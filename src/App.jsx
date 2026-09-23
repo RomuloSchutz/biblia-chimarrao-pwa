@@ -33,6 +33,8 @@ export default function App() {
   const [devotionalLoading, setDevotionalLoading] = useState(false)
   const [journey, setJourney] = useState({completed:0,lastDay:0,lastTitle:'',favorites:0,notes:0})
   const [journeyLoading, setJourneyLoading] = useState(false)
+  const [favoriteItems, setFavoriteItems] = useState([])
+  const [favoritesLoading, setFavoritesLoading] = useState(false)
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return
@@ -85,6 +87,26 @@ export default function App() {
     [7,'Julho','Tempo e espera'],[8,'Agosto','Tempestades'],[9,'Setembro','Transformação'],
     [10,'Outubro','Gratidão'],[11,'Novembro','Generosidade'],[12,'Dezembro','Esperança e celebração']
   ]
+
+  async function openFavorites() {
+    if (!user || !supabase) return
+    setFavoritesLoading(true); setMessage('')
+    const { data, error } = await supabase.from('favorites')
+      .select('created_at,encontros(day_number,day_of_month,month_name,title,verse_reference,verse_text)')
+      .eq('user_id',user.id).order('created_at',{ascending:false})
+    if (error) { setMessage('Não foi possível carregar seus favoritos.'); setFavoriteItems([]) }
+    else setFavoriteItems((data || []).filter(item => item.encontros))
+    setScreen('favorites'); setFavoritesLoading(false); window.scrollTo({top:0,behavior:'smooth'})
+  }
+
+  async function removeFavoriteFromList(dayNumber) {
+    const item = favoriteItems.find(x => x.encontros?.day_number === dayNumber)
+    if (!item || !user || !supabase) return
+    const { data: enc } = await supabase.from('encontros').select('id').eq('edition_id','e9ced096-9c32-4f64-b3af-d25fc6781fb6').eq('day_number',dayNumber).single()
+    if (!enc) return
+    const { error } = await supabase.from('favorites').delete().eq('user_id',user.id).eq('encontro_id',enc.id)
+    if (!error) setFavoriteItems(items => items.filter(x => x.encontros?.day_number !== dayNumber))
+  }
 
   async function openJourney() {
     if (!user || !supabase) return
@@ -201,6 +223,10 @@ export default function App() {
   }
 
 
+  if (screen === 'favorites' && user) {
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>365 encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome favorites-head"><p className="eyebrow">MEUS FAVORITOS</p><h2>Encontros que falaram com você</h2><p>Guarde aqui as mensagens que deseja encontrar novamente.</p></section>{favoritesLoading ? <p className="encounter-save-status">Carregando seus favoritos...</p> : favoriteItems.length ? <section className="favorites-list">{favoriteItems.map(item => { const e=item.encontros; return <article className="favorite-card" key={e.day_number}><div className="favorite-card-top"><span>♥</span><small>DIA {e.day_number} · {e.day_of_month} DE {String(e.month_name||'').toUpperCase()}</small></div><h3>{e.title}</h3><blockquote>{e.verse_text}</blockquote><p className="favorite-reference">{e.verse_reference}</p><div className="favorite-actions"><button onClick={() => openEncounter(e.day_number)}>Abrir encontro →</button><button className="favorite-remove" onClick={() => removeFavoriteFromList(e.day_number)}>♡ Remover</button></div></article>})}</section> : <section className="empty-state"><span>♡</span><h3>Nenhum favorito ainda</h3><p>Quando uma mensagem falar especialmente com você, toque em Favoritar no encontro. Ela ficará guardada aqui.</p><button onClick={() => setScreen('devotional')}>Explorar o devocional →</button></section>}</main>
+  }
+
   if (screen === 'journey' && user) {
     const pct = Math.round((journey.completed / 365) * 100)
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>365 encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome journey-head"><p className="eyebrow">MINHA CAMINHADA</p><h2>Um passo de cada vez</h2><p>Aqui você acompanha os encontros que já concluiu ao longo do ano.</p><div className="journey-progress"><div className="journey-progress-bar" style={{width:pct+'%'}}></div></div><strong className="journey-percent">{pct}% da caminhada · {journey.completed} de 365 encontros</strong></section>{journeyLoading ? <p className="encounter-save-status">Carregando sua caminhada...</p> : <><section className="journey-stats"><div><strong>{journey.completed}</strong><small>Concluídos</small></div><div><strong>{journey.notes}</strong><small>Anotações</small></div><div><strong>{journey.favorites}</strong><small>Favoritos</small></div></section><section className="journey-resume"><p className="eyebrow">CONTINUAR</p>{journey.lastDay ? <><h3>Seu último encontro concluído</h3><p>Dia {journey.lastDay} — {journey.lastTitle}</p><button onClick={() => openEncounter(Math.min(journey.lastDay + 1,365))}>Continuar do próximo encontro →</button></> : <><h3>Sua caminhada começa aqui</h3><p>Conclua seu primeiro encontro para começar a registrar seu progresso.</p><button onClick={() => openEncounter(1)}>Abrir o Dia 1 →</button></>}</section></>}</main>
@@ -236,7 +262,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
