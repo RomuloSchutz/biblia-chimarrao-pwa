@@ -16,6 +16,9 @@ export default function App() {
   const [screen, setScreen] = useState('home')
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
+  const [pensarNote, setPensarNote] = useState('')
+  const [passoNote, setPassoNote] = useState('')
+  const ENCONTRO_ID = '3817029c-5fe8-4a98-a92b-226d7b86b390'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -69,6 +72,35 @@ export default function App() {
     } finally { setLoading(false) }
   }
 
+  async function loadEncounterState() {
+    if (!user || !supabase) return
+    const [{ data: note }, { data: fav }] = await Promise.all([
+      supabase.from('reader_records').select('para_pensar_note,um_passo_para_hoje_note').eq('user_id', user.id).eq('encontro_id', ENCONTRO_ID).maybeSingle(),
+      supabase.from('favorites').select('encontro_id').eq('user_id', user.id).eq('encontro_id', ENCONTRO_ID).maybeSingle()
+    ])
+    setPensarNote(note?.para_pensar_note || '')
+    setPassoNote(note?.um_passo_para_hoje_note || '')
+    setFavoritePreview(Boolean(fav))
+  }
+
+  async function saveEncounterNotes() {
+    if (!user || !supabase) return
+    const { error } = await supabase.from('reader_records').upsert({user_id:user.id,encontro_id:ENCONTRO_ID,para_pensar_note:pensarNote,um_passo_para_hoje_note:passoNote},{onConflict:'user_id,encontro_id'})
+    if (!error) { setSavedPreview(true); setTimeout(() => setSavedPreview(false), 2200) }
+    else setMessage('Não foi possível salvar as anotações agora.')
+  }
+
+  async function toggleEncounterFavorite() {
+    if (!user || !supabase) return
+    if (favoritePreview) {
+      const { error } = await supabase.from('favorites').delete().eq('user_id',user.id).eq('encontro_id',ENCONTRO_ID)
+      if (!error) setFavoritePreview(false)
+    } else {
+      const { error } = await supabase.from('favorites').insert({user_id:user.id,encontro_id:ENCONTRO_ID})
+      if (!error) setFavoritePreview(true)
+    }
+  }
+
   async function handleLogout() {
     if (supabase) await supabase.auth.signOut()
     setUser(null); setScreen('home'); setMessage('')
@@ -76,7 +108,7 @@ export default function App() {
 
 
   if (screen === 'encounter' && user) {
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia da edição 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => window.history.length > 1 ? window.history.back() : setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><article className="welcome"><p className="eyebrow">DIA 1 · 1º DE JANEIRO</p><h2>O Primeiro Passo</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>Senhor, recebe este novo começo e guia meus primeiros passos.</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>“Entrega o teu caminho ao Senhor; confia nele, e ele o fará.”</p><small>Salmo 37:5</small></div><div className="dash-message">🧉 <strong>Mate da Reflexão</strong><p>Um novo ano pode parecer uma página em branco, mas ninguém começa completamente do zero. Levamos conosco experiências, perdas, aprendizados, desejos e feridas. Ainda assim, Deus pode fazer algo novo a partir da história que já vivemos.</p><p>O primeiro passo não precisa ser grandioso. Pode ser uma oração sincera, uma conversa necessária, uma escolha mais saudável ou a decisão de não repetir um padrão que trouxe sofrimento.</p><p>Entregar o caminho ao Senhor não significa deixar de planejar. Significa reconhecer que nossos planos precisam ser conduzidos por uma sabedoria maior que a nossa.</p><p>Comece este ano sem exigir de si uma perfeição impossível. Caminhe com fidelidade. Deus não pede que você enxergue toda a estrada; pede que confie nele no passo de hoje.</p></div><div className="dash-message">💭 <strong>Para Pensar</strong><p>Qual é o primeiro passo que Deus está colocando diante de você?</p><textarea placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>Senhor, entrego-te este novo ano e tudo o que ele trará. Dá-me sabedoria para planejar, coragem para agir e humildade para seguir tua direção. Amém.</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>Escreva uma decisão simples que deseja colocar em prática neste início de ano.</p><textarea placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><nav className="encounter-actions" aria-label="Ações do encontro"><button disabled title="Este é o primeiro encontro">← <span>Anterior</span></button><button onClick={() => { setSavedPreview(true); setTimeout(() => setSavedPreview(false), 2200) }}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={() => setFavoritePreview(v => !v)}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={() => setMessage('O Dia 2 será conectado após validarmos este modelo.') }><span>Próximo</span> →</button></nav></article></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia da edição 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => window.history.length > 1 ? window.history.back() : setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><article className="welcome"><p className="eyebrow">DIA 1 · 1º DE JANEIRO</p><h2>O Primeiro Passo</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>Senhor, recebe este novo começo e guia meus primeiros passos.</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>“Entrega o teu caminho ao Senhor; confia nele, e ele o fará.”</p><small>Salmo 37:5</small></div><div className="dash-message">🧉 <strong>Mate da Reflexão</strong><p>Um novo ano pode parecer uma página em branco, mas ninguém começa completamente do zero. Levamos conosco experiências, perdas, aprendizados, desejos e feridas. Ainda assim, Deus pode fazer algo novo a partir da história que já vivemos.</p><p>O primeiro passo não precisa ser grandioso. Pode ser uma oração sincera, uma conversa necessária, uma escolha mais saudável ou a decisão de não repetir um padrão que trouxe sofrimento.</p><p>Entregar o caminho ao Senhor não significa deixar de planejar. Significa reconhecer que nossos planos precisam ser conduzidos por uma sabedoria maior que a nossa.</p><p>Comece este ano sem exigir de si uma perfeição impossível. Caminhe com fidelidade. Deus não pede que você enxergue toda a estrada; pede que confie nele no passo de hoje.</p></div><div className="dash-message">💭 <strong>Para Pensar</strong><p>Qual é o primeiro passo que Deus está colocando diante de você?</p><textarea value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>Senhor, entrego-te este novo ano e tudo o que ele trará. Dá-me sabedoria para planejar, coragem para agir e humildade para seguir tua direção. Amém.</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>Escreva uma decisão simples que deseja colocar em prática neste início de ano.</p><textarea value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><nav className="encounter-actions" aria-label="Ações do encontro"><button disabled title="Este é o primeiro encontro">← <span>Anterior</span></button><button onClick={saveEncounterNotes}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={toggleEncounterFavorite}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={() => setMessage('O Dia 2 será conectado após validarmos este modelo.') }><span>Próximo</span> →</button></nav></article></main>
   }
 
   if (screen === 'dashboard' && user) {
@@ -95,7 +127,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? setScreen('encounter') : setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? (loadEncounterState(), setScreen('encounter')) : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
