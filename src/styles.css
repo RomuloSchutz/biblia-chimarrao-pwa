@@ -8,3 +8,5 @@
 @media(max-width:520px){.encounter-actions{position:sticky;bottom:8px;z-index:8;grid-template-columns:repeat(4,1fr);gap:5px;padding:7px;background:rgba(7,26,21,.96);border:1px solid #8c6d34;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.28)}.encounter-actions button{min-width:0;min-height:48px;padding:7px 4px;font-size:12px;border-radius:11px}.encounter-actions button span{display:block;font-size:10px;margin-top:2px}}
 
 .encounter-save-status{max-width:880px;margin:10px auto 0;padding:11px 14px;border:1px solid #b98b3f;border-radius:12px;background:#f3dfac;color:#173629!important;font-weight:800;text-align:center}
+
+.mate-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.share-mate{margin:0;padding:8px 13px;border:1px solid #b98b3f;background:transparent;color:#f3dfac;font-size:13px}.mate-title-row+p{margin-top:0}@media(max-width:520px){.mate-title-row{align-items:flex-start}.share-mate{padding:7px 9px;font-size:11px}}
