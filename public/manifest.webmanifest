@@ -1,0 +1,10 @@
+{
+  "name": "Biblia + Chimarrao",
+  "short_name": "Biblia+Mate",
+  "description": "365 encontros com a Palavra de Deus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3eadc",
+  "theme_color": "#5b2f16",
+  "lang": "pt-BR"
+}
