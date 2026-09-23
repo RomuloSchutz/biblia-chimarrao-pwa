@@ -5,8 +5,8 @@ const menuItems = [
   ['📖','Devocional','365 encontros com Deus'],
   ['☀️','Encontro de Hoje','Seu encontro de hoje'],
   ['🧭','Minha Caminhada','Registre, acompanhe e siga em frente'],
-  ['♡','Favoritos','Encontros que tocaram você'],
-  ['✍️','Meus Registros','Suas reflexões e orações'],
+  ['♡','Meus Favoritos','Encontros que tocaram você'],
+  ['✍️','Minhas Anotações','Suas reflexões e passos'],
   ['▣','Meus Livros','Sua biblioteca particular'],
   ['📚','Livros do Romulo','Conheça todas as obras'],
   ['💡','Ideias e Reflexões','Palavras para levar consigo']
@@ -72,6 +72,11 @@ export default function App() {
     setUser(null); setScreen('home'); setMessage('')
   }
 
+
+  if (screen === 'encounter' && user) {
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia da edição 2027</small></div><button className="logout" onClick={() => setScreen('dashboard')}>← Início</button></header><article className="welcome"><p className="eyebrow">DIA 1 · 1º DE JANEIRO</p><h2>O Primeiro Passo</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>Senhor, recebe este novo começo e guia meus primeiros passos.</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>“Entrega o teu caminho ao Senhor; confia nele, e ele o fará.”</p><small>Salmo 37:5</small></div><div className="dash-message">🧉 <strong>Mate da Reflexão</strong><p>Um novo ano pode parecer uma página em branco, mas ninguém começa completamente do zero. Levamos conosco experiências, perdas, aprendizados, desejos e feridas. Ainda assim, Deus pode fazer algo novo a partir da história que já vivemos.</p><p>O primeiro passo não precisa ser grandioso. Pode ser uma oração sincera, uma conversa necessária, uma escolha mais saudável ou a decisão de não repetir um padrão que trouxe sofrimento.</p><p>Entregar o caminho ao Senhor não significa deixar de planejar. Significa reconhecer que nossos planos precisam ser conduzidos por uma sabedoria maior que a nossa.</p><p>Comece este ano sem exigir de si uma perfeição impossível. Caminhe com fidelidade. Deus não pede que você enxergue toda a estrada; pede que confie nele no passo de hoje.</p></div><div className="dash-message">💭 <strong>Para Pensar</strong><p>Qual é o primeiro passo que Deus está colocando diante de você?</p><textarea placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>Senhor, entrego-te este novo ano e tudo o que ele trará. Dá-me sabedoria para planejar, coragem para agir e humildade para seguir tua direção. Amém.</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>Escreva uma decisão simples que deseja colocar em prática neste início de ano.</p><textarea placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div></article></main>
+  }
+
   if (screen === 'dashboard' && user) {
     const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
     return (
@@ -88,7 +93,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? setScreen('encounter') : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
