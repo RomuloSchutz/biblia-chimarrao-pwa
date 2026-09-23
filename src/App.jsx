@@ -19,7 +19,8 @@ export default function App() {
   const [pensarNote, setPensarNote] = useState('')
   const [passoNote, setPassoNote] = useState('')
   const [encounterStatus, setEncounterStatus] = useState('')
-  const ENCONTRO_ID = '3817029c-5fe8-4a98-a92b-226d7b86b390'
+  const [encounter, setEncounter] = useState(null)
+  const [encounterLoading, setEncounterLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -73,15 +74,23 @@ export default function App() {
     } finally { setLoading(false) }
   }
 
-  async function loadEncounterState() {
+  async function openEncounter(dayNumber = 1) {
     if (!user || !supabase) return
+    setEncounterLoading(true)
+    setEncounterStatus('')
+    const { data, error } = await supabase.from('encontros').select('*').eq('edition_id','e9ced096-9c32-4f64-b3af-d25fc6781fb6').eq('day_number',dayNumber).eq('is_published',true).maybeSingle()
+    if (error || !data) { setEncounterStatus('Este encontro ainda não está disponível.'); setEncounterLoading(false); return }
+    setEncounter(data)
     const [{ data: note }, { data: fav }] = await Promise.all([
-      supabase.from('reader_records').select('para_pensar_note,um_passo_para_hoje_note').eq('user_id', user.id).eq('encontro_id', ENCONTRO_ID).maybeSingle(),
-      supabase.from('favorites').select('encontro_id').eq('user_id', user.id).eq('encontro_id', ENCONTRO_ID).maybeSingle()
+      supabase.from('reader_records').select('para_pensar_note,um_passo_para_hoje_note').eq('user_id', user.id).eq('encontro_id', data.id).maybeSingle(),
+      supabase.from('favorites').select('encontro_id').eq('user_id', user.id).eq('encontro_id', data.id).maybeSingle()
     ])
     setPensarNote(note?.para_pensar_note || '')
     setPassoNote(note?.um_passo_para_hoje_note || '')
     setFavoritePreview(Boolean(fav))
+    setScreen('encounter')
+    setEncounterLoading(false)
+    window.scrollTo({top:0,behavior:'smooth'})
   }
 
   async function saveEncounterNotes() {
@@ -90,7 +99,7 @@ export default function App() {
     const activeUser = sessionData.session?.user
     if (!activeUser) { setEncounterStatus('Sua sessão expirou. Entre novamente para salvar.'); return }
     const { data, error } = await supabase.from('reader_records').upsert({
-      user_id:activeUser.id,encontro_id:ENCONTRO_ID,
+      user_id:activeUser.id,encontro_id:encounter.id,
       para_pensar_note:pensarNote,um_passo_para_hoje_note:passoNote
     },{onConflict:'user_id,encontro_id'}).select('id,para_pensar_note,um_passo_para_hoje_note').single()
     if (error || !data) { setEncounterStatus('Erro ao salvar: ' + (error?.message || 'sem confirmação do banco')); return }
@@ -105,20 +114,21 @@ export default function App() {
     const activeUser = sessionData.session?.user
     if (!activeUser) { setEncounterStatus('Sua sessão expirou. Entre novamente para favoritar.'); return }
     if (favoritePreview) {
-      const { error } = await supabase.from('favorites').delete().eq('user_id',activeUser.id).eq('encontro_id',ENCONTRO_ID)
+      const { error } = await supabase.from('favorites').delete().eq('user_id',activeUser.id).eq('encontro_id',encounter.id)
       if (error) { setEncounterStatus('Erro ao remover favorito: ' + error.message); return }
       setFavoritePreview(false); setEncounterStatus('Removido dos seus favoritos.')
     } else {
-      const { data, error } = await supabase.from('favorites').upsert({user_id:activeUser.id,encontro_id:ENCONTRO_ID},{onConflict:'user_id,encontro_id'}).select('encontro_id').single()
+      const { data, error } = await supabase.from('favorites').upsert({user_id:activeUser.id,encontro_id:encounter.id},{onConflict:'user_id,encontro_id'}).select('encontro_id').single()
       if (error || !data) { setEncounterStatus('Erro ao favoritar: ' + (error?.message || 'sem confirmação do banco')); return }
       setFavoritePreview(true); setEncounterStatus('♥ Encontro salvo em Meus Favoritos.')
     }
   }
 
   async function shareMate() {
-    const text = 'O PRIMEIRO PASSO\n\nUm novo ano pode parecer uma página em branco, mas ninguém começa completamente do zero. Levamos conosco experiências, perdas, aprendizados, desejos e feridas. Ainda assim, Deus pode fazer algo novo a partir da história que já vivemos.\n\nO primeiro passo não precisa ser grandioso. Pode ser uma oração sincera, uma conversa necessária, uma escolha mais saudável ou a decisão de não repetir um padrão que trouxe sofrimento.\n\nEntregar o caminho ao Senhor não significa deixar de planejar. Significa reconhecer que nossos planos precisam ser conduzidos por uma sabedoria maior que a nossa.\n\nComece este ano sem exigir de si uma perfeição impossível. Caminhe com fidelidade. Deus não pede que você enxergue toda a estrada; pede que confie nele no passo de hoje.\n\nBíblia + Chimarrão — 365 Encontros com Deus | Romulo Schutz'
+    if (!encounter) return
+    const text = encounter.title + '\n\n' + encounter.reflection + '\n\nBíblia + Chimarrão — 365 Encontros com Deus | Romulo Schutz'
     try {
-      if (navigator.share) await navigator.share({ title:'Mate da Reflexão — O Primeiro Passo', text })
+      if (navigator.share) await navigator.share({ title:'Mate da Reflexão — ' + encounter.title, text })
       else { await navigator.clipboard.writeText(text); setEncounterStatus('✓ Mate da Reflexão copiado para compartilhar.') }
     } catch (error) {
       if (error?.name !== 'AbortError') setEncounterStatus('Não foi possível compartilhar agora.')
@@ -126,11 +136,13 @@ export default function App() {
   }
 
   function goPrevious() {
-    setEncounterStatus('Este é o primeiro encontro da edição.')
+    if (!encounter || encounter.day_number <= 1) { setEncounterStatus('Este é o primeiro encontro da edição.'); return }
+    openEncounter(encounter.day_number - 1)
   }
 
   function goNext() {
-    setEncounterStatus('O próximo encontro será liberado quando o Dia 2 estiver importado.')
+    if (!encounter) return
+    openEncounter(encounter.day_number + 1)
   }
 
   async function handleLogout() {
@@ -140,7 +152,8 @@ export default function App() {
 
 
   if (screen === 'encounter' && user) {
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia da edição 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => window.history.length > 1 ? window.history.back() : setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><article className="welcome"><p className="eyebrow">DIA 1 · 1º DE JANEIRO</p><h2>O Primeiro Passo</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>Senhor, recebe este novo começo e guia meus primeiros passos.</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>“Entrega o teu caminho ao Senhor; confia nele, e ele o fará.”</p><small>Salmo 37:5</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div><p>Um novo ano pode parecer uma página em branco, mas ninguém começa completamente do zero. Levamos conosco experiências, perdas, aprendizados, desejos e feridas. Ainda assim, Deus pode fazer algo novo a partir da história que já vivemos.</p><p>O primeiro passo não precisa ser grandioso. Pode ser uma oração sincera, uma conversa necessária, uma escolha mais saudável ou a decisão de não repetir um padrão que trouxe sofrimento.</p><p>Entregar o caminho ao Senhor não significa deixar de planejar. Significa reconhecer que nossos planos precisam ser conduzidos por uma sabedoria maior que a nossa.</p><p>Comece este ano sem exigir de si uma perfeição impossível. Caminhe com fidelidade. Deus não pede que você enxergue toda a estrada; pede que confie nele no passo de hoje.</p></div><div className="dash-message">💭 <strong>Para Pensar</strong><p>Qual é o primeiro passo que Deus está colocando diante de você?</p><textarea value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>Senhor, entrego-te este novo ano e tudo o que ele trará. Dá-me sabedoria para planejar, coragem para agir e humildade para seguir tua direção. Amém.</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>Escreva uma decisão simples que deseja colocar em prática neste início de ano.</p><textarea value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><nav className="encounter-actions" aria-label="Ações do encontro"><button disabled onClick={goPrevious} title="Este é o primeiro encontro">← <span>Anterior</span></button><button onClick={saveEncounterNotes}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={toggleEncounterFavorite}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={goNext}><span>Próximo</span> →</button></nav>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
+    if (encounterLoading || !encounter) return <main className="dashboard"><p className="encounter-save-status">Carregando encontro...</p></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia da edição 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><article className="welcome"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small>{encounter.verse_reference}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={saveEncounterNotes}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={toggleEncounterFavorite}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={goNext}><span>Próximo</span> →</button></nav>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
   }
 
   if (screen === 'dashboard' && user) {
@@ -159,7 +172,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? (loadEncounterState(), setScreen('encounter')) : setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
