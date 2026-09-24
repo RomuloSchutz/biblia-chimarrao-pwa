@@ -9,6 +9,7 @@ const menuItems = [
   ['✍️','Minhas Anotações','Suas reflexões e passos'],
   ['▣','Meus Livros','Sua biblioteca particular'],
   ['📚','Livros do Romulo','Conheça todas as obras'],
+  ['👤','Sobre o Autor','Conheça Romulo Schutz'],
   ['💡','Ideias e Reflexões','Palavras para levar consigo']
 ]
 
@@ -248,6 +249,17 @@ export default function App() {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Ideias e Reflexões</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome ideas-head"><p className="eyebrow">IDEIAS E REFLEXÕES</p><h2>Palavras para levar consigo.</h2><p>Um espaço para pensamentos, perguntas e pequenas pausas sobre tempo, história, fé, esperança e vida.</p><div className="ideas-author">Romulo Schutz<small>Notas do autor</small></div></section><section className="ideas-grid">{reflections.map((item,index)=><article className="idea-card" key={item.kicker}><div className="idea-number">{String(index+1).padStart(2,'0')}</div><div><span>{item.kicker}</span><blockquote>“{item.quote}”</blockquote><p>{item.text}</p><small>Romulo Schutz</small></div></article>)}</section><section className="ideas-note"><span>✦</span><div><strong>Um espaço que continuará crescendo.</strong><p>Novas ideias e reflexões poderão ser acrescentadas ao aplicativo ao longo da caminhada.</p></div></section></main>
   }
 
+  if (screen === 'author' && user) {
+    const published = ['Entre os Tempos — Publicado — físico disponível', 'Entre o Já e o Ainda Não — Publicado — físico disponível']
+    const upcoming = ['Bíblia + Chimarrão', 'Entre os Sistemas 1', 'Entre a Cidade e o Silêncio']
+    const future = ['Entre os Sistemas 2', 'Entre a Honra de Servir']
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Conheça o autor</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header>
+      <section className="author-profile-hero"><div className="author-profile-photo"><img src="/autor-romulo.jpg" alt="Retrato de Romulo Schutz" onError={e=>{e.currentTarget.style.display='none'}}/><div className="author-photo-fallback">Romulo Schutz<small>Autor · História · Fé · Reflexão</small></div></div><div className="author-profile-intro"><p className="eyebrow">AUTOR</p><h2>Romulo Schutz</h2><p>Escritor, pesquisador e autor de obras que dialogam com história, filosofia, teologia e esperança cristã.</p><button onClick={() => setScreen('authorBooks')}>Conhecer as obras →</button></div></section>
+      <section className="author-profile-body"><p className="eyebrow">SOBRE O AUTOR</p><h3>Uma caminhada entre perguntas, história e fé.</h3><p>Romulo Schutz é escritor, empresário em Otacílio Costa, Santa Catarina, e presbítero da Igreja Assembleia de Deus. É casado com Scheila Schutz e pai de Marco Antônio e Maria Antônia.</p><p>Graduado em História, mantém seus estudos em filosofia, teologia e psicanálise, áreas que dialogam diretamente com as perguntas presentes em sua escrita: o sentido da existência, os propósitos, o vazio da alma, o tempo, as escolhas, a fé e a esperança cristã.</p><p>Filosofia e psicanálise aparecem em sua caminhada como instrumentos de reflexão sobre o ser humano; a fé cristã permanece como o eixo a partir do qual procura compreender a vida e seus propósitos.</p><p>É autor de <em>Entre os Tempos — A Urgência de Compreender o Calendário de Deus</em> e <em>Entre o Já e o Ainda Não — A Esperança Inabalável em um Mundo Acelerado</em>, obras já editadas e disponíveis para aquisição. Outros projetos estão em desenvolvimento, ampliando esse universo de história, filosofia, teologia, relações humanas, escolhas e esperança.</p></section>
+      <section className="author-profile-works"><p className="eyebrow">OBRAS PUBLICADAS E PROJETOS</p><h3>Livros e próximos capítulos</h3><div className="author-work-groups"><article><h4>Publicados</h4>{published.map(x=><p key={x}>✓ {x}</p>)}</article><article><h4>Próximos lançamentos</h4>{upcoming.map(x=><p key={x}>◈ {x}</p>)}</article><article><h4>Projetos futuros</h4>{future.map(x=><p key={x}>◇ {x}</p>)}</article></div><button onClick={() => setScreen('authorBooks')}>Ver livros do Romulo →</button></section><blockquote className="author-profile-quote">“Cada livro nasce de uma pergunta. Cada história procura deixar o leitor diante de uma escolha.”<small>Romulo Schutz</small></blockquote>
+    </main>
+  }
+
   if (screen === 'authorBooks' && user) {
     const works = [
       {title:'Bíblia + Chimarrão',sub:'365 encontros com Deus',meta:'Devocional diário 2027',image:'/image.png',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
@@ -311,7 +323,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : title === 'Meus Livros' ? setScreen('books') : title === 'Livros do Romulo' ? setScreen('authorBooks') : title === 'Ideias e Reflexões' ? setScreen('ideas') : setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : title === 'Meus Livros' ? setScreen('books') : title === 'Livros do Romulo' ? setScreen('authorBooks') : title === 'Sobre o Autor' ? setScreen('author') : title === 'Ideias e Reflexões' ? setScreen('ideas') : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
