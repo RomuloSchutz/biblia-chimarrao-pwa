@@ -236,6 +236,16 @@ export default function App() {
   }
 
 
+  if (screen === 'books' && user) {
+    const books = [
+      {title:'Bíblia + Chimarrão',sub:'365 encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',status:'Disponível no aplicativo',action:'Abrir devocional',open:()=>setScreen('devotional')},
+      {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',status:'Livro publicado',action:'Detalhes em breve'},
+      {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Alma · Esperança',cover:'ja',status:'Livro publicado',action:'Detalhes em breve'},
+      {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',kind:'Trilogia em desenvolvimento',cover:'cidade',status:'Em breve',action:'Projeto em desenvolvimento'}
+    ]
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome books-head"><p className="eyebrow">MEUS LIVROS</p><h2>História, fé e esperança para a sua jornada.</h2><p>Este espaço reúne as obras que fazem parte da caminhada do autor e do leitor.</p><div className="author-mark">Bíblia <b>+</b> Chimarrão <small>365 encontros com Deus · Romulo Schutz</small></div></section><section className="books-grid">{books.map(book=><article className="book-card" key={book.title}><div className={'book-cover '+book.cover}><span className="book-cover-kicker">{book.title==='Entre a Cidade e o Silêncio'?'TRÊS LIVROS. UMA HISTÓRIA.':''}</span><strong>{book.title}</strong><small>{book.sub}</small><i>Romulo Schutz</i></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={book.open}>{book.action} →</button>:<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section></main>
+  }
+
   if (screen === 'notes' && user) {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>365 encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome notes-head"><p className="eyebrow">MINHAS ANOTAÇÕES</p><h2>Palavras da sua caminhada</h2><p>Suas reflexões e passos ficam reunidos aqui para você revisitar quando quiser.</p></section>{notesLoading ? <p className="encounter-save-status">Carregando suas anotações...</p> : noteItems.length ? <section className="notes-list">{noteItems.map(item => { const e=item.encontros; return <article className="note-card" key={item.id}><div className="note-card-top"><span>✍️</span><small>DIA {e.day_number} · {e.day_of_month} DE {String(e.month_name||'').toUpperCase()}</small></div><h3>{e.title}</h3>{item.para_pensar_note?.trim() && <div className="note-block"><strong>Para Pensar</strong><small>{e.para_pensar}</small><p>{item.para_pensar_note}</p></div>}{item.um_passo_para_hoje_note?.trim() && <div className="note-block"><strong>Um Passo para Hoje</strong><small>{e.um_passo_para_hoje}</small><p>{item.um_passo_para_hoje_note}</p></div>}<button className="note-open" onClick={() => openEncounter(e.day_number)}>Abrir encontro →</button></article>})}</section> : <section className="empty-state"><span>✍️</span><h3>Nenhuma anotação ainda</h3><p>Nos encontros, escreva em Para Pensar ou Um Passo para Hoje e toque em Salvar. Suas palavras ficarão guardadas aqui.</p><button onClick={() => setScreen('devotional')}>Explorar o devocional →</button></section>}</main>
   }
@@ -279,7 +289,7 @@ export default function App() {
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : setMessage(title + ' será a próxima área a ser conectada.')}>
+            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Devocional' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : title === 'Meus Livros' ? setScreen('books') : setMessage(title + ' será a próxima área a ser conectada.')}>
               <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
