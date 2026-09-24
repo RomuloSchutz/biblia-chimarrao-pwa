@@ -5,17 +5,16 @@ import { supabase } from './lib/supabase.js'
 // The EPUB URL must be supplied only after the server has verified access.
 // Never use a public bucket URL for paid books.
 export default function EpubReader({ title, onBack }) {
-  const [epubUrl, setEpubUrl] = useState(null)
+  const [epubData, setEpubData] = useState(null)
   const [checking, setChecking] = useState(true)
   const [availability, setAvailability] = useState('')
 
   useEffect(() => {
     let active = true
-    let localUrl = null
     async function loadAuthorizedBook() {
       setChecking(true)
       setAvailability('')
-      setEpubUrl(null)
+      setEpubData(null)
       try {
         const { data: sessionData, error: authError } = await supabase.auth.getUser()
         if (authError || !sessionData.user) throw new Error('Entre na sua conta para acessar a biblioteca.')
@@ -31,8 +30,8 @@ export default function EpubReader({ title, onBack }) {
         const { data: file, error: downloadError } = await supabase.storage.from('paid-epubs').download(record.storage_path)
         if (downloadError || !file) throw downloadError || new Error('Falha ao carregar o arquivo.')
         if (!active) return
-        localUrl = URL.createObjectURL(file)
-        setEpubUrl(localUrl)
+        const bytes = await file.arrayBuffer()
+        if (active) setEpubData(bytes)
       } catch (err) {
         if (active) setAvailability(err?.message || 'Não foi possível verificar seu acesso.')
       } finally {
@@ -41,7 +40,7 @@ export default function EpubReader({ title, onBack }) {
     }
     if (supabase) loadAuthorizedBook()
     else { setAvailability('Biblioteca temporariamente indisponível.'); setChecking(false) }
-    return () => { active = false; if (localUrl) URL.revokeObjectURL(localUrl) }
+    return () => { active = false }
   }, [title])
 
   const host = useRef(null)
@@ -53,12 +52,12 @@ export default function EpubReader({ title, onBack }) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!epubUrl || !host.current) return
+    if (!epubData || !host.current) return
     let cancelled = false
     let book
     try {
       setError('')
-      book = ePub(epubUrl)
+      book = ePub(epubData)
       bookRef.current = book
       const view = book.renderTo(host.current, { width: '100%', height: '65vh', flow: 'paginated' })
       rendition.current = view
@@ -77,7 +76,7 @@ export default function EpubReader({ title, onBack }) {
       bookRef.current = null
       try { book?.destroy() } catch { /* cleanup */ }
     }
-  }, [epubUrl])
+  }, [epubData])
 
   useEffect(() => {
     rendition.current?.themes.fontSize(fontSize + '%')
@@ -87,7 +86,7 @@ export default function EpubReader({ title, onBack }) {
     <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Leitor digital</small></div><button className="logout" onClick={onBack}>← Minha biblioteca</button></header>
     <section className="epub-panel">
       <p className="eyebrow">LEITURA DIGITAL</p><h2>{title}</h2>
-      {!epubUrl ? <div className="epub-notice"><h3>{checking ? 'Verificando seu acesso...' : 'Leitor preparado'}</h3><p>{checking ? 'Consultando sua biblioteca particular.' : availability || 'A leitura estará disponível após a publicação do EPUB e a autorização da sua conta.'} Nenhuma compra está sendo realizada nesta tela.</p></div> : <>
+      {!epubData ? <div className="epub-notice"><h3>{checking ? 'Verificando seu acesso...' : 'Leitor preparado'}</h3><p>{checking ? 'Consultando sua biblioteca particular.' : availability || 'A leitura estará disponível após a publicação do EPUB e a autorização da sua conta.'} Nenhuma compra está sendo realizada nesta tela.</p></div> : <>
         <div className="epub-toolbar">
           <button onClick={() => setFontSize(n => Math.max(75,n-10))} aria-label="Diminuir letra">A−</button>
           <span>Tamanho do texto: {fontSize}%</span>
