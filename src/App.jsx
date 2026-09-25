@@ -50,6 +50,14 @@ export default function App() {
   const [reminderClock, setReminderClock] = useState('')
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err =>
+        console.info('Não foi possível registrar notificações do dispositivo:', err)
+      )
+    }
+  }, [])
+
+  useEffect(() => {
     if (!supabaseConfigured || !supabase) return
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
@@ -84,7 +92,17 @@ export default function App() {
     setReminderMessage(text)
     try {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Hora do Mate 🧉', { body: 'Prepare seu chimarrão. Seu encontro com Deus está esperando.' })
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(registration =>
+            registration.showNotification('Hora do Mate 🧉', {
+              body: 'Prepare seu chimarrão. Seu encontro com Deus está esperando.',
+              icon: '/image.png', badge: '/image.png', tag: 'hora-do-mate',
+              data: { url: '/' }
+            })
+          ).catch(err => console.info('Notificação pelo service worker indisponível:', err))
+        } else {
+          new Notification('Hora do Mate 🧉', { body: 'Prepare seu chimarrão. Seu encontro com Deus está esperando.' })
+        }
       }
     } catch (err) {
       // Alguns navegadores móveis não permitem Notification() diretamente.
