@@ -167,7 +167,7 @@ export default function App() {
     setReminderSaving(false)
   }
 
-  const VAPID_PUBLIC_KEY = 'BLqW-xYscmKU5HWSZCESMf5CEf23fiUOLPAe4wcToEzYNj8bqDjaYlpW1AANZOA7xPx4VS8wHKPLeo55EjYDpy4'
+  const VAPID_PUBLIC_KEY = 'BMfGc5ofxXq-TxFPadM90p3KN8gqb3KOfq3hUME1dibGBYLE7-3L2HxEq59qyIqilEe5AsPf7KCVtdBN9-0dHxQ'
   function vapidBytes(base64url) {
     const padding = '='.repeat((4 - base64url.length % 4) % 4)
     const binary = atob((base64url + padding).replace(/-/g,'+').replace(/_/g,'/'))
@@ -187,6 +187,15 @@ export default function App() {
       if (permission !== 'granted') { setReminderMessage('Autorize as notificações nas configurações do navegador.'); return }
       const registration = await navigator.serviceWorker.ready
       let subscription = await registration.pushManager.getSubscription()
+      if (subscription) {
+        const currentKey = subscription.options?.applicationServerKey
+        const expected = vapidBytes(VAPID_PUBLIC_KEY)
+        if (!currentKey || Array.from(new Uint8Array(currentKey)).some((value,index)=>value!==expected[index]) || new Uint8Array(currentKey).length!==expected.length) {
+          await supabase.from('push_subscriptions').delete().eq('user_id',user.id).eq('endpoint',subscription.endpoint)
+          await subscription.unsubscribe()
+          subscription = null
+        }
+      }
       if (!subscription) subscription = await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidBytes(VAPID_PUBLIC_KEY)})
       const json = subscription.toJSON()
       const {error} = await supabase.from('push_subscriptions').upsert({
