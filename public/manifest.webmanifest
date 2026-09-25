@@ -1,7 +1,7 @@
 {
-  "name": "Biblia + Chimarrao",
-  "short_name": "Biblia+Mate",
-  "description": "365 encontros com a Palavra de Deus",
+  "name": "Bíblia + Chimarrão",
+  "short_name": "Bíblia + Chimarrão",
+  "description": "Plataforma de leitura: devocional Chimarrão com Deus, biblioteca digital, livros e reflexões de Romulo Schutz.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f3eadc",
