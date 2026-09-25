@@ -73,24 +73,54 @@ export default function App() {
     return () => { cancelled = true }
   }, [user?.id])
 
-  // Lembrete local de demonstração: somente enquanto o aplicativo está aberto.
+  // Prévia local confiável: o navegador pode bloquear avisos do sistema,
+  // por isso sempre exibimos também uma mensagem dentro do aplicativo.
+  const [mateAlert, setMateAlert] = useState('')
+  function showMateAlert() {
+    const text = '🧉 Hora do Mate! Prepare seu chimarrão. Seu encontro com Deus está esperando.'
+    setMateAlert(text)
+    setReminderMessage(text)
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Hora do Mate 🧉', { body: 'Prepare seu chimarrão. Seu encontro com Deus está esperando.' })
+      }
+    } catch (err) {
+      // Alguns navegadores móveis não permitem Notification() diretamente.
+      console.info('Aviso do sistema indisponível neste navegador:', err)
+    }
+  }
+
   useEffect(() => {
     if (!user || !reminderEnabled || typeof window === 'undefined') return
     const check = () => {
       const now = new Date()
-      const hhmm = new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(now)
-      const day = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)
-      const key = 'mate-reminder-' + user.id + '-' + day
-      if (hhmm !== reminderTime || localStorage.getItem(key)) return
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', hour12:false
+      }).formatToParts(now)
+      const get = type => parts.find(part => part.type === type)?.value || ''
+      const day = get('year') + '-' + get('month') + '-' + get('day')
+      const current = Number(get('hour')) * 60 + Number(get('minute'))
+      const [h,m] = reminderTime.split(':').map(Number)
+      const scheduled = h * 60 + m
+      // Tolerância curta caso a aba tenha ficado suspensa no horário exato.
+      if (current < scheduled || current - scheduled > 5) return
+      // A chave inclui horário: alterar o horário permite repetir o teste no mesmo dia.
+      const key = 'mate-reminder-' + user.id + '-' + day + '-' + reminderTime
+      if (localStorage.getItem(key)) return
       localStorage.setItem(key,'1')
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Hora do Mate 🧉',{body:'Prepare seu chimarrão. Seu encontro de hoje está esperando por você.'})
-      }
-      setReminderMessage('🧉 Hora do Mate! Seu encontro de hoje está esperando por você.')
+      showMateAlert()
     }
     check()
-    const timer = window.setInterval(check,30000)
-    return () => window.clearInterval(timer)
+    const timer = window.setInterval(check,15000)
+    const resume = () => { if (!document.hidden) check() }
+    document.addEventListener('visibilitychange',resume)
+    window.addEventListener('focus',check)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange',resume)
+      window.removeEventListener('focus',check)
+    }
   }, [user?.id,reminderEnabled,reminderTime])
 
   async function saveReminder(event) {
@@ -99,14 +129,16 @@ export default function App() {
     setReminderSaving(true); setReminderMessage('')
     const {error} = await supabase.from('reminder_preferences').upsert({user_id:user.id,enabled:reminderEnabled,local_time:reminderTime+':00',timezone:'America/Sao_Paulo',updated_at:new Date().toISOString()},{onConflict:'user_id'})
     if (error) setReminderMessage('Erro ao salvar: '+error.message)
-    else setReminderMessage('✓ Preferência salva. O aviso de teste funciona enquanto o aplicativo estiver aberto.')
+    else setReminderMessage('✓ Horário salvo. O aviso será mostrado no aplicativo aberto, mesmo se o navegador bloquear a notificação do sistema.')
     setReminderSaving(false)
   }
 
   async function enableReminderNotifications() {
-    if (!('Notification' in window)) { setReminderMessage('Este navegador não oferece notificações nesta página.'); return }
-    try { const result=await Notification.requestPermission(); setReminderMessage(result==='granted'?'✓ Permissão concedida.':'Permissão não concedida; você ainda pode salvar seu horário.') }
-    catch { setReminderMessage('Não foi possível solicitar permissão neste navegador.') }
+    if (!('Notification' in window)) { setReminderMessage('Este navegador não permite notificações diretas. O aviso dentro do aplicativo continuará funcionando.'); return }
+    try {
+      const result = await Notification.requestPermission()
+      setReminderMessage(result==='granted'?'✓ Permissão concedida. Use Testar aviso agora para verificar o dispositivo.':'Notificação do sistema não autorizada. O aviso dentro do aplicativo continuará funcionando.')
+    } catch { setReminderMessage('Este navegador não permite solicitar a notificação. O aviso dentro do aplicativo continuará funcionando.') }
   }
 
   async function handleSubmit(event) {
@@ -369,7 +401,7 @@ export default function App() {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Hora do Mate</small></div><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></header>
       <section className="welcome reminder-panel"><p className="eyebrow">🧉 HORA DO MATE</p><h2>Reserve um momento para o que importa.</h2><p>Escolha quando deseja ser lembrado de preparar seu chimarrão e viver seu encontro com Deus.</p>
       <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meu lembrete</label><label>Horário do lembrete (horário de Brasília)<input type="time" required value={reminderTime} onChange={e=>setReminderTime(e.target.value)}/></label><button type="submit" disabled={reminderSaving}>{reminderSaving?'Salvando...':'Salvar meu horário'}</button></form>
-      <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button><p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
+      <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
   }
 
   if (screen === 'dashboard' && user) {
