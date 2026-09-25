@@ -167,6 +167,33 @@ export default function App() {
     setReminderSaving(false)
   }
 
+  const VAPID_PUBLIC_KEY = 'BLqW-xYscmKU5HWSZCESMf5CEf23fiUOLPAe4wcToEzYNj8bqDjaYlpW1AANZOA7xPx4VS8wHKPLeo55EjYDpy4'
+  function vapidBytes(base64url) {
+    const padding = '='.repeat((4 - base64url.length % 4) % 4)
+    const binary = atob((base64url + padding).replace(/-/g,'+').replace(/_/g,'/'))
+    return Uint8Array.from(binary, character => character.charCodeAt(0))
+  }
+  async function registerClosedAppNotifications() {
+    if (!user || !supabase) { setReminderMessage('Entre na sua conta para ativar as notificações.'); return }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      setReminderMessage('Este navegador não oferece notificações push. Os lembretes com o aplicativo aberto continuam disponíveis.'); return
+    }
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') { setReminderMessage('Autorize as notificações nas configurações do navegador.'); return }
+      const registration = await navigator.serviceWorker.ready
+      let subscription = await registration.pushManager.getSubscription()
+      if (!subscription) subscription = await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:vapidBytes(VAPID_PUBLIC_KEY)})
+      const json = subscription.toJSON()
+      const {error} = await supabase.from('push_subscriptions').upsert({
+        user_id:user.id,endpoint:subscription.endpoint,p256dh:json.keys?.p256dh,auth_key:json.keys?.auth,
+        user_agent:navigator.userAgent,enabled:true,updated_at:new Date().toISOString()
+      },{onConflict:'endpoint'})
+      if (error) throw error
+      setReminderMessage('✓ Dispositivo registrado para receber notificações com o aplicativo fechado. O envio automático pelo servidor ainda precisa ser ativado.')
+    } catch(error) { setReminderMessage('Não foi possível registrar este dispositivo: '+(error?.message || 'erro desconhecido')) }
+  }
+
   async function enableReminderNotifications() {
     if (!('Notification' in window)) { setReminderMessage('Este navegador não permite notificações diretas. O aviso dentro do aplicativo continuará funcionando.'); return }
     try {
@@ -436,7 +463,7 @@ export default function App() {
       <section className="welcome reminder-panel"><p className="eyebrow">🧉 HORA DO MATE</p><h2>Reserve um momento para o que importa.</h2><p>Escolha quando deseja ser lembrado de preparar seu chimarrão e viver seu encontro com Deus.</p>
       <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meus lembretes</label><p>Escolha os dias e horários (Brasília). Exemplo: segunda a sexta às 07:00, sábado e domingo às 09:00.</p>{weeklySchedule?.map(day=><div key={day.weekday} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'12px 0',borderBottom:'1px solid #d3b77c'}}><label style={{display:'flex',alignItems:'center',gap:8}}><input type="checkbox" checked={day.enabled} onChange={e=>setWeeklySchedule(old=>old.map(d=>d.weekday===day.weekday?{...d,enabled:e.target.checked}:d))}/>{WEEKDAYS[day.weekday]}</label><input aria-label={'Horário de '+WEEKDAYS[day.weekday]} type="time" disabled={!day.enabled} value={day.time} onChange={e=>setWeeklySchedule(old=>old.map(d=>d.weekday===day.weekday?{...d,time:e.target.value}:d))}/></div>)}<button type="submit" disabled={reminderSaving||!weeklySchedule}>{reminderSaving?'Salvando...':'Salvar programação semanal'}</button></form>
       <p className="encounter-save-status" role="status"><strong>Estado do agendamento:</strong> {savedReminder ? (savedReminder.enabled ? 'ATIVO · programação semanal' : 'DESATIVADO') : 'Carregando ou ainda não salvo'} · <strong>Relógio:</strong> {reminderClock || 'Aguardando verificação'} · <strong>Permissão:</strong> {typeof Notification === 'undefined' ? 'indisponível' : Notification.permission}</p>
-      <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
+      <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={registerClosedAppNotifications}>🔔 Preparar avisos com aplicativo fechado</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
   }
 
   if (screen === 'dashboard' && user) {
