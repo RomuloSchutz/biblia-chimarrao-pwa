@@ -5,6 +5,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f3eadc",
-  "theme_color": "#5b2f16",
-  "lang": "pt-BR"
+  "theme_color": "#0c2d23",
+  "lang": "pt-BR",
+  "id": "/"
 }
