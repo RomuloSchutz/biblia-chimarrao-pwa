@@ -46,6 +46,8 @@ export default function App() {
   const [reminderEnabled, setReminderEnabled] = useState(false)
   const [reminderMessage, setReminderMessage] = useState('')
   const [reminderSaving, setReminderSaving] = useState(false)
+  const [savedReminder, setSavedReminder] = useState(null)
+  const [reminderClock, setReminderClock] = useState('')
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return
@@ -68,7 +70,7 @@ export default function App() {
       .then(({data,error}) => {
         if (cancelled) return
         if (error) { setReminderMessage('Não foi possível carregar o lembrete.'); return }
-        if (data) { setReminderEnabled(data.enabled); setReminderTime(String(data.local_time).slice(0,5)) }
+        if (data) { setReminderEnabled(data.enabled); setReminderTime(String(data.local_time).slice(0,5)); setSavedReminder({enabled:data.enabled,time:String(data.local_time).slice(0,5)}) }
       })
     return () => { cancelled = true }
   }, [user?.id])
@@ -91,7 +93,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!user || !reminderEnabled || typeof window === 'undefined') return
+    if (!user || !savedReminder?.enabled || typeof window === 'undefined') return
     const check = () => {
       const now = new Date()
       const parts = new Intl.DateTimeFormat('en-GB', {
@@ -100,13 +102,14 @@ export default function App() {
       }).formatToParts(now)
       const get = type => parts.find(part => part.type === type)?.value || ''
       const day = get('year') + '-' + get('month') + '-' + get('day')
-      const current = Number(get('hour')) * 60 + Number(get('minute'))
-      const [h,m] = reminderTime.split(':').map(Number)
+      const current = (Number(get('hour')) % 24) * 60 + Number(get('minute'))
+      setReminderClock(get('hour') + ':' + get('minute') + ' (Brasília)')
+      const [h,m] = savedReminder.time.split(':').map(Number)
       const scheduled = h * 60 + m
       // Tolerância curta caso a aba tenha ficado suspensa no horário exato.
       if (current < scheduled || current - scheduled > 5) return
       // A chave inclui horário: alterar o horário permite repetir o teste no mesmo dia.
-      const key = 'mate-reminder-' + user.id + '-' + day + '-' + reminderTime
+      const key = 'mate-reminder-v2-' + user.id + '-' + day + '-' + savedReminder.time
       if (localStorage.getItem(key)) return
       localStorage.setItem(key,'1')
       showMateAlert()
@@ -121,7 +124,7 @@ export default function App() {
       document.removeEventListener('visibilitychange',resume)
       window.removeEventListener('focus',check)
     }
-  }, [user?.id,reminderEnabled,reminderTime])
+  }, [user?.id,savedReminder?.enabled,savedReminder?.time])
 
   async function saveReminder(event) {
     event.preventDefault()
@@ -129,7 +132,7 @@ export default function App() {
     setReminderSaving(true); setReminderMessage('')
     const {error} = await supabase.from('reminder_preferences').upsert({user_id:user.id,enabled:reminderEnabled,local_time:reminderTime+':00',timezone:'America/Sao_Paulo',updated_at:new Date().toISOString()},{onConflict:'user_id'})
     if (error) setReminderMessage('Erro ao salvar: '+error.message)
-    else setReminderMessage('✓ Horário salvo. O aviso será mostrado no aplicativo aberto, mesmo se o navegador bloquear a notificação do sistema.')
+    else { setSavedReminder({enabled:reminderEnabled,time:reminderTime}); setReminderMessage(reminderEnabled ? '✓ Lembrete ATIVO e salvo para '+reminderTime+' (Brasília). Mantenha esta página aberta para o teste.' : '✓ Horário salvo, mas lembrete DESATIVADO. Marque Ativar meu lembrete e salve novamente.') }
     setReminderSaving(false)
   }
 
@@ -401,6 +404,7 @@ export default function App() {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Hora do Mate</small></div><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></header>
       <section className="welcome reminder-panel"><p className="eyebrow">🧉 HORA DO MATE</p><h2>Reserve um momento para o que importa.</h2><p>Escolha quando deseja ser lembrado de preparar seu chimarrão e viver seu encontro com Deus.</p>
       <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meu lembrete</label><label>Horário do lembrete (horário de Brasília)<input type="time" required value={reminderTime} onChange={e=>setReminderTime(e.target.value)}/></label><button type="submit" disabled={reminderSaving}>{reminderSaving?'Salvando...':'Salvar meu horário'}</button></form>
+      <p className="encounter-save-status" role="status"><strong>Estado do agendamento:</strong> {savedReminder ? (savedReminder.enabled ? 'ATIVO às '+savedReminder.time : 'DESATIVADO') : 'Carregando ou ainda não salvo'} · <strong>Relógio:</strong> {reminderClock || 'Aguardando verificação'} · <strong>Permissão:</strong> {typeof Notification === 'undefined' ? 'indisponível' : Notification.permission}</p>
       <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
   }
 
