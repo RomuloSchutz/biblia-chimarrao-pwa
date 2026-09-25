@@ -43,6 +43,8 @@ export default function App() {
   const [bookSearch, setBookSearch] = useState('')
   const [readerTitle, setReaderTitle] = useState('')
   const [reminderTime, setReminderTime] = useState('08:00')
+  const [weeklySchedule, setWeeklySchedule] = useState(null)
+  const WEEKDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
   const [reminderEnabled, setReminderEnabled] = useState(false)
   const [reminderMessage, setReminderMessage] = useState('')
   const [reminderSaving, setReminderSaving] = useState(false)
@@ -80,6 +82,12 @@ export default function App() {
         if (error) { setReminderMessage('Não foi possível carregar o lembrete.'); return }
         if (data) { setReminderEnabled(data.enabled); setReminderTime(String(data.local_time).slice(0,5)); setSavedReminder({enabled:data.enabled,time:String(data.local_time).slice(0,5)}) }
       })
+    supabase.from('reminder_weekly_schedule').select('weekday,enabled,local_time').eq('user_id',user.id).then(({data,error}) => {
+      if (cancelled) return
+      if (error) { setReminderMessage('Não foi possível carregar os dias da semana.'); return }
+      const fallback = Array.from({length:7},(_,weekday)=>({weekday,enabled:true,time:String(weekday===0||weekday===6?'09:00':'07:00')}))
+      setWeeklySchedule(data?.length ? fallback.map(d=>{const found=data.find(item=>item.weekday===d.weekday);return found?{weekday:d.weekday,enabled:found.enabled,time:String(found.local_time).slice(0,5)}:d}) : fallback)
+    })
     return () => { cancelled = true }
   }, [user?.id])
 
@@ -122,12 +130,16 @@ export default function App() {
       const day = get('year') + '-' + get('month') + '-' + get('day')
       const current = (Number(get('hour')) % 24) * 60 + Number(get('minute'))
       setReminderClock(get('hour') + ':' + get('minute') + ' (Brasília)')
-      const [h,m] = savedReminder.time.split(':').map(Number)
+      const weekday = Number(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',weekday:'short'}).format(now).replace(/.*/,value=>({Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6})[value]))
+      const todayRule = savedReminder.weekly?.find(item=>item.weekday===weekday)
+      if (todayRule && !todayRule.enabled) return
+      const todayTime = todayRule?.time || savedReminder.time
+      const [h,m] = todayTime.split(':').map(Number)
       const scheduled = h * 60 + m
       // Tolerância curta caso a aba tenha ficado suspensa no horário exato.
       if (current < scheduled || current - scheduled > 5) return
       // A chave inclui horário: alterar o horário permite repetir o teste no mesmo dia.
-      const key = 'mate-reminder-v2-' + user.id + '-' + day + '-' + savedReminder.time
+      const key = 'mate-reminder-v3-' + user.id + '-' + day + '-' + todayTime
       if (localStorage.getItem(key)) return
       localStorage.setItem(key,'1')
       showMateAlert()
@@ -142,15 +154,16 @@ export default function App() {
       document.removeEventListener('visibilitychange',resume)
       window.removeEventListener('focus',check)
     }
-  }, [user?.id,savedReminder?.enabled,savedReminder?.time])
+  }, [user?.id,savedReminder])
 
   async function saveReminder(event) {
     event.preventDefault()
     if (!user || !supabase) return
     setReminderSaving(true); setReminderMessage('')
     const {error} = await supabase.from('reminder_preferences').upsert({user_id:user.id,enabled:reminderEnabled,local_time:reminderTime+':00',timezone:'America/Sao_Paulo',updated_at:new Date().toISOString()},{onConflict:'user_id'})
-    if (error) setReminderMessage('Erro ao salvar: '+error.message)
-    else { setSavedReminder({enabled:reminderEnabled,time:reminderTime}); setReminderMessage(reminderEnabled ? '✓ Lembrete ATIVO e salvo para '+reminderTime+' (Brasília). Mantenha esta página aberta para o teste.' : '✓ Horário salvo, mas lembrete DESATIVADO. Marque Ativar meu lembrete e salve novamente.') }
+    const {error:weeklyError} = error || !weeklySchedule ? {error:null} : await supabase.from('reminder_weekly_schedule').upsert(weeklySchedule.map(d=>({user_id:user.id,weekday:d.weekday,enabled:d.enabled,local_time:d.time+':00',updated_at:new Date().toISOString()})),{onConflict:'user_id,weekday'})
+    if (error || weeklyError) setReminderMessage('Erro ao salvar: '+(error||weeklyError).message)
+    else { setSavedReminder({enabled:reminderEnabled,time:reminderTime,weekly:weeklySchedule?.map(d=>({...d}))}); setReminderMessage(reminderEnabled ? '✓ Programação semanal salva. Mantenha o aplicativo aberto para testar os avisos.' : '✓ Programação salva, mas os lembretes estão DESATIVADOS.') }
     setReminderSaving(false)
   }
 
@@ -421,8 +434,8 @@ export default function App() {
   if (screen === 'reminder' && user) {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Hora do Mate</small></div><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></header>
       <section className="welcome reminder-panel"><p className="eyebrow">🧉 HORA DO MATE</p><h2>Reserve um momento para o que importa.</h2><p>Escolha quando deseja ser lembrado de preparar seu chimarrão e viver seu encontro com Deus.</p>
-      <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meu lembrete</label><label>Horário do lembrete (horário de Brasília)<input type="time" required value={reminderTime} onChange={e=>setReminderTime(e.target.value)}/></label><button type="submit" disabled={reminderSaving}>{reminderSaving?'Salvando...':'Salvar meu horário'}</button></form>
-      <p className="encounter-save-status" role="status"><strong>Estado do agendamento:</strong> {savedReminder ? (savedReminder.enabled ? 'ATIVO às '+savedReminder.time : 'DESATIVADO') : 'Carregando ou ainda não salvo'} · <strong>Relógio:</strong> {reminderClock || 'Aguardando verificação'} · <strong>Permissão:</strong> {typeof Notification === 'undefined' ? 'indisponível' : Notification.permission}</p>
+      <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meus lembretes</label><p>Escolha os dias e horários (Brasília). Exemplo: segunda a sexta às 07:00, sábado e domingo às 09:00.</p>{weeklySchedule?.map(day=><div key={day.weekday} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'12px 0',borderBottom:'1px solid #d3b77c'}}><label style={{display:'flex',alignItems:'center',gap:8}}><input type="checkbox" checked={day.enabled} onChange={e=>setWeeklySchedule(old=>old.map(d=>d.weekday===day.weekday?{...d,enabled:e.target.checked}:d))}/>{WEEKDAYS[day.weekday]}</label><input aria-label={'Horário de '+WEEKDAYS[day.weekday]} type="time" disabled={!day.enabled} value={day.time} onChange={e=>setWeeklySchedule(old=>old.map(d=>d.weekday===day.weekday?{...d,time:e.target.value}:d))}/></div>)}<button type="submit" disabled={reminderSaving||!weeklySchedule}>{reminderSaving?'Salvando...':'Salvar programação semanal'}</button></form>
+      <p className="encounter-save-status" role="status"><strong>Estado do agendamento:</strong> {savedReminder ? (savedReminder.enabled ? 'ATIVO · programação semanal' : 'DESATIVADO') : 'Carregando ou ainda não salvo'} · <strong>Relógio:</strong> {reminderClock || 'Aguardando verificação'} · <strong>Permissão:</strong> {typeof Notification === 'undefined' ? 'indisponível' : Notification.permission}</p>
       <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
   }
 
