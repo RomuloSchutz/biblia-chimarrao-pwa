@@ -42,6 +42,10 @@ export default function App() {
   const [bookFilter, setBookFilter] = useState('todos')
   const [bookSearch, setBookSearch] = useState('')
   const [readerTitle, setReaderTitle] = useState('')
+  const [reminderTime, setReminderTime] = useState('08:00')
+  const [reminderEnabled, setReminderEnabled] = useState(false)
+  const [reminderMessage, setReminderMessage] = useState('')
+  const [reminderSaving, setReminderSaving] = useState(false)
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return
@@ -56,6 +60,54 @@ export default function App() {
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user || !supabase) return
+    let cancelled = false
+    supabase.from('reminder_preferences').select('enabled,local_time').eq('user_id',user.id).maybeSingle()
+      .then(({data,error}) => {
+        if (cancelled) return
+        if (error) { setReminderMessage('Não foi possível carregar o lembrete.'); return }
+        if (data) { setReminderEnabled(data.enabled); setReminderTime(String(data.local_time).slice(0,5)) }
+      })
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  // Lembrete local de demonstração: somente enquanto o aplicativo está aberto.
+  useEffect(() => {
+    if (!user || !reminderEnabled || typeof window === 'undefined') return
+    const check = () => {
+      const now = new Date()
+      const hhmm = new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',hour12:false}).format(now)
+      const day = new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)
+      const key = 'mate-reminder-' + user.id + '-' + day
+      if (hhmm !== reminderTime || localStorage.getItem(key)) return
+      localStorage.setItem(key,'1')
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Hora do Mate 🧉',{body:'Prepare seu chimarrão. Seu encontro de hoje está esperando por você.'})
+      }
+      setReminderMessage('🧉 Hora do Mate! Seu encontro de hoje está esperando por você.')
+    }
+    check()
+    const timer = window.setInterval(check,30000)
+    return () => window.clearInterval(timer)
+  }, [user?.id,reminderEnabled,reminderTime])
+
+  async function saveReminder(event) {
+    event.preventDefault()
+    if (!user || !supabase) return
+    setReminderSaving(true); setReminderMessage('')
+    const {error} = await supabase.from('reminder_preferences').upsert({user_id:user.id,enabled:reminderEnabled,local_time:reminderTime+':00',timezone:'America/Sao_Paulo',updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    if (error) setReminderMessage('Erro ao salvar: '+error.message)
+    else setReminderMessage('✓ Preferência salva. O aviso de teste funciona enquanto o aplicativo estiver aberto.')
+    setReminderSaving(false)
+  }
+
+  async function enableReminderNotifications() {
+    if (!('Notification' in window)) { setReminderMessage('Este navegador não oferece notificações nesta página.'); return }
+    try { const result=await Notification.requestPermission(); setReminderMessage(result==='granted'?'✓ Permissão concedida.':'Permissão não concedida; você ainda pode salvar seu horário.') }
+    catch { setReminderMessage('Não foi possível solicitar permissão neste navegador.') }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -313,6 +365,13 @@ export default function App() {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Prévia 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><article className="welcome"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small>{encounter.verse_reference}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={saveEncounterNotes}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={toggleEncounterFavorite}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={goNext}><span>Próximo</span> →</button></nav><button className="complete-encounter" onClick={markEncounterCompleted}>✓ Concluir este encontro</button>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
   }
 
+  if (screen === 'reminder' && user) {
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Hora do Mate</small></div><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></header>
+      <section className="welcome reminder-panel"><p className="eyebrow">🧉 HORA DO MATE</p><h2>Reserve um momento para o que importa.</h2><p>Escolha quando deseja ser lembrado de preparar seu chimarrão e viver seu encontro com Deus.</p>
+      <form onSubmit={saveReminder} className="reminder-form"><label className="reminder-switch"><input type="checkbox" checked={reminderEnabled} onChange={e=>setReminderEnabled(e.target.checked)}/> Ativar meu lembrete</label><label>Horário do lembrete (horário de Brasília)<input type="time" required value={reminderTime} onChange={e=>setReminderTime(e.target.value)}/></label><button type="submit" disabled={reminderSaving}>{reminderSaving?'Salvando...':'Salvar meu horário'}</button></form>
+      <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button><p className="reminder-disclaimer">Versão de teste: o aviso só funciona com o aplicativo aberto. Notificações com o aplicativo fechado serão ativadas em uma próxima etapa, após configurar o envio push.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
+  }
+
   if (screen === 'dashboard' && user) {
     const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
     return (
@@ -335,7 +394,7 @@ export default function App() {
           ))}
         </section>
         <section className="dash-tools">
-          <button onClick={() => setMessage('Lembrete Diário será configurado na próxima etapa.')}>⏰ Lembrete Diário</button>
+          <button onClick={() => {setReminderMessage('');setScreen('reminder')}}>⏰ Lembrete Diário</button>
           <button onClick={() => setMessage('Configurações será conectada em seguida.')}>⚙ Configurações</button>
         </section>
         {message && <p className="dash-message">{message}</p>}
