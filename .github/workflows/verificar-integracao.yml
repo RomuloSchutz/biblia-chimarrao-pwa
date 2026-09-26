@@ -28,3 +28,10 @@ jobs:
           for n in $(seq -w 1 12); do
             test -s "dist/devocional/mes_${n}.jpg" || { echo "Falta imagem ${n} no build"; exit 1; }
           done
+
+      - name: Guardar versão de demonstração
+        uses: actions/upload-artifact@v4
+        with:
+          name: demonstracao-chimarrao-com-deus
+          path: dist/
+          retention-days: 14
