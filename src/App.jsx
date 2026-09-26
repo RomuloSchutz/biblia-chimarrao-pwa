@@ -258,7 +258,7 @@ export default function App() {
 
   const months = [
     [1,'Janeiro','Recomeços'],[2,'Fevereiro','Intimidade'],[3,'Março','Fé'],
-    [4,'Abril','A vida à luz da cruz e da ressurreição'],[5,'Maio','Relacionamentos'],[6,'Junho','Propósito'],
+    [4,'Abril','Cruz e Ressurreição'],[5,'Maio','Relacionamentos'],[6,'Junho','Propósito'],
     [7,'Julho','Tempo e espera'],[8,'Agosto','Tempestades'],[9,'Setembro','Transformação'],
     [10,'Outubro','Gratidão'],[11,'Novembro','Generosidade'],[12,'Dezembro','Esperança e celebração']
   ]
