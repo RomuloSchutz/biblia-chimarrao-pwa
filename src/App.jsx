@@ -76,17 +76,27 @@ export default function App() {
   useEffect(() => {
     if (!user || !supabase) return
     let cancelled = false
-    supabase.from('reminder_preferences').select('enabled,local_time').eq('user_id',user.id).maybeSingle()
-      .then(({data,error}) => {
-        if (cancelled) return
-        if (error) { setReminderMessage('Não foi possível carregar o lembrete.'); return }
-        if (data) { setReminderEnabled(data.enabled); setReminderTime(String(data.local_time).slice(0,5)); setSavedReminder({enabled:data.enabled,time:String(data.local_time).slice(0,5)}) }
-      })
-    supabase.from('reminder_weekly_schedule').select('weekday,enabled,local_time').eq('user_id',user.id).then(({data,error}) => {
+    Promise.all([
+      supabase.from('reminder_preferences').select('enabled,local_time').eq('user_id',user.id).maybeSingle(),
+      supabase.from('reminder_weekly_schedule').select('weekday,enabled,local_time').eq('user_id',user.id)
+    ]).then(([preferences,weekly]) => {
       if (cancelled) return
-      if (error) { setReminderMessage('Não foi possível carregar os dias da semana.'); return }
-      const fallback = Array.from({length:7},(_,weekday)=>({weekday,enabled:true,time:String(weekday===0||weekday===6?'09:00':'07:00')}))
-      setWeeklySchedule(data?.length ? fallback.map(d=>{const found=data.find(item=>item.weekday===d.weekday);return found?{weekday:d.weekday,enabled:found.enabled,time:String(found.local_time).slice(0,5)}:d}) : fallback)
+      if (preferences.error || weekly.error) {
+        setReminderMessage('Não foi possível carregar a programação dos lembretes.')
+        return
+      }
+      const data = preferences.data
+      const fallback = Array.from({length:7},(_,weekday)=>({weekday,enabled:true,time:weekday===0||weekday===6?'09:00':'07:00'}))
+      const schedule = weekly.data?.length
+        ? fallback.map(d=>{const found=weekly.data.find(item=>item.weekday===d.weekday);return found?{weekday:d.weekday,enabled:found.enabled,time:String(found.local_time).slice(0,5)}:d})
+        : fallback
+      setWeeklySchedule(schedule)
+      if (data) {
+        const time = String(data.local_time).slice(0,5)
+        setReminderEnabled(data.enabled)
+        setReminderTime(time)
+        setSavedReminder({enabled:data.enabled,time,weekly:schedule})
+      } else setSavedReminder(null)
     })
     return () => { cancelled = true }
   }, [user?.id])
