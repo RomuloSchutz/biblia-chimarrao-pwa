@@ -1,0 +1,30 @@
+name: Verificar integração do devocional
+on:
+  push:
+    branches: [integracao-imagens-epub]
+  pull_request:
+    branches: [main]
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Conferir as 12 imagens oficiais
+        shell: bash
+        run: |
+          for n in $(seq -w 1 12); do
+            test -s "public/devocional/mes_${n}.jpg" || { echo "Falta a imagem do mês ${n}"; exit 1; }
+          done
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+      - name: Gerar versão de teste
+        run: npm run build
+      - name: Conferir imagens na versão gerada
+        shell: bash
+        run: |
+          for n in $(seq -w 1 12); do
+            test -s "dist/devocional/mes_${n}.jpg" || { echo "Falta imagem ${n} no build"; exit 1; }
+          done
