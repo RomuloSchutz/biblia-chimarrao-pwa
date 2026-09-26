@@ -64,3 +64,14 @@
 .reminder-panel{max-width:780px;margin:28px auto}.reminder-panel>p{line-height:1.65}.reminder-form{display:grid;gap:18px;max-width:440px;margin:25px 0}.reminder-form label{display:grid;gap:10px;color:#f1dfba;font-weight:650}.reminder-form input[type=time]{padding:13px 15px;max-width:230px;border:1px solid #c9ac70;border-radius:10px;background:#fff8e9;color:#1d3629;font-size:20px}.reminder-form .reminder-switch{display:flex;align-items:center;gap:12px}.reminder-switch input{width:22px;height:22px;accent-color:#cda854}.reminder-form button,.reminder-permission{padding:13px 18px;border:1px solid #c9ac70;border-radius:10px;background:#e5ca90;color:#173729;font-weight:800;cursor:pointer}.reminder-permission{background:transparent;color:#efd99f}.reminder-disclaimer{max-width:590px;margin-top:24px;font-size:13px;color:#d8ccb1}
 
 .mate-alert{position:fixed;z-index:9999;bottom:22px;left:50%;transform:translateX(-50%);width:min(92vw,620px);padding:22px;background:#f9e5ad;color:#19372b;border:2px solid #bd9350;border-radius:16px;box-shadow:0 12px 45px #0008;display:flex;gap:18px;align-items:center;justify-content:space-between;font-size:18px}.mate-alert button{padding:10px 16px;border:1px solid #19372b;border-radius:8px;background:#19372b;color:#fff;cursor:pointer}@media(max-width:520px){.mate-alert{flex-direction:column;align-items:stretch;font-size:16px}}
+
+/* Ilustrações oficiais extraídas do EPUB Chimarrão com Deus. */
+.month-card-illustrated{position:relative;overflow:hidden;padding:0;min-height:225px;isolation:isolate;background:#12382b;display:flex;align-items:flex-end}
+.month-cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .3s ease}
+.month-card-illustrated:hover .month-cover-image{transform:scale(1.04)}
+.month-card-illustrated:after{content:'';position:absolute;inset:25% 0 0;background:linear-gradient(transparent,rgba(4,21,15,.96));z-index:-1}
+.month-cover-caption{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:18px;width:100%;text-align:left;color:#fff3d7;text-shadow:0 1px 4px #071b16}
+.month-cover-caption strong{font:700 23px Georgia,serif}
+.month-cover-caption small{font-size:13px;color:#f5e5c0}
+.month-intro-image{display:block;width:100%;max-height:380px;object-fit:contain;object-position:center;border-radius:15px;margin:0 auto 22px;background:#09261e}
+@media(max-width:520px){.month-card-illustrated{min-height:190px}.month-cover-caption{padding:13px}.month-cover-caption strong{font-size:19px}}
