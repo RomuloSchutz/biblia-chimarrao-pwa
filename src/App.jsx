@@ -34,6 +34,11 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [user, setUser] = useState(null)
+  const [appearance,setAppearance]=useState(()=>localStorage.getItem('bc-appearance')||'dark')
+  const [newPassword,setNewPassword]=useState('')
+  const [confirmPassword,setConfirmPassword]=useState('')
+  const [settingsMessage,setSettingsMessage]=useState('')
+  const [settingsBusy,setSettingsBusy]=useState(false)
   const [monthDays, setMonthDays] = useState([])
   const [selectedMonth, setSelectedMonth] = useState(null)
   const [devotionalLoading, setDevotionalLoading] = useState(false)
@@ -56,6 +61,7 @@ export default function App() {
   const [savedReminder, setSavedReminder] = useState(null)
   const [reminderClock, setReminderClock] = useState('')
 
+  useEffect(()=>{document.documentElement.dataset.appearance=appearance;localStorage.setItem('bc-appearance',appearance)},[appearance])
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(err =>
@@ -230,6 +236,33 @@ export default function App() {
     } catch { setReminderMessage('Este navegador não permite solicitar a notificação. O aviso dentro do aplicativo continuará funcionando.') }
   }
 
+  async function saveNewPassword(e){
+    e.preventDefault();setSettingsMessage('')
+    if(newPassword.length<8){setSettingsMessage('A senha precisa ter pelo menos 8 caracteres.');return}
+    if(newPassword!==confirmPassword){setSettingsMessage('As senhas não coincidem.');return}
+    setSettingsBusy(true)
+    const {error}=await supabase.auth.updateUser({password:newPassword})
+    setSettingsBusy(false)
+    if(error)setSettingsMessage(error.message)
+    else{setNewPassword('');setConfirmPassword('');setSettingsMessage('Senha atualizada com sucesso.')}
+  }
+  async function saveReaderPhoto(e){
+    const file=e.target.files?.[0];e.target.value=''
+    if(!file)return
+    if(!file.type.startsWith('image/')||file.size>8*1024*1024){setSettingsMessage('Escolha uma foto de até 8 MB.');return}
+    setSettingsBusy(true);setSettingsMessage('')
+    try{
+      const bitmap=await createImageBitmap(file),canvas=document.createElement('canvas')
+      canvas.width=192;canvas.height=192
+      const ctx=canvas.getContext('2d'),side=Math.min(bitmap.width,bitmap.height)
+      ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,192,192)
+      bitmap.close?.()
+      const {data,error}=await supabase.auth.updateUser({data:{avatar_data_url:canvas.toDataURL('image/jpeg',.72)}})
+      if(error)throw error
+      setUser(data.user);setSettingsMessage('Foto atualizada com sucesso.')
+    }catch(err){setSettingsMessage(err.message||'Erro ao salvar a foto.')}
+    finally{setSettingsBusy(false)}
+  }
   async function handleSubmit(event) {
     event.preventDefault()
     setMessage('')
@@ -515,7 +548,7 @@ export default function App() {
 
             <div className="visual-quick"><button onClick={()=>setScreen('news')} aria-label="Notificações"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></span><small>Notificações</small></button><button onClick={()=>{setMessage('');setScreen('support')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
           </div>
-          <div className="visual-greeting"><img src="/autor-romulo.jpg.png" alt="" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
+          <div className="visual-greeting"><span className="reader-avatar">{user.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
               ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
@@ -535,7 +568,7 @@ export default function App() {
           </nav>
           <div className="visual-bottom">
 
-            <button type="button" className="visual-settings-bar" onClick={()=>setMessage('Configurações será conectada em seguida.')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
+            <button type="button" className="visual-settings-bar" onClick={()=>{setSettingsMessage('');setScreen('settings')}}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
         {message && <p className="dash-message">{message}</p>}
@@ -543,6 +576,19 @@ export default function App() {
     )
   }
 
+  if(screen==='settings'&&user)return <main className="dashboard reader-settings-page">
+    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Configurações da conta</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
+    <section className="reader-settings"><h1>Configurações</h1><p>Personalize seu espaço de leitura.</p>
+      <div className="reader-settings-panel"><h2>Aparência</h2><p>Escolha o tema do aplicativo.</p><div className="reader-appearance">
+        <button aria-pressed={appearance==='light'} className={appearance==='light'?'selected':''} onClick={()=>setAppearance('light')}>☀ Claro</button>
+        <button aria-pressed={appearance==='dark'} className={appearance==='dark'?'selected':''} onClick={()=>setAppearance('dark')}>☾ Escuro</button>
+      </div></div>
+      <div className="reader-settings-panel"><h2>Minha conta</h2><label className="reader-setting-label">E-mail<input type="email" readOnly value={user.email||''}/></label>
+        <h3>Foto do leitor</h3><div className="reader-photo-row"><span className="reader-avatar reader-avatar-large">{user.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Sua foto"/>:<span>{(user.user_metadata?.full_name||user.email||'L').charAt(0).toUpperCase()}</span>}</span><label className="reader-photo-upload">Inserir ou trocar foto<input type="file" accept="image/*" onChange={saveReaderPhoto} disabled={settingsBusy}/></label></div>
+        <h3>Trocar senha</h3><form className="reader-password-form" onSubmit={saveNewPassword}><label>Nova senha<input type="password" minLength="8" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required/></label><label>Confirmar senha<input type="password" minLength="8" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required/></label><button disabled={settingsBusy}>Salvar nova senha</button></form>
+        {settingsMessage&&<p role="status" className="reader-settings-status">{settingsMessage}</p>}</div>
+      <div className="reader-settings-panel"><h2>Sobre o aplicativo</h2><p>Versão: 0.1.0</p><p>Build: 20260927-settings-1</p></div>
+    </section></main>
   if (screen === 'todayHome' && user) {
  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
  return <main className="dashboard premium-today-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Encontro do dia</small></div><button className="back-button" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
