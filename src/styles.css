@@ -205,3 +205,8 @@
 .stage1-today-shade{width:100%;min-height:565px;justify-content:center;gap:6px;padding-top:30px}
 .stage1-date{font-weight:700;letter-spacing:.02em;text-transform:capitalize}.stage1-today h2{font-size:clamp(29px,3vw,42px)}.stage1-day-title{margin-top:34px}
 @media(max-width:700px){.dashboard:has(.stage1-layout) .stage1-layout{grid-template-columns:1fr}.stage1-cover-compact{height:185px}.stage1-today-shade{min-height:500px}.stage1-month-label{margin-top:17px}}
+
+/* Revisão mobile: eliminar atalhos duplicados e evitar arte com texto sob o conteúdo */
+.stage1-today:before{background:radial-gradient(ellipse at 50% 12%,#bc8548aa,transparent 49%),linear-gradient(150deg,#785033,#3e3325 43%,#192c25 80%)!important;filter:none!important;inset:0!important;transform:none!important}
+.stage1-today:after{background:linear-gradient(180deg,#20150e44 0%,#24180da1 55%,#1b140eea 100%)!important}
+@media(max-width:700px){.stage1-side{margin-top:0}.stage1-cover-compact{height:150px}.stage1-today,.stage1-today-shade{min-height:475px}.stage1-today-shade{padding:12px 14px 20px}.stage1-day-title{margin-top:19px}.stage1-today h2{font-size:29px}.stage1-today p:not(.stage1-date){font-size:16px}.stage1-links button{padding:10px 8px}.stage1-social{padding-bottom:17px}}
