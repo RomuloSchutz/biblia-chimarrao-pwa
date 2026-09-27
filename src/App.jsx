@@ -511,7 +511,7 @@ export default function App() {
         </header>
         <section className="visual-dashboard" aria-label="Menu principal ilustrado">
           <div className="visual-dashboard-top">
-            <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias · Ideias</small></div>
+            <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias<br/>Ideias · Reflexões</small></div>
 
             <div className="visual-quick"><button onClick={()=>setScreen('news')} aria-label="Notificações"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></span><small>Notificações</small></button><button onClick={()=>{setMessage('');setScreen('support')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
           </div>
