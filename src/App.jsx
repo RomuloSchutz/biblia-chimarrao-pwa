@@ -4,13 +4,13 @@ import EpubReader from './EpubReader.jsx'
 
 const menuItems = [
   ['📖','Chimarrão com Deus','365 Encontros com Deus'],
-  ['☀️','Encontro de Hoje','Seu encontro de hoje'],
+  ['🌅','Encontro de Hoje','Seu encontro de hoje'],
   ['🧭','Minha Caminhada','Registre, acompanhe e siga em frente'],
-  ['♡','Meus Favoritos','Encontros que tocaram você'],
-  ['✍️','Minhas Anotações','Suas reflexões e passos'],
-  ['▣','Meus Livros','Sua biblioteca particular'],
-  ['📚','Livros do Romulo','Conheça todas as obras'],
-  ['👤','Sobre o Autor','Conheça Romulo Schutz'],
+  ['💛','Meus Favoritos','Encontros que tocaram você'],
+  ['📝','Minhas Anotações','Suas reflexões e passos'],
+  ['📚','Meus Livros','Sua biblioteca particular'],
+  ['📖','Livros do Romulo','Conheça todas as obras'],
+  ['🪶','Sobre o Autor','Conheça Romulo Schutz'],
   ['💡','Ideias e Reflexões','Palavras para levar consigo']
 ]
 
@@ -521,13 +521,13 @@ export default function App() {
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
             <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Chimarrão com Deus' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : title === 'Meus Livros' ? setScreen('books') : title === 'Livros do Romulo' ? setScreen('authorBooks') : title === 'Sobre o Autor' ? setScreen('author') : title === 'Ideias e Reflexões' ? setScreen('ideas') : setMessage(title + ' será a próxima área a ser conectada.')}>
-              <span className="menu-icon">{icon}</span><strong>{title}</strong><small>{desc}</small>
+              <span className={"menu-illustration illustration-"+({ "Chimarrão com Deus":"devotional","Encontro de Hoje":"today","Minha Caminhada":"journey","Meus Favoritos":"favorites","Minhas Anotações":"notes","Meus Livros":"books","Livros do Romulo":"authorbooks","Sobre o Autor":"author","Ideias e Reflexões":"ideas" }[title])} aria-hidden="true"><span className="illustration-glow"/><span className="illustration-art">{icon}</span></span><strong>{title}</strong><small>{desc}</small>
             </button>
           ))}
         </section>
-        <section className="dash-tools">
-          <button onClick={() => {setReminderMessage('');setScreen('reminder')}}>⏰ Lembrete Diário</button>
-          <button onClick={() => setMessage('Configurações será conectada em seguida.')}>⚙ Configurações</button>
+        <section className="dashboard-extras" aria-label="Ferramentas">
+          <button className="menu-card reminder-card" onClick={() => {setReminderMessage('');setScreen('reminder')}}><span className="menu-illustration illustration-reminder" aria-hidden="true"><span className="illustration-glow"/><span className="illustration-art">🧉<span className="mate-clock">◷</span></span></span><strong>Hora do Mate</strong><small>Seu lembrete diário, no seu horário</small></button>
+          <button className="settings-fullbar" onClick={() => setMessage('Configurações será conectada em seguida.')}><span className="settings-illustration" aria-hidden="true">⚙</span><span><strong>Configurações</strong><small>Personalize sua experiência</small></span><span className="settings-arrow" aria-hidden="true">→</span></button>
         </section>
         {message && <p className="dash-message">{message}</p>}
         <nav className="bottom-nav"><span>⌂<small>Início</small></span><span>📖<small>Chimarrão com Deus</small></span><span>▣<small>Livros</small></span><span>♡<small>Favoritos</small></span><span>•••<small>Mais</small></span></nav>
