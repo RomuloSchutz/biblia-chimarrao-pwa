@@ -91,3 +91,7 @@
 .welcome-book-cover-fallback em{font-size:22px;display:block}.welcome-book-cover-fallback small{font:12px Georgia,serif;display:block;margin-top:24px}
 .welcome-book-front.cover-awaiting-file .welcome-book-cover-fallback{display:block}
 @media(max-width:650px){.welcome-book-stage{min-height:285px}.welcome-book-3d{width:150px}}
+
+/* Ajuste de proporção: moldura compacta e livro em destaque, sem cortar a capa. */
+@media(min-width:651px){.dashboard .welcome-book-stage{min-height:365px;max-width:330px;width:100%;padding:17px 14px;margin-inline:auto}.dashboard .welcome-book-3d{width:min(228px,86%)}}
+@media(max-width:650px){.dashboard .welcome-book-stage{min-height:320px;padding:15px 12px}.dashboard .welcome-book-3d{width:min(185px,78%)}}
