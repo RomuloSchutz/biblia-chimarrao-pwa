@@ -84,7 +84,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         setUser(data.session.user)
-        setScreen('opening')
+        setScreen('dashboard')
       }
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
