@@ -214,7 +214,7 @@ export default function App() {
         user_agent:navigator.userAgent,enabled:true,updated_at:new Date().toISOString()
       },{onConflict:'endpoint'})
       if (error) throw error
-      setReminderMessage('✓ Dispositivo registrado para receber notificações com o aplicativo fechado. O envio automático pelo servidor ainda precisa ser ativado.')
+      setReminderMessage('✓ Dispositivo registrado para receber notificações com o aplicativo fechado. Faça um teste de entrega no horário programado para confirmar o funcionamento.')
     } catch(error) { setReminderMessage('Não foi possível registrar este dispositivo: '+(error?.message || 'erro desconhecido')) }
   }
 
