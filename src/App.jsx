@@ -504,20 +504,30 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
-        <div className="stage1-layout premium-menu-layout">
-          <aside className="stage1-side" aria-label="Menu principal">
-            <div className="premium-menu-heading"><strong>Bíblia + Chimarrão</strong><small>Seu espaço de leitura e reflexão</small></div>
-            <div className="stage1-user"><img src="/autor-romulo.jpg.png" alt="" className="stage1-avatar" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><small>Que bom ter você aqui.</small></div></div>
-            <nav className="stage1-links" aria-label="Áreas do aplicativo">
-              {menuItems.filter(([,title])=>title!=='Livros do Romulo').map(([icon,title])=><button key={title} onClick={()=>title==='Chimarrão com Deus'?setScreen('devotional'):title==='Encontro de Hoje'?setScreen('todayHome'):title==='Minha Caminhada'?openJourney():title==='Meus Favoritos'?openFavorites():title==='Minhas Anotações'?openNotes():title==='Meus Livros'?setScreen('books'):title==='Sobre o Autor'?setScreen('author'):title==='Ideias e Reflexões'?setScreen('ideas'):null}><span className="stage1-link-icon premium-illustrated-icon" aria-hidden="true">{title==="Sobre o Autor"?<img src="/autor-romulo.jpg.png" alt=""/>:({"Chimarrão com Deus":"📖🧉","Encontro de Hoje":"🌅","Minha Caminhada":"🌿","Meus Favoritos":"💛","Minhas Anotações":"✍️","Meus Livros":"📚","Sobre o Autor":"👤","Ideias e Reflexões":"💡"})[title]}</span><span>{title}</span><span aria-hidden="true">›</span></button>)}
-              <button onClick={()=>{setReminderMessage('');setScreen('reminder')}}><span className="stage1-link-icon premium-illustrated-icon" aria-hidden="true">🧉⏰</span><span>Hora do Mate</span><span aria-hidden="true">›</span></button>
-              <button onClick={()=>setScreen('authorBooks')}><span className="stage1-link-icon premium-illustrated-icon" aria-hidden="true">📚</span><span>Livros do Romulo</span><span aria-hidden="true">›</span></button>
-            </nav>
-            <div className="stage1-social"><p>Siga nas redes sociais</p><div className="stage1-social-icons" aria-label="Redes sociais"><a href={SOCIAL_LINKS.facebook || undefined} aria-disabled={!SOCIAL_LINKS.facebook} onClick={e=>{if(!SOCIAL_LINKS.facebook)e.preventDefault()}} target="_blank" rel="noopener noreferrer" aria-label="Facebook" title={SOCIAL_LINKS.facebook?"Abrir Facebook":"Aguardando endereço oficial"}>f</a><a href={SOCIAL_LINKS.instagram || undefined} aria-disabled={!SOCIAL_LINKS.instagram} onClick={e=>{if(!SOCIAL_LINKS.instagram)e.preventDefault()}} target="_blank" rel="noopener noreferrer" aria-label="Instagram" title={SOCIAL_LINKS.instagram?"Abrir Instagram":"Aguardando endereço oficial"}>◎</a><a href={SOCIAL_LINKS.youtube || undefined} aria-disabled={!SOCIAL_LINKS.youtube} onClick={e=>{if(!SOCIAL_LINKS.youtube)e.preventDefault()}} target="_blank" rel="noopener noreferrer" aria-label="YouTube" title={SOCIAL_LINKS.youtube?"Abrir YouTube":"Aguardando endereço oficial"}>▶</a></div>{(!SOCIAL_LINKS.facebook||!SOCIAL_LINKS.instagram||!SOCIAL_LINKS.youtube)&&<small>Endereços oficiais aguardando confirmação</small>}</div>
-          </aside>
-
-        </div>
-        <button className="stage1-settings" onClick={()=>setMessage('Configurações será conectada em seguida.')}>⚙ <span>Configurações</span> <span aria-hidden="true">→</span></button>
+        <section className="visual-dashboard" aria-label="Menu principal ilustrado">
+          <div className="visual-dashboard-top">
+            <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias · Ideias</small></div>
+            <img className="visual-brand-seal" src="/capa-devocional-oficial.jpg" alt="Identidade Bíblia + Chimarrão" />
+            <div className="visual-quick"><button onClick={()=>{setReminderMessage('');setScreen('reminder')}} aria-label="Notificações e lembretes">♧<small>Avisos</small></button><button onClick={()=>setScreen('ideas')} aria-label="Apoie e acompanhe">♥<small>Apoie</small></button><button onClick={()=>setScreen('author')} aria-label="Contato e autor">✉<small>Contato</small></button></div>
+          </div>
+          <div className="visual-greeting"><img src="/autor-romulo.jpg.png" alt="" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
+          <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
+            {[
+              ["Devocional","365 encontros com Deus","/capa-devocional-oficial.jpg",()=>setScreen('devotional'),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","/devocional/mes_09.jpg",()=>setScreen('todayHome'),"☀"],
+              ["Minha Caminhada","Registre e acompanhe","/devocional/mes_06.jpg",()=>openJourney(),"⌁"],
+              ["Favoritos","Encontros que tocaram você","/devocional/mes_05.jpg",()=>openFavorites(),"♡"],
+              ["Minhas Anotações","Suas reflexões e orações","/devocional/mes_07.jpg",()=>openNotes(),"✎"],
+              ["Meus Livros","Sua biblioteca particular","/capa-app-oficial.png",()=>setScreen('books'),"▤"],
+              ["Livros do Romulo","Conheça todas as obras","/capa-app-oficial.png",()=>setScreen('authorBooks'),"▥"],
+              ["Ideias e Reflexões","Conteúdos para inspirar","/devocional/mes_11.jpg",()=>setScreen('ideas'),"✧"],
+              ["Hora do Mate","Não perca seu encontro","/devocional/mes_08.jpg",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
+              ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
+              ["Configurações","Conta, aparência e mais","/devocional/mes_10.jpg",()=>setMessage('Configurações será conectada em seguida.'),"⚙"]
+            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={action} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
+            <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
+          </nav>
+        </section>
         {message && <p className="dash-message">{message}</p>}
       </main>
     )
