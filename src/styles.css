@@ -95,3 +95,11 @@
 /* Ajuste de proporção: moldura compacta e livro em destaque, sem cortar a capa. */
 @media(min-width:651px){.dashboard .welcome-book-stage{min-height:365px;max-width:330px;width:100%;padding:17px 14px;margin-inline:auto}.dashboard .welcome-book-3d{width:min(228px,86%)}}
 @media(max-width:650px){.dashboard .welcome-book-stage{min-height:320px;padding:15px 12px}.dashboard .welcome-book-3d{width:min(185px,78%)}}
+
+/* Capa oficial da plataforma, separada da capa do devocional. */
+.app-cover-entry{max-width:1174px;margin:0 auto 18px;text-align:center}
+.app-cover-toggle{padding:10px 18px;border:1px solid #b58b4d;border-radius:999px;background:#2c2117;color:#f5d69b;font-weight:700;cursor:pointer}
+.app-cover-display{margin:16px auto 26px;max-width:540px;padding:14px;border:1px solid #bd914d;border-radius:19px;background:linear-gradient(145deg,#352316,#162f25);box-shadow:0 18px 42px rgba(0,0,0,.28)}
+.app-cover-display img{display:block;width:100%;max-height:74vh;object-fit:contain;border-radius:10px}
+.app-cover-display button{margin:15px auto 0;padding:12px 20px;border:1px solid #d3a55d;border-radius:999px;background:#a66c30;color:#fff8e8;font-weight:700;cursor:pointer}
+.app-cover-toggle:focus-visible,.app-cover-display button:focus-visible{outline:3px solid #f3ca80;outline-offset:3px}
