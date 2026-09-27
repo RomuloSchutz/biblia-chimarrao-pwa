@@ -114,3 +114,30 @@
 .month-cover-caption small{font-size:13px;color:#f5e5c0}
 .month-intro-image{display:block;width:100%;max-height:380px;object-fit:contain;object-position:center;border-radius:15px;margin:0 auto 22px;background:#09261e}
 @media(max-width:520px){.month-card-illustrated{min-height:190px}.month-cover-caption{padding:13px}.month-cover-caption strong{font-size:19px}}
+
+/* Ilustrações editoriais e organização premium da página inicial */
+.dashboard .menu-illustration{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:105px;overflow:hidden;border-radius:14px;border:1px solid rgba(235,191,115,.33);background:radial-gradient(circle at 50% 72%,rgba(224,169,87,.35),transparent 48%),linear-gradient(135deg,#3b2a1c,#172e27 62%,#17160f);isolation:isolate}
+.dashboard .illustration-glow{position:absolute;width:115px;height:115px;top:9px;left:calc(50% - 57px);border-radius:50%;background:radial-gradient(circle,rgba(245,207,129,.24),transparent 69%);box-shadow:0 0 42px rgba(197,144,66,.13)}
+.dashboard .illustration-art{position:relative;display:flex;align-items:center;justify-content:center;font-size:51px;line-height:1;filter:drop-shadow(0 8px 9px rgba(0,0,0,.38));transform:translateY(2px)}
+.dashboard .illustration-devotional{background:radial-gradient(circle at 50% 95%,#8e6a36,transparent 48%),linear-gradient(135deg,#372217,#19382e)}
+.dashboard .illustration-today{background:radial-gradient(circle at 50% 80%,#c58c4e,transparent 53%),linear-gradient(135deg,#2d241e,#344d42)}
+.dashboard .illustration-journey{background:radial-gradient(circle at 50% 100%,#98774d,transparent 55%),linear-gradient(135deg,#253f37,#31271d)}
+.dashboard .illustration-favorites{background:radial-gradient(circle at 50% 90%,#8b5d42,transparent 53%),linear-gradient(135deg,#34231c,#283c2c)}
+.dashboard .illustration-notes{background:radial-gradient(circle at 50% 100%,#b28757,transparent 54%),linear-gradient(135deg,#38291d,#24362d)}
+.dashboard .illustration-books,.dashboard .illustration-authorbooks{background:radial-gradient(circle at 50% 95%,#a67943,transparent 55%),linear-gradient(135deg,#382318,#1d3b31)}
+.dashboard .illustration-author{background:radial-gradient(circle at 50% 100%,#9c8053,transparent 53%),linear-gradient(135deg,#26392f,#36271b)}
+.dashboard .illustration-ideas{background:radial-gradient(circle at 50% 90%,#b58c3b,transparent 54%),linear-gradient(135deg,#292f27,#352519)}
+.dashboard .menu-card{display:flex;flex-direction:column;align-items:stretch;min-height:218px}
+.dashboard .menu-card strong{margin-top:13px}
+.dashboard .dashboard-extras{max-width:880px;margin:16px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dashboard .dashboard-extras .reminder-card{grid-column:1/2;min-height:218px}
+.dashboard .illustration-reminder{background:radial-gradient(circle at 50% 100%,#a57b41,transparent 55%),linear-gradient(135deg,#273c30,#3e291b)}
+.dashboard .illustration-reminder .illustration-art{gap:3px}
+.dashboard .mate-clock{font-family:Georgia,serif;font-size:42px;color:#f7d99a;text-shadow:0 3px 8px #23180d}
+.dashboard .settings-fullbar{grid-column:1/-1;display:flex;align-items:center;gap:17px;text-align:left;padding:16px 20px;border:1px solid rgba(222,173,93,.55);border-radius:18px;background:linear-gradient(135deg,#513019,#241a12);color:#f7e6b2}
+.dashboard .settings-fullbar strong,.dashboard .settings-fullbar small{display:block}
+.dashboard .settings-fullbar strong{font:700 21px Georgia,serif}
+.dashboard .settings-fullbar small{margin-top:4px;color:#d7d0bd}
+.dashboard .settings-illustration{display:grid;place-items:center;flex:none;width:52px;height:52px;border:1px solid #a9844c;border-radius:14px;background:#332519;font-size:30px}
+.dashboard .settings-arrow{margin-left:auto;font-size:25px;color:#e8c27d}
+@media(max-width:520px){.dashboard .menu-illustration{height:83px}.dashboard .illustration-art{font-size:41px}.dashboard .menu-card{min-height:187px}.dashboard .dashboard-extras{grid-template-columns:1fr 1fr}.dashboard .dashboard-extras .reminder-card{grid-column:1/2}.dashboard .settings-fullbar{padding:14px}.dashboard .settings-fullbar strong{font-size:19px}}
