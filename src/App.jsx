@@ -1,4 +1,4 @@
-const SOCIAL_LINKS = { facebook:"", instagram:"", youtube:"" } // Preencher apenas com os perfis oficiais confirmados.
+const SOCIAL_LINKS = { facebook:"https://www.facebook.com/romuloschutz", instagram:"https://www.instagram.com/romuloschutz/", youtube:"https://www.youtube.com/@romuloschutz" } // Preencher apenas com os perfis oficiais confirmados.
 import { useEffect, useState } from 'react'
 import { supabase, supabaseConfigured } from './lib/supabase.js'
 import EpubReader from './EpubReader.jsx'
