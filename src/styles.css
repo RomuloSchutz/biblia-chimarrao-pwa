@@ -147,3 +147,30 @@
 .dashboard .app-cover-hero{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:14px}
 .dashboard:has(.app-cover-always-visible){padding-bottom:34px}
 @media(max-width:520px){.dashboard .app-cover-always-visible{margin-bottom:16px}.dashboard .app-cover-hero{border-radius:9px}}
+
+/* Etapa 1 — identidade editorial baseada na referência aprovada */
+.dashboard:has(.stage1-layout){background:linear-gradient(160deg,#20160f,#39251a 40%,#1d251d);color:#f9e8cb;padding:0 20px 45px}
+.dashboard:has(.stage1-layout) .dash-header{max-width:1120px}
+.dashboard:has(.stage1-layout) .app-cover-always-visible{max-width:1120px;margin:18px auto 24px}
+.dashboard:has(.stage1-layout) .app-cover-hero{max-height:80vh;object-fit:contain}
+.stage1-layout{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(265px,.82fr) minmax(0,1.5fr);gap:20px;align-items:start}
+.stage1-side{border:1px solid #a9814a;border-radius:24px;overflow:hidden;background:linear-gradient(135deg,#2a1b13,#41281a 62%,#211a14);box-shadow:0 15px 38px #120c09a8}
+.stage1-user{display:flex;align-items:center;gap:14px;padding:25px 19px 19px;background:radial-gradient(circle at 90% 0,#6b452d,transparent 65%)}
+.stage1-avatar{width:58px;height:58px;object-fit:cover;object-position:top;border-radius:50%;border:2px solid #d6ad6b}
+.stage1-user strong,.stage1-user small{display:block}.stage1-user strong{font:700 21px Georgia,serif;color:#fff2d5}.stage1-user small{margin-top:5px;color:#e2c9a5;font-size:13px}
+.stage1-links{padding:5px 12px 14px;display:grid;gap:3px}
+.stage1-links button{display:flex;align-items:center;gap:13px;width:100%;margin:0;padding:11px 9px;text-align:left;border:0;border-bottom:1px solid #d2a76d23;border-radius:10px;background:transparent;color:#f8e9d2;font:16px Georgia,serif;cursor:pointer}
+.stage1-links button:hover,.stage1-links button:focus-visible{background:#9a713536;outline:1px solid #cba76b}
+.stage1-links button>span:nth-child(2){flex:1}.stage1-links button>span:last-child{font-size:23px;color:#dbb877}
+.stage1-link-icon{width:29px;text-align:center;font-size:22px;color:#edca84}
+.stage1-social{text-align:center;margin:0 18px;padding:18px 0 23px;border-top:1px solid #bb965f5e}.stage1-social p{margin:0 0 11px;font:14px Georgia,serif}.stage1-social small{display:block;margin-top:8px;color:#d5b990;font-size:11px}.stage1-social-icons{display:flex;justify-content:center;gap:18px}.stage1-social-icons span{display:grid;place-items:center;width:36px;height:36px;border:1px solid #d7b277;border-radius:50%;background:#483021;color:#f2d39a;font-size:23px;font-weight:bold}
+.stage1-main{min-width:0}.stage1-today{position:relative;min-height:620px;border:1px solid #d4a56c;border-radius:24px;overflow:hidden;text-align:center;background:linear-gradient(180deg,#271b1370 0%,#291b13b8 65%,#1c150fed 100%),url('/devocional/mes_09.jpg') center/cover no-repeat;box-shadow:0 15px 38px #120c09a8}
+.stage1-today-shade{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:620px;padding:25px 22px 22px}
+.stage1-brand{width:112px;height:143px;object-fit:cover;object-position:top;border:2px solid #d2ab70;border-radius:5px;box-shadow:0 9px 20px #0008}
+.stage1-date{margin:16px 0 3px;text-transform:capitalize;color:#fff0d1}.stage1-today h2{font:700 34px Georgia,serif;color:#fff3d4;margin:4px 0 8px}.stage1-today p:not(.stage1-date){font:17px/1.5 Georgia,serif;max-width:310px;margin:0 auto;color:#fff3d8}
+.stage1-day-title{display:grid;gap:5px;margin:22px auto 15px;text-shadow:0 2px 7px #000}.stage1-day-title small{letter-spacing:.15em;font-size:12px}.stage1-day-title strong{font:700 21px Georgia,serif}
+.stage1-enter{display:flex;align-items:center;justify-content:space-between;gap:16px;width:min(100%,390px);padding:15px 21px;border:1px solid #f5d59e;border-radius:40px;background:linear-gradient(135deg,#ffdaa0,#bd7e3d);color:#301d10;font:700 16px Georgia,serif;cursor:pointer}.stage1-enter span{font-size:27px}
+.stage1-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;width:100%;margin-top:18px}.stage1-quick button{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;margin:0;padding:9px 2px;border:1px solid #cba16b8c;border-radius:12px;background:#42291dd9;color:#fff0d7;font-size:11px;cursor:pointer}.stage1-quick span{font-size:26px;color:#f2ce8c}
+.stage1-more{margin-top:19px;padding:18px;border:1px solid #9e7749;border-radius:19px;background:#2a1d16}.stage1-more h2{font:700 23px Georgia,serif;margin:0 0 4px}.stage1-more p{margin:0 0 15px;color:#dec39d}.stage1-more-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.stage1-more-grid button{display:flex;gap:9px;align-items:center;text-align:left;padding:12px;border:1px solid #b58e58;border-radius:11px;background:#432d20;color:#ffe6c0;cursor:pointer}.stage1-more-grid button span{flex:1}
+.stage1-settings{display:flex;align-items:center;gap:15px;max-width:1120px;width:100%;margin:20px auto 0;padding:17px 23px;border:1px solid #b78c57;border-radius:15px;background:linear-gradient(100deg,#4a2f20,#251b16);color:#f7dfb4;font:700 19px Georgia,serif;text-align:left;cursor:pointer}.stage1-settings span:nth-child(2){flex:1}
+@media(max-width:700px){.dashboard:has(.stage1-layout){padding:0 11px 35px}.stage1-layout{grid-template-columns:1fr;gap:15px}.stage1-main{grid-row:1}.stage1-side{grid-row:2}.stage1-today,.stage1-today-shade{min-height:540px}.stage1-today-shade{padding:20px 13px}.stage1-brand{width:86px;height:112px}.stage1-today h2{font-size:29px}.stage1-quick{gap:5px}.stage1-quick button{font-size:10px}.stage1-more-grid{grid-template-columns:1fr 1fr}.stage1-user{padding:17px}.dashboard:has(.stage1-layout) .app-cover-hero{max-height:none}}
