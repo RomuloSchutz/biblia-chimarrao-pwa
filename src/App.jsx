@@ -501,11 +501,9 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
-        <section className="app-cover-entry app-cover-always-visible" aria-label="Capa oficial do aplicativo Bíblia + Chimarrão">
-          <img className="app-cover-hero" src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão: livros, Bíblia, chimarrão e paisagem ao pôr do sol" />
-        </section>
         <div className="stage1-layout">
           <aside className="stage1-side" aria-label="Menu principal">
+            <div className="stage1-cover-compact"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/></div>
             <div className="stage1-user"><img src="/autor-romulo.jpg.png" alt="" className="stage1-avatar" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><small>Que bom ter você aqui.</small></div></div>
             <nav className="stage1-links" aria-label="Áreas do aplicativo">
               {menuItems.filter(([,title])=>title!=='Encontro de Hoje'&&title!=='Livros do Romulo').map(([icon,title])=><button key={title} onClick={()=>title==='Chimarrão com Deus'?setScreen('devotional'):title==='Minha Caminhada'?openJourney():title==='Meus Favoritos'?openFavorites():title==='Minhas Anotações'?openNotes():title==='Meus Livros'?setScreen('books'):title==='Sobre o Autor'?setScreen('author'):title==='Ideias e Reflexões'?setScreen('ideas'):null}><span className="stage1-link-icon" aria-hidden="true">{icon}</span><span>{title}</span><span aria-hidden="true">›</span></button>)}
@@ -515,9 +513,9 @@ export default function App() {
             <div className="stage1-social"><p>Siga nas redes sociais</p><div className="stage1-social-icons" aria-label="Redes sociais — endereços oficiais ainda não cadastrados"><span title="Facebook — link em preparação">f</span><span title="Instagram — link em preparação">◎</span><span title="YouTube — link em preparação">▶</span></div><small>Links oficiais em preparação</small></div>
           </aside>
           <div className="stage1-main">
-            <section className="stage1-today" aria-label="Encontro do dia">
+            <section className="stage1-today" aria-label="Encontro do dia"><div className="stage1-month-label">ENCONTRO DO DIA</div>
               <div className="stage1-today-shade">
-                <img className="stage1-brand" src="/capa-devocional-oficial.jpg" alt="Capa oficial de Chimarrão com Deus" />
+
                 <p className="stage1-date">{new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'numeric',month:'long'}).format(new Date())}</p>
                 <h2>Olá, {name}!</h2>
                 <p>Prepare seu chimarrão e venha ter um encontro com Deus hoje.</p>
