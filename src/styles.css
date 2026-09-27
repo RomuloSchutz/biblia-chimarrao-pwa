@@ -141,3 +141,9 @@
 .dashboard .settings-illustration{display:grid;place-items:center;flex:none;width:52px;height:52px;border:1px solid #a9844c;border-radius:14px;background:#332519;font-size:30px}
 .dashboard .settings-arrow{margin-left:auto;font-size:25px;color:#e8c27d}
 @media(max-width:520px){.dashboard .menu-illustration{height:83px}.dashboard .illustration-art{font-size:41px}.dashboard .menu-card{min-height:187px}.dashboard .dashboard-extras{grid-template-columns:1fr 1fr}.dashboard .dashboard-extras .reminder-card{grid-column:1/2}.dashboard .settings-fullbar{padding:14px}.dashboard .settings-fullbar strong{font-size:19px}}
+
+/* Capa sempre visível e sem navegação inferior redundante */
+.dashboard .app-cover-always-visible{max-width:1174px;margin:0 auto 22px;padding:0;border:0;background:transparent;box-shadow:none}
+.dashboard .app-cover-hero{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:14px}
+.dashboard:has(.app-cover-always-visible){padding-bottom:34px}
+@media(max-width:520px){.dashboard .app-cover-always-visible{margin-bottom:16px}.dashboard .app-cover-hero{border-radius:9px}}
