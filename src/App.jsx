@@ -16,7 +16,6 @@ const menuItems = [
 
 export default function App() {
   const [screen, setScreen] = useState('home')
-  const [showAppCover, setShowAppCover] = useState(false)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -502,11 +501,8 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
-        <section className="app-cover-entry" aria-label="Capa oficial do aplicativo Bíblia + Chimarrão">
-          <button type="button" className="app-cover-toggle" onClick={() => setShowAppCover(value => !value)} aria-expanded={showAppCover}>
-            {showAppCover ? 'Ocultar apresentação' : '✦ Conheça a capa oficial do Bíblia + Chimarrão'}
-          </button>
-          {showAppCover && <div className="app-cover-display"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão: livros, Bíblia, chimarrão e paisagem ao pôr do sol" /><button type="button" onClick={() => setShowAppCover(false)}>Continuar para meu espaço ↓</button></div>}
+        <section className="app-cover-entry app-cover-always-visible" aria-label="Capa oficial do aplicativo Bíblia + Chimarrão">
+          <img className="app-cover-hero" src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão: livros, Bíblia, chimarrão e paisagem ao pôr do sol" />
         </section>
         <section className="welcome welcome-editorial">
           <div className="welcome-copy">
@@ -530,7 +526,6 @@ export default function App() {
           <button className="settings-fullbar" onClick={() => setMessage('Configurações será conectada em seguida.')}><span className="settings-illustration" aria-hidden="true">⚙</span><span><strong>Configurações</strong><small>Personalize sua experiência</small></span><span className="settings-arrow" aria-hidden="true">→</span></button>
         </section>
         {message && <p className="dash-message">{message}</p>}
-        <nav className="bottom-nav"><span>⌂<small>Início</small></span><span>📖<small>Chimarrão com Deus</small></span><span>▣<small>Livros</small></span><span>♡<small>Favoritos</small></span><span>•••<small>Mais</small></span></nav>
       </main>
     )
   }
