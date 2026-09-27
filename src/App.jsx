@@ -582,7 +582,7 @@ export default function App() {
               ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
               
-            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : ()=>setScreen("guestInfo")} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
+            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : ()=>setScreen(title === "Devocional" || title === "Encontro de Hoje" ? "guestDemo" : "guestInfo")} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
             <div className="visual-card visual-quote visual-quote-tile" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
           </nav>
@@ -647,6 +647,13 @@ export default function App() {
       </section></main>
     )
   }
+
+  if (screen === 'guestDemo' && !user) return <main className="dashboard guest-demo-page">
+    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia do devocional · Edição 2027</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header>
+    <section className="guest-demo-intro"><span className="eyebrow">CONHEÇA O DEVOCIONAL</span><h1>Chimarrão com Deus</h1><p>365 encontros com Deus, organizados em doze meses. Conheça a apresentação e o formato de cada encontro antes de criar sua conta.</p></section>
+    <section className="guest-demo-months" aria-label="Temas dos doze meses">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração do mês de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</section>
+    <section className="guest-demo-format"><h2>Como funciona cada encontro?</h2><p>O conteúdo completo é apresentado em seis momentos:</p><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p className="guest-demo-disclaimer">Esta é uma apresentação da estrutura do devocional, não uma leitura completa. O acesso comercial ainda não está ativado.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section>
+  </main>
 
   if (screen === 'guestInfo') return <main className="dashboard"><section className="guest-info"><button className="back-button" onClick={()=>setScreen('dashboard')}>← Voltar à apresentação</button><h1>Seu espaço de leitura e reflexão</h1><p>Você está conhecendo a apresentação do Bíblia + Chimarrão. Para utilizar os recursos, crie sua conta gratuita.</p><p>O acesso comercial ainda está em preparação. Nenhuma cobrança será realizada nesta etapa.</p><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button className="secondary-action" onClick={()=>setScreen('login')}>Já tenho uma conta</button></section></main>
 
