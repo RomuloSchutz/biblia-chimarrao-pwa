@@ -305,3 +305,11 @@
 [data-appearance="light"] .reader-settings-panel h2,[data-appearance="light"] .reader-settings-panel h3,[data-appearance="light"] .reader-setting-label,[data-appearance="light"] .reader-password-form label{color:#49301b!important}
 [data-appearance="light"] .reader-settings-panel p{color:#544431!important}
 [data-appearance="light"] .reader-appearance button:not(.selected){background:#f0e3d1;color:#36271a}
+
+/* Configurações compactas: três temas na mesma linha e visibilidade de senhas */
+.reader-settings .reader-appearance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.reader-settings .reader-appearance button{min-width:0;width:100%;padding:11px 3px;font-size:clamp(12px,3.3vw,16px);white-space:nowrap;min-height:46px}
+.reader-password-field{position:relative;display:block}
+.reader-password-field input{padding-right:92px!important}
+.reader-settings .reader-password-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;gap:3px;border:0;border-radius:8px;background:#493622;color:#fff2d6;font-size:14px;min-width:74px;min-height:40px;padding:5px 7px;cursor:pointer}
+.reader-settings .reader-password-eye:focus-visible{outline:3px solid #f2cc85;outline-offset:1px}
