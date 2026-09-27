@@ -16,6 +16,7 @@ const menuItems = [
 
 export default function App() {
   const [screen, setScreen] = useState('home')
+  const [showAppCover, setShowAppCover] = useState(false)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -498,6 +499,12 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
+        <section className="app-cover-entry" aria-label="Capa oficial do aplicativo Bíblia + Chimarrão">
+          <button type="button" className="app-cover-toggle" onClick={() => setShowAppCover(value => !value)} aria-expanded={showAppCover}>
+            {showAppCover ? 'Ocultar apresentação' : '✦ Conheça a capa oficial do Bíblia + Chimarrão'}
+          </button>
+          {showAppCover && <div className="app-cover-display"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão: livros, Bíblia, chimarrão e paisagem ao pôr do sol" /><button type="button" onClick={() => setShowAppCover(false)}>Continuar para meu espaço ↓</button></div>}
+        </section>
         <section className="welcome welcome-editorial">
           <div className="welcome-copy">
             <p className="eyebrow">SEU ESPAÇO DE ENCONTRO</p>
