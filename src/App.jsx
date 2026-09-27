@@ -523,10 +523,14 @@ export default function App() {
               ["Ideias e Reflexões","Conteúdos para inspirar","/devocional/mes_11.jpg",()=>setScreen('ideas'),"✧"],
               ["Hora do Mate","Não perca seu encontro","/devocional/mes_08.jpg",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
-              ["Configurações","Conta, aparência e mais","/devocional/mes_10.jpg",()=>setMessage('Configurações será conectada em seguida.'),"⚙"]
+              
             ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={action} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
           </nav>
+          <div className="visual-bottom">
+            <div className="visual-quote" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
+            <button type="button" className="visual-settings-bar" onClick={()=>setMessage('Configurações será conectada em seguida.')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
+          </div>
         </section>
         {message && <p className="dash-message">{message}</p>}
       </main>
