@@ -524,7 +524,6 @@ export default function App() {
                 <div className="stage1-quick"><button onClick={openJourney}><span>▥</span>Minha Caminhada</button><button onClick={openFavorites}><span>♡</span>Meus Favoritos</button><button onClick={openNotes}><span>✎</span>Minhas Anotações</button><button onClick={()=>setScreen('books')}><span>▤</span>Meus Livros</button></div>
               </div>
             </section>
-            <section className="stage1-more"><h2>Explore seu espaço</h2><p>Todos os recursos em um só lugar.</p><div className="stage1-more-grid"><button onClick={()=>setScreen('devotional')}>📖 <span>Os 12 meses do devocional</span> →</button><button onClick={()=>setScreen('ideas')}>💡 <span>Ideias e Reflexões</span> →</button><button onClick={()=>setScreen('author')}>🪶 <span>Conheça o Autor</span> →</button><button onClick={()=>{setReminderMessage('');setScreen('reminder')}}>🧉 <span>Hora do Mate</span> →</button></div></section>
           </div>
         </div>
         <button className="stage1-settings" onClick={()=>setMessage('Configurações será conectada em seguida.')}>⚙ <span>Configurações</span> <span aria-hidden="true">→</span></button>
