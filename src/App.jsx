@@ -65,7 +65,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         setUser(data.session.user)
-        setScreen('dashboard')
+        setScreen('opening')
       }
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -493,6 +493,8 @@ export default function App() {
               <button className="reminder-permission" onClick={enableReminderNotifications}>Permitir notificações neste dispositivo</button> <button className="reminder-permission" type="button" onClick={registerClosedAppNotifications}>🔔 Preparar avisos com aplicativo fechado</button> <button className="reminder-permission" type="button" onClick={showMateAlert}>🧉 Testar aviso agora</button>{mateAlert && <div className="mate-alert" role="alert"><strong>{mateAlert}</strong><button type="button" onClick={()=>setMateAlert('')}>Fechar</button></div>}<p className="reminder-disclaimer">Para receber notificações com o aplicativo fechado, autorize os avisos neste dispositivo e mantenha a programação semanal ativada. A entrega depende também das permissões do navegador e do sistema.</p>{reminderMessage&&<p className="encounter-save-status" role="status">{reminderMessage}</p>}</section></main>
   }
 
+  if (screen === 'opening' && user) return <main className="premium-opening"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão"/><div className="premium-opening-actions"><button onClick={()=>setScreen('dashboard')}>Entrar no aplicativo →</button><p>Mais que leitura. Um encontro real.</p></div></div></main>
+
   if (screen === 'dashboard' && user) {
     const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
     return (
@@ -501,18 +503,29 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
-        <div className="stage1-layout">
+        <div className="stage1-layout premium-menu-layout">
           <aside className="stage1-side" aria-label="Menu principal">
-            <div className="stage1-cover-compact"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/></div>
+            <div className="premium-menu-heading"><strong>Bíblia + Chimarrão</strong><small>Seu espaço de leitura e reflexão</small></div>
             <div className="stage1-user"><img src="/autor-romulo.jpg.png" alt="" className="stage1-avatar" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><small>Que bom ter você aqui.</small></div></div>
             <nav className="stage1-links" aria-label="Áreas do aplicativo">
-              {menuItems.filter(([,title])=>title!=='Encontro de Hoje'&&title!=='Livros do Romulo').map(([icon,title])=><button key={title} onClick={()=>title==='Chimarrão com Deus'?setScreen('devotional'):title==='Minha Caminhada'?openJourney():title==='Meus Favoritos'?openFavorites():title==='Minhas Anotações'?openNotes():title==='Meus Livros'?setScreen('books'):title==='Sobre o Autor'?setScreen('author'):title==='Ideias e Reflexões'?setScreen('ideas'):null}><span className="stage1-link-icon" aria-hidden="true">{icon}</span><span>{title}</span><span aria-hidden="true">›</span></button>)}
-              <button onClick={()=>{setReminderMessage('');setScreen('reminder')}}><span className="stage1-link-icon" aria-hidden="true">🧉</span><span>Hora do Mate</span><span aria-hidden="true">›</span></button>
+              {menuItems.filter(([,title])=>title!=='Livros do Romulo').map(([icon,title])=><button key={title} onClick={()=>title==='Chimarrão com Deus'?setScreen('devotional'):title==='Encontro de Hoje'?setScreen('todayHome'):title==='Minha Caminhada'?openJourney():title==='Meus Favoritos'?openFavorites():title==='Minhas Anotações'?openNotes():title==='Meus Livros'?setScreen('books'):title==='Sobre o Autor'?setScreen('author'):title==='Ideias e Reflexões'?setScreen('ideas'):null}><span className="stage1-link-icon premium-icon" aria-hidden="true">{({ "Chimarrão com Deus":"✝","Encontro de Hoje":"☼","Minha Caminhada":"▥","Meus Favoritos":"♡","Minhas Anotações":"✎","Meus Livros":"▤","Sobre o Autor":"♙","Ideias e Reflexões":"✧" })[title] || icon}</span><span>{title}</span><span aria-hidden="true">›</span></button>)}
+              <button onClick={()=>{setReminderMessage('');setScreen('reminder')}}><span className="stage1-link-icon premium-icon" aria-hidden="true">◷</span><span>Hora do Mate</span><span aria-hidden="true">›</span></button>
               <button onClick={()=>setScreen('authorBooks')}><span className="stage1-link-icon" aria-hidden="true">📚</span><span>Livros do Romulo</span><span aria-hidden="true">›</span></button>
             </nav>
             <div className="stage1-social"><p>Siga nas redes sociais</p><div className="stage1-social-icons" aria-label="Redes sociais — endereços oficiais ainda não cadastrados"><span title="Facebook — link em preparação">f</span><span title="Instagram — link em preparação">◎</span><span title="YouTube — link em preparação">▶</span></div><small>Links oficiais em preparação</small></div>
           </aside>
-          <div className="stage1-main">
+
+        </div>
+        <button className="stage1-settings" onClick={()=>setMessage('Configurações será conectada em seguida.')}>⚙ <span>Configurações</span> <span aria-hidden="true">→</span></button>
+        {message && <p className="dash-message">{message}</p>}
+      </main>
+    )
+  }
+
+  if (screen === 'todayHome' && user) {
+ const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
+ return <main className="dashboard premium-today-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Encontro do dia</small></div><button className="back-button" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
+<div className="stage1-main">
             <section className="stage1-today" aria-label="Encontro do dia"><div className="stage1-month-label">ENCONTRO DO DIA</div>
               <div className="stage1-today-shade">
 
@@ -525,12 +538,8 @@ export default function App() {
               </div>
             </section>
           </div>
-        </div>
-        <button className="stage1-settings" onClick={()=>setMessage('Configurações será conectada em seguida.')}>⚙ <span>Configurações</span> <span aria-hidden="true">→</span></button>
-        {message && <p className="dash-message">{message}</p>}
-      </main>
-    )
-  }
+</main>
+ }
 
   if (screen === 'login' || screen === 'signup') {
     const creating = screen === 'signup'
