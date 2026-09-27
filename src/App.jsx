@@ -513,15 +513,15 @@ export default function App() {
           <div className="visual-greeting"><img src="/autor-romulo.jpg.png" alt="" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
-              ["Devocional","365 encontros com Deus","/capa-devocional-oficial.jpg",()=>setScreen('devotional'),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/devocional/mes_"+new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",month:"2-digit"}).format(new Date())+".jpg",()=>setScreen('todayHome'),"☀"],
-              ["Minha Caminhada","Registre e acompanhe","/devocional/mes_06.jpg",()=>openJourney(),"⌁"],
+              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
+              ["Minha Caminhada","Registre e acompanhe","/menu-camenhada.webp",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/devocional/mes_05.jpg",()=>openFavorites(),"♡"],
-              ["Minhas Anotações","Suas reflexões e orações","/devocional/mes_07.jpg",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/1000769250.jpg",()=>setScreen('books'),"▤"],
-              ["Livros do Romulo","Conheça todas as obras","/capa-app-oficial.png",()=>setScreen('authorBooks'),"▥"],
-              ["Ideias e Reflexões","Conteúdos para inspirar","/devocional/mes_11.jpg",()=>setScreen('ideas'),"✧"],
-              ["Hora do Mate","Não perca seu encontro","/devocional/mes_08.jpg",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
+              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacos.webp",()=>openNotes(),"✎"],
+              ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
+              ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
+              ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias.webp",()=>setScreen('ideas'),"✧"],
+              ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
               
             ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={action} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
