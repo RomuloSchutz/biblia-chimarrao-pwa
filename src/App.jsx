@@ -19,7 +19,7 @@ const menuItems = [
 ]
 
 export default function App() {
-  const [screen, setScreen] = useState('home')
+  const [screen, setScreen] = useState('dashboard')
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -464,7 +464,7 @@ export default function App() {
 
   async function handleLogout() {
     if (supabase) await supabase.auth.signOut()
-    setUser(null); setScreen('home'); setMessage('')
+    setUser(null); setScreen('dashboard'); setMessage('')
   }
 
 
@@ -554,22 +554,22 @@ export default function App() {
 
   if (screen === 'opening' && user) return <main className="premium-opening"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão"/><div className="premium-opening-actions"><button onClick={()=>setScreen('dashboard')}>Entrar no aplicativo →</button></div></div></main>
 
-  if (screen === 'dashboard' && user) {
-    const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
+  if (screen === 'dashboard') {
+    const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
     return (
       <main className="dashboard">
         <header className="dash-header">
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
-          <button className="logout" onClick={handleLogout}>Sair</button>
+          {user ? <button className="logout" onClick={handleLogout}>Sair</button> : <div className="guest-header-actions"><button className="logout" onClick={()=>setScreen("login")}>Entrar</button><button className="logout" onClick={()=>setScreen("signup")}>Criar conta</button></div>}
         </header>
         <section className="visual-dashboard" aria-label="Menu principal ilustrado">
           <div className="visual-dashboard-top">
             <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias<br/>Ideias · Reflexões</small></div>
 
-            <div className="visual-quick"><button onClick={()=>setScreen('news')} aria-label="Notificações"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></span><small>Notificações</small></button><button onClick={()=>{setMessage('');setScreen('support')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
+            <div className="visual-quick"><button onClick={()=>user?setScreen('news'):setScreen("guestInfo")} aria-label="Notificações"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></span><small>Notificações</small></button><button onClick={()=>{setMessage('');setScreen('support')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
           </div>
-          <div className="visual-greeting"><span className="reader-avatar">{user.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
-          <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
+          <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
+          {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore a apresentação dos recursos. Para salvar sua caminhada e acessar o conteúdo, crie uma conta.</p><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
               ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
               ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
@@ -582,13 +582,13 @@ export default function App() {
               ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
               
-            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={action} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
+            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : ()=>setScreen("guestInfo")} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
             <div className="visual-card visual-quote visual-quote-tile" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
           </nav>
           <div className="visual-bottom">
 
-            <button type="button" className="visual-settings-bar" onClick={()=>{setSettingsMessage('');setScreen('settings')}}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
+            <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
         {message && <p className="dash-message">{message}</p>}
@@ -648,6 +648,8 @@ export default function App() {
     )
   }
 
+  if (screen === 'guestInfo') return <main className="dashboard"><section className="guest-info"><button className="back-button" onClick={()=>setScreen('dashboard')}>← Voltar à apresentação</button><h1>Seu espaço de leitura e reflexão</h1><p>Você está conhecendo a apresentação do Bíblia + Chimarrão. Para utilizar os recursos, crie sua conta gratuita.</p><p>O acesso comercial ainda está em preparação. Nenhuma cobrança será realizada nesta etapa.</p><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button className="secondary-action" onClick={()=>setScreen('login')}>Já tenho uma conta</button></section></main>
+
   if (screen === 'access') return (
     <main className="app"><section className="auth-card">
       <button className="back-button" onClick={() => setScreen('home')}>← Voltar</button>
@@ -657,5 +659,5 @@ export default function App() {
     </section></main>
   )
 
-  return <main className="app"><section className="hero"><p className="eyebrow">365 ENCONTROS</p><h1>Bíblia +<br/>Chimarrão</h1><p className="subtitle">Uma pausa. Uma Palavra. Um novo começo.</p><button onClick={() => setScreen('access')}>Começar meu encontro</button></section><section className="card"><span>Edição 2027</span><h2>Seu encontro diário com a Palavra</h2><p>Reflexão, aplicação, oração e uma caminhada que fica registrada na sua conta.</p></section></main>
+  return <main className="app guest-entry"><section className="guest-entry-panel"><h1>Bíblia + Chimarrão</h1><p>Uma palavra. Uma pausa. Um encontro.</p><button onClick={()=>setScreen('dashboard')}>Conhecer o aplicativo</button><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></section></main>
 }
