@@ -321,3 +321,20 @@
 .reader-settings .reader-password-field input{width:100%!important;box-sizing:border-box;padding-right:52px!important}
 .reader-settings .reader-password-field .reader-password-eye{position:absolute!important;right:6px!important;top:50%!important;transform:translateY(-50%)!important;width:40px!important;min-width:40px!important;height:40px!important;min-height:40px!important;margin:0!important;padding:0!important;display:grid!important;place-items:center!important;background:transparent!important;color:#49301b!important;border:0!important;box-shadow:none!important}
 [data-appearance="dark"] .reader-settings .reader-password-field .reader-password-eye{color:#49301b!important}
+
+/* Visita guiada sem cadastro: reaproveita a apresentação premium */
+.guest-header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.guest-header-actions .logout{font-size:clamp(12px,3.3vw,16px);padding:9px 12px}
+.guest-preview-note{border:1px solid #a98045;border-radius:16px;padding:16px;margin:14px 0 22px;background:linear-gradient(125deg,#382416,#09281f);color:#fff1d6}
+.guest-preview-note strong{font:700 clamp(20px,5vw,27px) Georgia,serif}
+.guest-preview-note p{font-size:15px;line-height:1.5;color:#f5e5ca}
+.guest-preview-note button,.guest-info button{border:1px solid #c29a57;border-radius:12px;padding:12px 16px;margin:4px;background:#633a1d;color:white;font-weight:700}
+.guest-preview-note .guest-login{background:transparent}
+.guest-info{max-width:620px;margin:30px auto;padding:28px;border:1px solid #a98045;border-radius:20px;background:#0c241c;color:#fff2db}
+.guest-info h1{font:700 clamp(28px,7vw,40px) Georgia,serif}
+.guest-info p{font-size:17px;line-height:1.6}
+.guest-entry{min-height:100vh;display:grid;place-items:center;background:linear-gradient(#09291f,#332012)}
+.guest-entry-panel{padding:28px;color:#fff2da;text-align:center}
+.guest-entry-panel h1{font:700 42px Georgia,serif}
+.guest-entry-panel button{display:block;margin:12px auto;padding:14px 24px;background:#56351f;color:white;border:1px solid #b99759;border-radius:12px}
+@media(max-width:400px){.guest-header-actions{gap:4px}.guest-header-actions .logout{padding:7px 9px}.guest-preview-note button{padding:10px}}
