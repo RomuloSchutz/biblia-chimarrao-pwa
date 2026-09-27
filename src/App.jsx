@@ -498,11 +498,15 @@ export default function App() {
           <div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div>
           <button className="logout" onClick={handleLogout}>Sair</button>
         </header>
-        <section className="welcome">
-          <p className="eyebrow">SEU ESPAÇO</p>
-          <h2>Olá, {name}!</h2>
-          <p>Que bom ter você aqui.</p>
-          <blockquote>“Uma palavra. Uma pausa. Um encontro.”</blockquote>
+        <section className="welcome welcome-editorial">
+          <div className="welcome-copy">
+            <p className="eyebrow">SEU ESPAÇO DE ENCONTRO</p>
+            <h2>Olá, {name}!</h2>
+            <p>Prepare seu chimarrão. Reserve um momento para a Palavra.</p>
+            <blockquote>“Mais que leitura. Um encontro real.”</blockquote>
+            <button className="welcome-enter" onClick={() => setScreen('devotional')}>📖 Entrar no Devocional <span aria-hidden="true">→</span></button>
+          </div>
+          <div className="welcome-art" aria-hidden="true"><span className="welcome-art-sun">☀</span><span className="welcome-art-caption">Chimarrão com Deus<br/><small>365 encontros com Deus</small></span></div>
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
