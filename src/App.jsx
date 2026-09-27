@@ -506,7 +506,7 @@ export default function App() {
             <blockquote>“Mais que leitura. Um encontro real.”</blockquote>
             <button className="welcome-enter" onClick={() => setScreen('devotional')}>📖 Entrar no Devocional <span aria-hidden="true">→</span></button>
           </div>
-          <div className="welcome-art" aria-hidden="true"><span className="welcome-art-sun">☀</span><span className="welcome-art-caption">Chimarrão com Deus<br/><small>365 encontros com Deus</small></span></div>
+          <div className="welcome-art welcome-book-stage" aria-label="Apresentação tridimensional do devocional"><div className="welcome-book-3d"><div className="welcome-book-pages" aria-hidden="true"></div><div className="welcome-book-front"><img src="/capa-devocional-oficial.webp" alt="Capa oficial de Chimarrão com Deus — 365 Encontros com Deus" onError={e=>{e.currentTarget.style.display="none";e.currentTarget.parentElement.classList.add("cover-awaiting-file")}}/><span className="welcome-book-cover-fallback">Chimarrão<br/><em>com Deus</em><small>365 Encontros com Deus</small></span></div></div></div>
         </section>
         <section className="menu-grid">
           {menuItems.map(([icon,title,desc]) => (
