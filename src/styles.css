@@ -103,3 +103,14 @@
 .app-cover-display img{display:block;width:100%;max-height:74vh;object-fit:contain;border-radius:10px}
 .app-cover-display button{margin:15px auto 0;padding:12px 20px;border:1px solid #d3a55d;border-radius:999px;background:#a66c30;color:#fff8e8;font-weight:700;cursor:pointer}
 .app-cover-toggle:focus-visible,.app-cover-display button:focus-visible{outline:3px solid #f3ca80;outline-offset:3px}
+
+/* Ilustrações oficiais extraídas do EPUB Chimarrão com Deus. */
+.month-card-illustrated{position:relative;overflow:hidden;padding:0;min-height:225px;isolation:isolate;background:#12382b;display:flex;align-items:flex-end}
+.month-cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .3s ease}
+.month-card-illustrated:hover .month-cover-image{transform:scale(1.04)}
+.month-card-illustrated:after{content:'';position:absolute;inset:25% 0 0;background:linear-gradient(transparent,rgba(4,21,15,.96));z-index:-1}
+.month-cover-caption{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:18px;width:100%;text-align:left;color:#fff3d7;text-shadow:0 1px 4px #071b16}
+.month-cover-caption strong{font:700 23px Georgia,serif}
+.month-cover-caption small{font-size:13px;color:#f5e5c0}
+.month-intro-image{display:block;width:100%;max-height:380px;object-fit:contain;object-position:center;border-radius:15px;margin:0 auto 22px;background:#09261e}
+@media(max-width:520px){.month-card-illustrated{min-height:190px}.month-cover-caption{padding:13px}.month-cover-caption strong{font-size:19px}}
