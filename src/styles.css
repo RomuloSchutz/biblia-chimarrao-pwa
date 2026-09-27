@@ -79,3 +79,15 @@
 .dashboard .dash-tools button{background:linear-gradient(135deg,#55341c,#241a12);border-color:rgba(222,173,93,.55)}
 .dashboard .welcome-editorial{background:linear-gradient(110deg,rgba(30,19,13,.98),rgba(91,52,25,.91));border-color:#c49652}
 .dashboard .welcome-enter{background:linear-gradient(110deg,#b47532,#70401e);color:#fff9e9}
+
+/* Livro 3D da apresentação; a arte original é exibida integralmente, sem recortes. */
+.welcome-book-stage{perspective:1100px;min-height:325px;padding:25px 35px;background:radial-gradient(ellipse at 50% 60%,rgba(213,157,78,.36),transparent 70%),linear-gradient(155deg,#694326,#241d17 70%,#1a2b22);overflow:visible}
+.welcome-book-3d{position:relative;width:min(185px,75%);aspect-ratio:2/3;transform-style:preserve-3d;transform:rotateY(-19deg) rotateX(3deg);filter:drop-shadow(18px 21px 14px rgba(0,0,0,.52));transition:transform .35s ease}
+.welcome-book-stage:hover .welcome-book-3d{transform:rotateY(-9deg) rotateX(1deg)}
+.welcome-book-pages{position:absolute;inset:3% -9% 2% 7%;border-radius:2px 5px 5px 2px;background:repeating-linear-gradient(90deg,#e9d8b6 0 1px,#bda984 2px 3px);transform:translateZ(-10px) rotateY(4deg);box-shadow:4px 0 0 #5c301b}
+.welcome-book-front{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:2px 4px 4px 2px;overflow:hidden;background:linear-gradient(160deg,#a76732,#3e2519);box-shadow:inset 5px 0 6px rgba(30,15,8,.5),2px 2px 3px rgba(0,0,0,.2)}
+.welcome-book-front img{width:100%;height:100%;object-fit:contain;position:relative;z-index:1}
+.welcome-book-cover-fallback{display:none;text-align:center;font:26px Georgia,serif;color:#ffe5a6;padding:12px;text-shadow:0 2px 3px #32180b}
+.welcome-book-cover-fallback em{font-size:22px;display:block}.welcome-book-cover-fallback small{font:12px Georgia,serif;display:block;margin-top:24px}
+.welcome-book-front.cover-awaiting-file .welcome-book-cover-fallback{display:block}
+@media(max-width:650px){.welcome-book-stage{min-height:285px}.welcome-book-3d{width:150px}}
