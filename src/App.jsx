@@ -34,7 +34,8 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [user, setUser] = useState(null)
-  const [appearance,setAppearance]=useState(()=>localStorage.getItem('bc-appearance')||'dark')
+  const [appearance,setAppearance]=useState(()=>localStorage.getItem('bc-appearance')||'system')
+  const [currentPassword,setCurrentPassword]=useState('')
   const [newPassword,setNewPassword]=useState('')
   const [confirmPassword,setConfirmPassword]=useState('')
   const [settingsMessage,setSettingsMessage]=useState('')
@@ -61,7 +62,14 @@ export default function App() {
   const [savedReminder, setSavedReminder] = useState(null)
   const [reminderClock, setReminderClock] = useState('')
 
-  useEffect(()=>{document.documentElement.dataset.appearance=appearance;localStorage.setItem('bc-appearance',appearance)},[appearance])
+  useEffect(()=>{
+    localStorage.setItem('bc-appearance',appearance)
+    const media=window.matchMedia('(prefers-color-scheme: dark)')
+    const apply=()=>{document.documentElement.dataset.appearance=appearance==='system'?(media.matches?'dark':'light'):appearance}
+    apply()
+    media.addEventListener?.('change',apply)
+    return ()=>media.removeEventListener?.('change',apply)
+  },[appearance])
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(err =>
@@ -238,13 +246,24 @@ export default function App() {
 
   async function saveNewPassword(e){
     e.preventDefault();setSettingsMessage('')
-    if(newPassword.length<8){setSettingsMessage('A senha precisa ter pelo menos 8 caracteres.');return}
+    if(!currentPassword){setSettingsMessage('Digite sua senha atual para confirmar sua identidade.');return}
+    if(newPassword.length<8){setSettingsMessage('A nova senha precisa ter pelo menos 8 caracteres.');return}
     if(newPassword!==confirmPassword){setSettingsMessage('As senhas não coincidem.');return}
     setSettingsBusy(true)
-    const {error}=await supabase.auth.updateUser({password:newPassword})
-    setSettingsBusy(false)
-    if(error)setSettingsMessage(error.message)
-    else{setNewPassword('');setConfirmPassword('');setSettingsMessage('Senha atualizada com sucesso.')}
+    try{
+      const {error:authError}=await supabase.auth.signInWithPassword({email:user.email,password:currentPassword})
+      if(authError){setSettingsMessage('Não foi possível confirmar sua senha atual. Confira a senha e tente novamente.');return}
+      const {error}=await supabase.auth.updateUser({password:newPassword})
+      if(error){
+        if(/reauth|nonce/i.test(error.message||'')){
+          setSettingsMessage('Por segurança, é necessária uma confirmação adicional da conta. Solicite a recuperação de senha na tela de entrada.')
+        }else setSettingsMessage('Não foi possível trocar a senha: '+error.message)
+      }else{
+        setCurrentPassword('');setNewPassword('');setConfirmPassword('')
+        setSettingsMessage('Sua senha foi atualizada com sucesso.')
+      }
+    }catch(err){setSettingsMessage('Não foi possível concluir a alteração. Tente novamente.')}
+    finally{setSettingsBusy(false)}
   }
   async function saveReaderPhoto(e){
     const file=e.target.files?.[0];e.target.value=''
@@ -582,12 +601,13 @@ export default function App() {
       <div className="reader-settings-panel"><h2>Aparência</h2><p>Escolha o tema do aplicativo.</p><div className="reader-appearance">
         <button aria-pressed={appearance==='light'} className={appearance==='light'?'selected':''} onClick={()=>setAppearance('light')}>☀ Claro</button>
         <button aria-pressed={appearance==='dark'} className={appearance==='dark'?'selected':''} onClick={()=>setAppearance('dark')}>☾ Escuro</button>
+        <button aria-pressed={appearance==='system'} className={appearance==='system'?'selected':''} onClick={()=>setAppearance('system')}>◐ Do sistema</button>
       </div></div>
       <div className="reader-settings-panel"><h2>Minha conta</h2><label className="reader-setting-label">E-mail<input type="email" readOnly value={user.email||''}/></label>
         <h3>Foto do leitor</h3><div className="reader-photo-row"><span className="reader-avatar reader-avatar-large">{user.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Sua foto"/>:<span>{(user.user_metadata?.full_name||user.email||'L').charAt(0).toUpperCase()}</span>}</span><label className="reader-photo-upload">Inserir ou trocar foto<input type="file" accept="image/*" onChange={saveReaderPhoto} disabled={settingsBusy}/></label></div>
-        <h3>Trocar senha</h3><form className="reader-password-form" onSubmit={saveNewPassword}><label>Nova senha<input type="password" minLength="8" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required/></label><label>Confirmar senha<input type="password" minLength="8" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required/></label><button disabled={settingsBusy}>Salvar nova senha</button></form>
+        <h3>Trocar senha</h3><form className="reader-password-form" onSubmit={saveNewPassword}><p>Para sua segurança, confirme a senha atual antes de alterá-la.</p><label>Senha atual<input type="password" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required/></label><label>Nova senha<input type="password" minLength="8" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} required/></label><label>Confirmar senha<input type="password" minLength="8" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required/></label><button disabled={settingsBusy}>Salvar nova senha</button></form>
         {settingsMessage&&<p role="status" className="reader-settings-status">{settingsMessage}</p>}</div>
-      <div className="reader-settings-panel"><h2>Sobre o aplicativo</h2><p>Versão: 0.1.0</p><p>Build: 20260927-settings-1</p></div>
+      <div className="reader-settings-panel"><h2>Sobre o aplicativo</h2><p>Versão: 0.1.0</p><p>Build: 20260927-settings-2</p></div>
     </section></main>
   if (screen === 'todayHome' && user) {
  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor'
