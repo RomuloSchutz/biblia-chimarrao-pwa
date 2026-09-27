@@ -515,9 +515,9 @@ export default function App() {
             {[
               ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
               ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
-              ["Minha Caminhada","Registre e acompanhe","/menu-camenhada.webp",()=>openJourney(),"⌁"],
+              ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/devocional/mes_05.jpg",()=>openFavorites(),"♡"],
-              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacos.webp",()=>openNotes(),"✎"],
+              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
               ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
               ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
               ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias.webp",()=>setScreen('ideas'),"✧"],
