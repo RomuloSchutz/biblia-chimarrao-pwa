@@ -1,3 +1,6 @@
+const PIX_COPIA_COLA='00020126480014br.gov.bcb.pix0126biblia.chimarrao@gmail.com5204000053039865802BR5913Romulo Schutz6009Sao Paulo62230519daqr238603757697802630439FC';
+const PIX_QR_ROWS='1fc4d7006a17f,10413dfac9741,175152f75a35d,175eea902d25d,1757207ee885d,10529ac50cc41,1fd555555557f,1898c664f00,17c45d7e7bc7c,7b90ab28bb9c,ec0185e0c32f,1393a6ad92278,1a4ad454afcee,11a6df485886a,13f979d3356bd,ab35b5e85e59,197de5bd3fbe1,8af56a3944ea,10e16afd7b8bb,1b05512f562fb,13744ad4af1c5,fa5f4ccf12c9,3f98ffc0fff5,1713984654312,195b91d68f15c,31e564663b10,1dfc407e7d7f9,5938b935800b,87eea904bfad,39668a2d999a,2d14e02e76d9,1b210cec694f0,94087a2c3f50,a896cd06892a,1f436682c1c7b,e2b6851621bb,1b5a778827255,a95adf46302d,8fad4421ffea,e13073e58891,1c7e79fe67ffd,1e66c633b10,1fcb95d67e553,105ab4c57a513,175e70fc693fc,17598ba3fbbb2,175cd51935d49,1041933285bd5,1fd443993d30f'.split(',');
+function ApoiePixQR(){return <svg className="apoie-qr" viewBox="0 0 57 57" role="img" aria-label="QR Code Pix de Romulo Schutz"><rect width="57" height="57" fill="white"/>{PIX_QR_ROWS.flatMap((row,y)=>Array.from({length:49},(_,x)=>((BigInt('0x'+row)>>BigInt(48-x))&1n)===1n?<rect key={y+'-'+x} x={x+4} y={y+4} width="1" height="1" fill="#111"/>:null).filter(Boolean))}</svg>}
 const SOCIAL_LINKS = { facebook:"https://www.facebook.com/romuloschutz", instagram:"https://www.instagram.com/romuloschutz/", youtube:"https://www.youtube.com/@romuloschutz" } // Preencher apenas com os perfis oficiais confirmados.
 import { useEffect, useState } from 'react'
 import { supabase, supabaseConfigured } from './lib/supabase.js'
@@ -414,6 +417,8 @@ export default function App() {
 
 
 
+  if(screen==='support'&&user){return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apoie as obras</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header><section className="support-page"><span className="support-heart">♥</span><h1>Apoie as obras de Romulo Schutz</h1><p>Se os livros, devocionais e reflexões têm contribuído para sua caminhada, você pode apoiar espontaneamente a continuidade deste trabalho. Toda contribuição é voluntária.</p><div className="support-qr-frame"><ApoiePixQR/></div><strong>Contribuição via Pix · Mercado Pago</strong><p>Chave Pix: <b>biblia.chimarrao@gmail.com</b></p><button className="support-copy" onClick={async()=>{try{await navigator.clipboard.writeText(PIX_COPIA_COLA);setMessage('Código Pix copiado. Confira os dados no aplicativo do seu banco.')}catch{setMessage('Use a chave Pix informada acima.')}}}>Copiar código Pix</button>{message&&<p role="status">{message}</p>}<p>Confira o destinatário antes de confirmar. Obrigado pelo apoio!</p></section></main>}
+  if(screen==='news'&&user){return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Notificações</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header><section className="support-page"><h1>Notificações</h1><p>As novidades e comunicados do autor aparecerão aqui quando o painel de publicação estiver disponível.</p><button className="support-copy" onClick={()=>setScreen('reminder')}>Configurar Hora do Mate</button></section></main>}
   if (screen === 'ideas' && user) {
     const reflections = [
       {kicker:'TEMPO',quote:'O tempo passa. O que fazemos com ele deixa marcas.',text:'Um espaço para perceber a vida com mais atenção — sem correr para uma resposta antes de compreender a pergunta.'},
@@ -421,7 +426,7 @@ export default function App() {
       {kicker:'ESPERANÇA',quote:'Esperar não é ficar parado. É continuar caminhando sem possuir todas as respostas.',text:'A esperança sustenta o presente enquanto aquilo que ainda não vemos continua sendo construído.'},
       {kicker:'FÉ E VIDA',quote:'A fé não elimina as perguntas; ela muda o lugar de onde começamos a enfrentá-las.',text:'Aqui, fé, história e experiência humana podem conversar sem transformar a reflexão em respostas fáceis.'}
     ]
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Ideias e Reflexões</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome ideas-head stage3-ideas-head"><p className="eyebrow">IDEIAS E REFLEXÕES</p><h2>Palavras para levar consigo.</h2><p>Um espaço para pensamentos, perguntas e pequenas pausas sobre tempo, história, fé, esperança e vida.</p><div className="ideas-author">Romulo Schutz<small>Notas do autor</small></div></section><section className="ideas-grid">{reflections.map((item,index)=><article className="idea-card stage3-idea" key={item.kicker}><img src={"/devocional/mes_"+["07","05","12","03"][index]+".jpg"} alt="" className="stage3-idea-art"/><div className="idea-number">{String(index+1).padStart(2,'0')}</div><div><span>{item.kicker}</span><blockquote>“{item.quote}”</blockquote><p>{item.text}</p><small>Romulo Schutz</small></div></article>)}</section><section className="ideas-note"><span>✦</span><div><strong>Um espaço que continuará crescendo.</strong><p>Novas ideias e reflexões poderão ser acrescentadas ao aplicativo ao longo da caminhada.</p></div></section></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Ideias e Reflexões</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome ideas-head stage3-ideas-head"><p className="eyebrow">IDEIAS E REFLEXÕES</p><h2>Palavras para levar consigo.</h2><p>Um espaço para pensamentos, perguntas e pequenas pausas sobre tempo, história, fé, esperança e vida.</p><div className="ideas-author">Romulo Schutz<small>Notas do autor</small></div></section><section className="ideas-grid">{reflections.map((item,index)=><article className="idea-card stage3-idea" key={item.kicker}><div className="idea-number">{String(index+1).padStart(2,'0')}</div><div><span>{item.kicker}</span><blockquote>“{item.quote}”</blockquote><p>{item.text}</p><small>Romulo Schutz</small></div></article>)}</section><section className="ideas-note"><span>✦</span><div><strong>Um espaço que continuará crescendo.</strong><p>Novas ideias e reflexões poderão ser acrescentadas ao aplicativo ao longo da caminhada.</p></div></section></main>
   }
 
   if (screen === 'author' && user) {
@@ -507,8 +512,8 @@ export default function App() {
         <section className="visual-dashboard" aria-label="Menu principal ilustrado">
           <div className="visual-dashboard-top">
             <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias · Ideias</small></div>
-            <img className="visual-brand-seal" src="/capa-devocional-oficial.jpg" alt="Identidade Bíblia + Chimarrão" />
-            <div className="visual-quick"><button onClick={()=>{setReminderMessage('');setScreen('reminder')}} aria-label="Notificações e lembretes">♧<small>Avisos</small></button><button onClick={()=>setScreen('ideas')} aria-label="Apoie e acompanhe">♥<small>Apoie</small></button><button onClick={()=>setScreen('author')} aria-label="Contato e autor">✉<small>Contato</small></button></div>
+
+            <div className="visual-quick"><button onClick={()=>setScreen('news')} aria-label="Notificações">♧<small>Notificações</small></button><button onClick={()=>{setMessage('');setScreen('support')}} aria-label="Apoie">♥<small>Apoie</small></button></div>
           </div>
           <div className="visual-greeting"><img src="/autor-romulo.jpg.png" alt="" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><span>Que bom ter você aqui!</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
@@ -516,7 +521,7 @@ export default function App() {
               ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
               ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
               ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
-              ["Favoritos","Encontros que tocaram você","/devocional/mes_05.jpg",()=>openFavorites(),"♡"],
+              ["Favoritos","Encontros que tocaram você","/menu-chimarrao.webp",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
               ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
               ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
@@ -526,9 +531,10 @@ export default function App() {
               
             ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={action} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
+            <div className="visual-card visual-quote visual-quote-tile" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
           </nav>
           <div className="visual-bottom">
-            <div className="visual-quote" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
+
             <button type="button" className="visual-settings-bar" onClick={()=>setMessage('Configurações será conectada em seguida.')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
