@@ -504,27 +504,32 @@ export default function App() {
         <section className="app-cover-entry app-cover-always-visible" aria-label="Capa oficial do aplicativo Bíblia + Chimarrão">
           <img className="app-cover-hero" src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão: livros, Bíblia, chimarrão e paisagem ao pôr do sol" />
         </section>
-        <section className="welcome welcome-editorial">
-          <div className="welcome-copy">
-            <p className="eyebrow">SEU ESPAÇO DE ENCONTRO</p>
-            <h2>Olá, {name}!</h2>
-            <p>Prepare seu chimarrão. Reserve um momento para a Palavra.</p>
-            <blockquote>“Mais que leitura. Um encontro real.”</blockquote>
-            <button className="welcome-enter" onClick={() => setScreen('devotional')}>📖 Entrar no Devocional <span aria-hidden="true">→</span></button>
+        <div className="stage1-layout">
+          <aside className="stage1-side" aria-label="Menu principal">
+            <div className="stage1-user"><img src="/autor-romulo.jpg.png" alt="" className="stage1-avatar" onError={e=>{e.currentTarget.style.display='none'}}/><div><strong>Olá, {name}!</strong><small>Que bom ter você aqui.</small></div></div>
+            <nav className="stage1-links" aria-label="Áreas do aplicativo">
+              {menuItems.filter(([,title])=>title!=='Encontro de Hoje'&&title!=='Livros do Romulo').map(([icon,title])=><button key={title} onClick={()=>title==='Chimarrão com Deus'?setScreen('devotional'):title==='Minha Caminhada'?openJourney():title==='Meus Favoritos'?openFavorites():title==='Minhas Anotações'?openNotes():title==='Meus Livros'?setScreen('books'):title==='Sobre o Autor'?setScreen('author'):title==='Ideias e Reflexões'?setScreen('ideas'):null}><span className="stage1-link-icon" aria-hidden="true">{icon}</span><span>{title}</span><span aria-hidden="true">›</span></button>)}
+              <button onClick={()=>{setReminderMessage('');setScreen('reminder')}}><span className="stage1-link-icon" aria-hidden="true">🧉</span><span>Hora do Mate</span><span aria-hidden="true">›</span></button>
+              <button onClick={()=>setScreen('authorBooks')}><span className="stage1-link-icon" aria-hidden="true">📚</span><span>Livros do Romulo</span><span aria-hidden="true">›</span></button>
+            </nav>
+            <div className="stage1-social"><p>Siga nas redes sociais</p><div className="stage1-social-icons" aria-label="Redes sociais — endereços oficiais ainda não cadastrados"><span title="Facebook — link em preparação">f</span><span title="Instagram — link em preparação">◎</span><span title="YouTube — link em preparação">▶</span></div><small>Links oficiais em preparação</small></div>
+          </aside>
+          <div className="stage1-main">
+            <section className="stage1-today" aria-label="Encontro do dia">
+              <div className="stage1-today-shade">
+                <img className="stage1-brand" src="/capa-devocional-oficial.jpg" alt="Capa oficial de Chimarrão com Deus" />
+                <p className="stage1-date">{new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'numeric',month:'long'}).format(new Date())}</p>
+                <h2>Olá, {name}!</h2>
+                <p>Prepare seu chimarrão e venha ter um encontro com Deus hoje.</p>
+                <div className="stage1-day-title"><small>DEVOCIONAL DO DIA</small><strong>Seu encontro com Deus</strong></div>
+                <button className="stage1-enter" onClick={()=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',month:'numeric',day:'numeric'}).formatToParts(new Date());const m=Number(parts.find(p=>p.type==='month')?.value);const d=Number(parts.find(p=>p.type==='day')?.value);const day=new Date(2027,m-1,d);const start=new Date(2027,0,1);openEncounter(Math.floor((day-start)/86400000)+1)}}>📖 Entrar no Encontro de Hoje <span aria-hidden="true">›</span></button>
+                <div className="stage1-quick"><button onClick={openJourney}><span>▥</span>Minha Caminhada</button><button onClick={openFavorites}><span>♡</span>Meus Favoritos</button><button onClick={openNotes}><span>✎</span>Minhas Anotações</button><button onClick={()=>setScreen('books')}><span>▤</span>Meus Livros</button></div>
+              </div>
+            </section>
+            <section className="stage1-more"><h2>Explore seu espaço</h2><p>Todos os recursos em um só lugar.</p><div className="stage1-more-grid"><button onClick={()=>setScreen('devotional')}>📖 <span>Os 12 meses do devocional</span> →</button><button onClick={()=>setScreen('ideas')}>💡 <span>Ideias e Reflexões</span> →</button><button onClick={()=>setScreen('author')}>🪶 <span>Conheça o Autor</span> →</button><button onClick={()=>{setReminderMessage('');setScreen('reminder')}}>🧉 <span>Hora do Mate</span> →</button></div></section>
           </div>
-          <div className="welcome-art welcome-book-stage" aria-label="Apresentação tridimensional do devocional"><div className="welcome-book-3d"><div className="welcome-book-pages" aria-hidden="true"></div><div className="welcome-book-front"><img src="/capa-devocional-oficial.jpg" alt="Capa oficial de Chimarrão com Deus — 365 Encontros com Deus" onError={e=>{e.currentTarget.style.display="none";e.currentTarget.parentElement.classList.add("cover-awaiting-file")}}/><span className="welcome-book-cover-fallback">Chimarrão<br/><em>com Deus</em><small>365 Encontros com Deus</small></span></div></div></div>
-        </section>
-        <section className="menu-grid">
-          {menuItems.map(([icon,title,desc]) => (
-            <button className="menu-card" key={title} onClick={() => title === 'Encontro de Hoje' ? openEncounter(1) : title === 'Chimarrão com Deus' ? setScreen('devotional') : title === 'Minha Caminhada' ? openJourney() : title === 'Meus Favoritos' ? openFavorites() : title === 'Minhas Anotações' ? openNotes() : title === 'Meus Livros' ? setScreen('books') : title === 'Livros do Romulo' ? setScreen('authorBooks') : title === 'Sobre o Autor' ? setScreen('author') : title === 'Ideias e Reflexões' ? setScreen('ideas') : setMessage(title + ' será a próxima área a ser conectada.')}>
-              <span className={"menu-illustration illustration-"+({ "Chimarrão com Deus":"devotional","Encontro de Hoje":"today","Minha Caminhada":"journey","Meus Favoritos":"favorites","Minhas Anotações":"notes","Meus Livros":"books","Livros do Romulo":"authorbooks","Sobre o Autor":"author","Ideias e Reflexões":"ideas" }[title])} aria-hidden="true"><span className="illustration-glow"/><span className="illustration-art">{icon}</span></span><strong>{title}</strong><small>{desc}</small>
-            </button>
-          ))}
-        </section>
-        <section className="dashboard-extras" aria-label="Ferramentas">
-          <button className="menu-card reminder-card" onClick={() => {setReminderMessage('');setScreen('reminder')}}><span className="menu-illustration illustration-reminder" aria-hidden="true"><span className="illustration-glow"/><span className="illustration-art">🧉<span className="mate-clock">◷</span></span></span><strong>Hora do Mate</strong><small>Seu lembrete diário, no seu horário</small></button>
-          <button className="settings-fullbar" onClick={() => setMessage('Configurações será conectada em seguida.')}><span className="settings-illustration" aria-hidden="true">⚙</span><span><strong>Configurações</strong><small>Personalize sua experiência</small></span><span className="settings-arrow" aria-hidden="true">→</span></button>
-        </section>
+        </div>
+        <button className="stage1-settings" onClick={()=>setMessage('Configurações será conectada em seguida.')}>⚙ <span>Configurações</span> <span aria-hidden="true">→</span></button>
         {message && <p className="dash-message">{message}</p>}
       </main>
     )
