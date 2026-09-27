@@ -514,11 +514,11 @@ export default function App() {
           <nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
               ["Devocional","365 encontros com Deus","/capa-devocional-oficial.jpg",()=>setScreen('devotional'),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/devocional/mes_09.jpg",()=>setScreen('todayHome'),"☀"],
+              ["Encontro de Hoje","Seu encontro de hoje","/devocional/mes_"+new Intl.DateTimeFormat("en-US",{timeZone:"America/Sao_Paulo",month:"2-digit"}).format(new Date())+".jpg",()=>setScreen('todayHome'),"☀"],
               ["Minha Caminhada","Registre e acompanhe","/devocional/mes_06.jpg",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/devocional/mes_05.jpg",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/devocional/mes_07.jpg",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/capa-app-oficial.png",()=>setScreen('books'),"▤"],
+              ["Meus Livros","Sua biblioteca particular","/1000769250.jpg",()=>setScreen('books'),"▤"],
               ["Livros do Romulo","Conheça todas as obras","/capa-app-oficial.png",()=>setScreen('authorBooks'),"▥"],
               ["Ideias e Reflexões","Conteúdos para inspirar","/devocional/mes_11.jpg",()=>setScreen('ideas'),"✧"],
               ["Hora do Mate","Não perca seu encontro","/devocional/mes_08.jpg",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
