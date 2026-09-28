@@ -632,6 +632,7 @@ export default function App() {
           </nav>
           <div className="visual-bottom">
 
+            {isAdmin && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
             <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
