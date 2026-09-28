@@ -101,8 +101,8 @@ export default function App() {
   useEffect(()=>{
     if(!user||!supabase){setIsAdmin(false);return}
     let cancelled=false
-    supabase.from('app_admins').select('user_id').eq('user_id',user.id).maybeSingle().then(({data,error})=>{
-      if(!cancelled) setIsAdmin(Boolean(data&&!error))
+    supabase.rpc('is_app_admin').then(({data,error})=>{
+      if(!cancelled) setIsAdmin(Boolean(data)&&!error)
     })
     return()=>{cancelled=true}
   },[user?.id])
