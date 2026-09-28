@@ -442,3 +442,16 @@
 .months-grid .month-card-illustrated .month-cover-image{position:static!important;inset:auto!important;display:block!important;width:100%!important;height:auto!important;max-height:none!important;min-height:0!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center!important;flex:none!important;transform:none!important}
 .months-grid .month-card-illustrated .month-cover-caption{position:static!important;inset:auto!important;display:flex!important;flex-direction:column!important;justify-content:center!important;width:100%!important;height:auto!important;min-height:90px!important;flex:none!important;box-sizing:border-box!important;padding:10px 12px!important}
 @media(max-width:400px){.guest-cover-bottom{gap:8px!important;padding:16px 12px 28px!important}.guest-cover-bottom button{font-size:13px!important}.months-grid .month-card-illustrated .month-cover-caption{padding:8px!important}}
+
+/* Revisão editorial: capas mensais inteiras, sem recortes de títulos ou legendas sobre a arte. */
+.guest-demo-months{align-items:start}
+.guest-demo-month{height:auto!important;aspect-ratio:auto!important;overflow:hidden;display:flex;flex-direction:column}
+.guest-demo-month img{position:static;width:100%;height:auto!important;aspect-ratio:auto!important;object-fit:contain!important;flex:0 0 auto}
+.guest-demo-month div{position:static!important;inset:auto!important;padding:10px 12px 13px!important;background:#0b2b20!important;flex:1}
+.guest-demo-month[role="button"]{cursor:pointer;outline-offset:3px}
+.guest-demo-month[role="button"]:focus-visible{outline:3px solid #dfbd76}
+.guest-january-cta{font-size:12px;color:#f5d18e;line-height:1.35;font-weight:700}
+.months-grid .month-card-illustrated{min-width:0!important;max-width:100%!important}
+.months-grid .month-card-illustrated .month-cover-image{width:100%!important;max-width:100%!important;object-fit:contain!important}
+.months-grid .month-card-illustrated:after{display:none!important}
+.months-grid .month-card-illustrated .month-cover-caption{background:#0b2b20!important;text-shadow:none!important}
