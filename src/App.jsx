@@ -19,7 +19,7 @@ const menuItems = [
 ]
 
 export default function App() {
-  const [screen, setScreen] = useState('landing')
+  const [screen, setScreen] = useState('dashboard')
   const [acceptedTerms,setAcceptedTerms]=useState(false)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
@@ -467,7 +467,7 @@ export default function App() {
 
   async function handleLogout() {
     if (supabase) await supabase.auth.signOut()
-    setUser(null); setScreen('landing'); setMessage('')
+    setUser(null); setScreen('dashboard'); setMessage('')
   }
 
 
