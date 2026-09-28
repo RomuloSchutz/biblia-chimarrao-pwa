@@ -19,7 +19,8 @@ const menuItems = [
 ]
 
 export default function App() {
-  const [screen, setScreen] = useState('dashboard')
+  const [screen, setScreen] = useState('landing')
+  const [acceptedTerms,setAcceptedTerms]=useState(false)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -286,6 +287,7 @@ export default function App() {
   async function handleSubmit(event) {
     event.preventDefault()
     setMessage('')
+    if (screen === 'signup' && !acceptedTerms) { setMessage('Leia e aceite os Termos de Uso e a Política de Privacidade para continuar.'); return }
     if (!supabaseConfigured || !supabase) {
       setMessage('A conexão com o Supabase ainda não está disponível.')
       return
@@ -299,7 +301,7 @@ export default function App() {
         setScreen('dashboard')
       } else {
         const { data, error } = await supabase.auth.signUp({
-          email, password, options: { data: { full_name: fullName } }
+          email, password, options: { data: { full_name: fullName, terms_accepted_at: new Date().toISOString(), terms_version: 'draft-2026-09' } }
         })
         if (error) throw error
         if (data.session) {
@@ -465,7 +467,7 @@ export default function App() {
 
   async function handleLogout() {
     if (supabase) await supabase.auth.signOut()
-    setUser(null); setScreen('dashboard'); setMessage('')
+    setUser(null); setScreen('landing'); setMessage('')
   }
 
 
@@ -584,7 +586,7 @@ export default function App() {
               ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/autor-romulo.jpg.png",()=>setScreen('author'),"♙"],
               
-            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : ()=>setScreen(title === "Devocional" || title === "Encontro de Hoje" ? "guestDemo" : "guestInfo")} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
+            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : undefined} disabled={!user} aria-disabled={!user} style={{backgroundImage:`linear-gradient(180deg,transparent 35%,rgba(2,35,26,.9) 75%,#05271e 100%),url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
             <div className="visual-card visual-quote visual-quote-tile" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
           </nav>
@@ -635,7 +637,7 @@ export default function App() {
     const creating = screen === 'signup'
     return (
       <main className="app"><section className="auth-card">
-        <button className="back-button" onClick={() => { setScreen('access'); setMessage('') }}>← Voltar</button>
+        <button className="back-button" onClick={() => { setScreen(user?'dashboard':'landing'); setMessage('') }}>← Voltar</button>
         <p className="eyebrow">BÍBLIA + CHIMARRÃO</p>
         <h2>{creating ? 'Criar minha conta' : 'Entrar na minha conta'}</h2>
         <p className="auth-intro">{creating ? 'Crie seu acesso para registrar sua caminhada diária.' : 'Use seu e-mail e senha para continuar sua caminhada.'}</p>
@@ -643,6 +645,7 @@ export default function App() {
           {creating && <label>Nome<input value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" required /></label>}
           <label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></label>
           <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="6" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
+          {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>O cadastro é gratuito nesta etapa. Nenhuma cobrança será realizada agora.</small></div>}
           <button type="submit" disabled={loading}>{loading ? 'Aguarde...' : creating ? 'Criar minha conta' : 'Entrar'}</button>
         </form>
         {message && <p className="form-message" role="status">{message}</p>}
@@ -650,18 +653,15 @@ export default function App() {
     )
   }
 
-  if (screen === 'guestDemo' && !user) return <main className="dashboard guest-demo-page">
-    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Prévia do devocional · Edição 2027</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header>
-    <section className="guest-demo-intro"><span className="eyebrow">CONHEÇA O DEVOCIONAL</span><h1>Chimarrão com Deus</h1><p>365 encontros com Deus, organizados em doze meses. Conheça a apresentação e o formato de cada encontro antes de criar sua conta.</p></section>
-    <section className="guest-demo-months" aria-label="Temas dos doze meses">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração do mês de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</section>
-    <section className="guest-demo-format"><h2>Como funciona cada encontro?</h2><p>O conteúdo completo é apresentado em seis momentos:</p><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p className="guest-demo-disclaimer">Esta é uma apresentação da estrutura do devocional, não uma leitura completa. O acesso comercial ainda não está ativado.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section>
-  </main>
+  if (!user && screen === 'landing') return <main className="premium-opening guest-landing"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/><div className="premium-opening-actions guest-landing-actions"><button onClick={()=>setScreen('guestDemo')}>Conhecer o aplicativo</button><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></div></main>
 
-  if (screen === 'guestInfo') return <main className="dashboard"><section className="guest-info"><button className="back-button" onClick={()=>setScreen('dashboard')}>← Voltar à apresentação</button><h1>Seu espaço de leitura e reflexão</h1><p>Você está conhecendo a apresentação do Bíblia + Chimarrão. Para utilizar os recursos, crie sua conta gratuita.</p><p>O acesso comercial ainda está em preparação. Nenhuma cobrança será realizada nesta etapa.</p><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button className="secondary-action" onClick={()=>setScreen('login')}>Já tenho uma conta</button></section></main>
+  if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-romulo.jpg.png" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Esta apresentação não libera conteúdo de leitura nem cria uma conta automaticamente.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
+
+  if (screen === 'terms' || screen === 'privacy') return <main className="app"><section className="auth-card legal-document"><button className="back-button" onClick={()=>setScreen('signup')}>← Voltar ao cadastro</button>{screen==='terms'?<><h1>Termos de Uso — minuta</h1><p>O Bíblia + Chimarrão disponibiliza conteúdo devocional e recursos pessoais de leitura. A conta é individual; o usuário deve fornecer dados corretos e proteger sua senha. Textos, imagens e obras do autor são protegidos por direitos autorais e não podem ser redistribuídos sem autorização. O usuário é responsável pelas anotações que inserir. O acesso gratuito e eventuais recursos pagos serão identificados antes da contratação. Nenhuma cobrança está ativa nesta etapa. Em caso de alterações relevantes, será publicada uma versão atualizada destes termos.</p></>:<><h1>Política de Privacidade — minuta</h1><p>Para criar e administrar a conta, o aplicativo utiliza nome, e-mail, credenciais de autenticação e dados associados ao uso dos recursos, como anotações, favoritos, lembretes e foto, quando fornecidos. O serviço utiliza infraestrutura de autenticação e armazenamento do Supabase e hospedagem no Cloudflare. As informações são usadas para autenticar o leitor, manter suas preferências e disponibilizar os recursos solicitados. Não informe dados sensíveis desnecessários em anotações. Você pode solicitar informações sobre seus dados ou sua exclusão pelo canal de contato indicado antes do lançamento comercial. A versão definitiva deverá detalhar contato do controlador, prazos de retenção, transferências internacionais e procedimentos para exercício dos direitos previstos na LGPD.</p></>}<p><strong>Documento preliminar:</strong> será revisado antes da abertura pública dos cadastros.</p></section></main>
 
   if (screen === 'access') return (
     <main className="app"><section className="auth-card">
-      <button className="back-button" onClick={() => setScreen('home')}>← Voltar</button>
+      <button className="back-button" onClick={() => setScreen('landing')}>← Voltar</button>
       <p className="eyebrow">BÍBLIA + CHIMARRÃO</p><h2>Bem-vindo ao seu encontro</h2>
       <p className="auth-intro">Entre na sua conta para continuar sua caminhada ou crie seu acesso para começar.</p>
       <div className="auth-actions"><button onClick={() => setScreen('login')}>Entrar</button><button className="secondary-action" onClick={() => setScreen('signup')}>Criar minha conta</button></div>
