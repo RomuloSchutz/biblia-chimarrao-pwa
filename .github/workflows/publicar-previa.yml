@@ -1,0 +1,46 @@
+name: Publicar prévia isolada
+on:
+  workflow_dispatch:
+  push:
+    branches: [ajustes-abertura-previa-20260928]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        run: npm install
+      - name: Compilar aplicativo com variáveis de prévia
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Verificar credenciais antes de publicar
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+          test -n "${{ vars.VITE_SUPABASE_URL }}" || { echo "Falta VITE_SUPABASE_URL"; exit 1; }
+          test -n "${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}" || { echo "Falta VITE_SUPABASE_PUBLISHABLE_KEY"; exit 1; }
+      - name: Criar prévia (nunca implantar produção)
+        id: preview
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          npx wrangler preview --name ajustes-abertura-previa-20260928 2>&1 | tee preview-output.txt
+          echo "### Resultado da tentativa de prévia" >> "$GITHUB_STEP_SUMMARY"
+          if grep -Eo 'https://[^[:space:]"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY"; then
+            echo "Endereço encontrado; confirme que é a prévia antes de compartilhar." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "A ferramenta não informou endereço de prévia. Verifique o log da etapa." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
