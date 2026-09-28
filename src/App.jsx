@@ -63,6 +63,10 @@ export default function App() {
   const [reminderSaving, setReminderSaving] = useState(false)
   const [savedReminder, setSavedReminder] = useState(null)
   const [reminderClock, setReminderClock] = useState('')
+  const [isAdmin,setIsAdmin]=useState(false)
+  const [adminUsers,setAdminUsers]=useState([])
+  const [adminLoading,setAdminLoading]=useState(false)
+  const [adminMessage,setAdminMessage]=useState('')
 
   useEffect(()=>{
     localStorage.setItem('bc-appearance',appearance)
@@ -93,6 +97,15 @@ export default function App() {
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(()=>{
+    if(!user||!supabase){setIsAdmin(false);return}
+    let cancelled=false
+    supabase.from('app_admins').select('user_id').eq('user_id',user.id).maybeSingle().then(({data,error})=>{
+      if(!cancelled) setIsAdmin(Boolean(data&&!error))
+    })
+    return()=>{cancelled=true}
+  },[user?.id])
 
   useEffect(() => {
     if (!user || !supabase) return
@@ -558,6 +571,32 @@ export default function App() {
   }
 
   if (screen === 'opening' && user) return <main className="premium-opening"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão"/><div className="premium-opening-actions"><button onClick={()=>setScreen('dashboard')}>Entrar no aplicativo →</button></div></div></main>
+
+  async function openAdminPanel(){
+    if(!isAdmin||!supabase)return
+    setAdminLoading(true);setAdminMessage('')
+    const {data,error}=await supabase.rpc('admin_list_users')
+    if(error){setAdminMessage('Não foi possível carregar os usuários: '+error.message);setAdminUsers([])}else setAdminUsers(data||[])
+    setAdminLoading(false);setScreen('admin');window.scrollTo({top:0,behavior:'smooth'})
+  }
+
+  async function changeAdminAccess(item,status){
+    if(!isAdmin||!supabase||item.is_admin)return
+    setAdminMessage('Atualizando acesso...')
+    const {error}=await supabase.rpc('admin_set_user_access',{target_user_id:item.user_id,new_status:status,new_access_until:null,admin_notes:'Alteração manual pelo painel administrativo'})
+    if(error){setAdminMessage('Erro ao atualizar: '+error.message);return}
+    setAdminUsers(list=>list.map(u=>u.user_id===item.user_id?{...u,status,source:'manual',access_until:null}:u))
+    setAdminMessage(status==='active'?'✓ Acesso liberado.':'✓ Acesso bloqueado.')
+  }
+
+  if(screen==='admin'&&user&&isAdmin)return <main className="dashboard admin-page">
+    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
+    <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Painel Administrativo</h1><p>Controle de usuários e acessos ao aplicativo.</p></div>
+      <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Usuários</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
+      {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
+      {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{adminUsers.map(item=><article className="admin-user-card" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><dl><div><dt>Origem</dt><dd>{item.is_admin?'Administrativo':item.source==='mercado_pago'?'Mercado Pago':item.source==='gift'?'Presente':item.source==='promotion'?'Promoção':'Manual'}</dd></div><div><dt>Vencimento</dt><dd>{item.access_until?new Date(item.access_until).toLocaleDateString('pt-BR'):'Sem vencimento'}</dd></div></dl>{!item.is_admin&&<div className="admin-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar acesso</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button></div>}</article>)}</div>}
+    </section>
+  </main>
 
   if (screen === 'dashboard') {
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
