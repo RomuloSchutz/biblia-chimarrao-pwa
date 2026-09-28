@@ -378,14 +378,14 @@ export default function App() {
   }
 
   async function openMonth(monthNumber) {
-    if (!supabase) return
+    if (!supabase) { setMessage('A prévia de leitura está temporariamente indisponível. A conexão com o banco de dados precisa ser configurada na publicação.'); setScreen('devotional'); return }
     setDevotionalLoading(true)
     setMessage('')
     const { data, error } = await supabase.from('encontros')
       .select('day_number,day_of_month,title,month_name,theme')
       .eq('edition_id','e9ced096-9c32-4f64-b3af-d25fc6781fb6')
       .eq('month_number',monthNumber).eq('is_published',true).order('day_number')
-    if (error) { setMessage('Não foi possível carregar este mês.'); setDevotionalLoading(false); if (!user) setScreen('guestInfo'); return }
+    if (error) { setMessage('Não foi possível carregar este mês. Verifique a conexão com o banco de dados.'); setDevotionalLoading(false); return }
     setMonthDays(data || [])
     setSelectedMonth(monthNumber)
     setScreen('month')
@@ -394,11 +394,12 @@ export default function App() {
   }
 
   async function openEncounter(dayNumber = 1) {
-    if (!supabase || (!user && (dayNumber < 1 || dayNumber > 3))) { if (!user) setScreen('guestInfo'); return }
+    if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }
+    if (!supabase) { setMessage('A prévia de leitura está temporariamente indisponível: conexão com o banco de dados não configurada.'); setScreen('devotional'); return }
     setEncounterLoading(true)
     setEncounterStatus('')
     const { data, error } = await supabase.from('encontros').select('*').eq('edition_id','e9ced096-9c32-4f64-b3af-d25fc6781fb6').eq('day_number',dayNumber).eq('is_published',true).maybeSingle()
-    if (error || !data) { setEncounterStatus('Este encontro ainda não está disponível.'); setEncounterLoading(false); if (!user) setScreen('guestInfo'); return }
+    if (error || !data) { setMessage('Não foi possível abrir o encontro. Verifique a conexão com o banco de dados ou tente novamente.'); setEncounterLoading(false); setScreen('devotional'); return }
     setEncounter(data)
     if (!user) { setPensarNote(''); setPassoNote(''); setFavoritePreview(false); setScreen('encounter'); setEncounterLoading(false); window.scrollTo({top:0,behavior:'smooth'}); return }
     const [{ data: note }, { data: fav }] = await Promise.all([
@@ -534,7 +535,7 @@ export default function App() {
   }
 
   if (screen === 'devotional') {
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome devotional-intro"><p className="eyebrow">CHIMARRÃO COM DEUS · 365 ENCONTROS COM DEUS</p><h2>Escolha um mês</h2><p>Uma caminhada de 365 encontros, um dia de cada vez.</p></section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Experimente antes de criar sua conta</h2><p>Conheça os doze meses e leia gratuitamente os três primeiros encontros de janeiro.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro →</button></section>}<section className="months-grid">{months.map(([number,name,theme]) => <button key={number} className="month-card month-card-illustrated" onClick={() => openMonth(number)}><img className="month-cover-image" src={`/devocional/mes_${String(number).padStart(2, '0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy" /><span className="month-cover-caption"><span className="month-number">{String(number).padStart(2,'0')}</span><strong>{name}</strong><small>{theme}</small></span></button>)}</section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Gostou da apresentação?</h2><p>Leia o primeiro encontro e conheça o conteúdo do devocional antes de se cadastrar.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro gratuitamente →</button></section>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('dashboard')}>← Voltar</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header>{message && !user && <div className="guest-demo-error" role="alert">{message}</div>}<section className="welcome devotional-intro"><p className="eyebrow">CHIMARRÃO COM DEUS · 365 ENCONTROS COM DEUS</p><h2>Escolha um mês</h2><p>Uma caminhada de 365 encontros, um dia de cada vez.</p></section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Experimente antes de criar sua conta</h2><p>Conheça os doze meses e leia gratuitamente os três primeiros encontros de janeiro.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro →</button></section>}<section className="months-grid">{months.map(([number,name,theme]) => <button key={number} className="month-card month-card-illustrated" onClick={() => openMonth(number)}><img className="month-cover-image" src={`/devocional/mes_${String(number).padStart(2, '0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy" /><span className="month-cover-caption"><span className="month-number">{String(number).padStart(2,'0')}</span><strong>{name}</strong><small>{theme}</small></span></button>)}</section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Gostou da apresentação?</h2><p>Leia o primeiro encontro e conheça o conteúdo do devocional antes de se cadastrar.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro gratuitamente →</button></section>}</main>
   }
 
   if (screen === 'month') {
