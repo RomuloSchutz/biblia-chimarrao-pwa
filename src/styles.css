@@ -455,3 +455,12 @@
 .months-grid .month-card-illustrated .month-cover-image{width:100%!important;max-width:100%!important;object-fit:contain!important}
 .months-grid .month-card-illustrated:after{display:none!important}
 .months-grid .month-card-illustrated .month-cover-caption{background:#0b2b20!important;text-shadow:none!important}
+
+/* Entrada: a capa oficial é o primeiro elemento, sem faixa de botão acima. */
+.guest-cover-shell .guest-cover-art{order:0!important}
+.guest-cover-shell .guest-cover-bottom{order:1!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.guest-cover-bottom .guest-cover-primary{grid-column:1/-1!important;background:#78501e!important;font-size:clamp(17px,4vw,23px)!important;padding:17px 14px!important}
+.guest-demo-start{max-width:900px;margin:22px auto!important;padding:22px!important;border:1px solid #b48a49;border-radius:18px;background:linear-gradient(120deg,#352115,#09271c);color:#fff0d8;text-align:center}
+.guest-demo-start h2{font:700 clamp(23px,5vw,32px) Georgia,serif;margin:0 0 10px}
+.guest-demo-start p{font-size:clamp(15px,3.6vw,19px);line-height:1.5}
+.guest-demo-start button{background:#805123;color:#fff;border:1px solid #dbb778;border-radius:14px;padding:15px 22px;font-weight:700;font-size:clamp(15px,3.7vw,19px);cursor:pointer}
