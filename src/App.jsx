@@ -668,5 +668,11 @@ export default function App() {
     </section></main>
   )
 
-  return <main className="app guest-entry"><section className="guest-entry-panel"><h1>Bíblia + Chimarrão</h1><p>Uma palavra. Uma pausa. Um encontro.</p><button onClick={()=>setScreen('dashboard')}>Conhecer o aplicativo</button><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></section></main>
+  return <main className="guest-cover-entry" aria-label="Apresentação do Bíblia + Chimarrão">
+    <div className="guest-cover-shell">
+      <div className="guest-cover-top"><button onClick={()=>setScreen('dashboard')}>Conheça o aplicativo</button></div>
+      <img className="guest-cover-art" src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão, com Bíblia, chimarrão, cruz pincelada e carimbo do autor" />
+      <div className="guest-cover-bottom"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div>
+    </div>
+  </main>
 }
