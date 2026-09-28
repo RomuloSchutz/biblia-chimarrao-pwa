@@ -573,10 +573,11 @@ export default function App() {
   if (screen === 'opening' && user) return <main className="premium-opening"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão"/><div className="premium-opening-actions"><button onClick={()=>setScreen('dashboard')}>Entrar no aplicativo →</button></div></div></main>
 
   async function openAdminPanel(){
-    if(!isAdmin||!supabase)return
+    if(!user||!supabase)return
     setAdminLoading(true);setAdminMessage('')
     const {data,error}=await supabase.rpc('admin_list_users')
-    if(error){setAdminMessage('Não foi possível carregar os usuários: '+error.message);setAdminUsers([])}else setAdminUsers(data||[])
+    if(error){setAdminMessage('Acesso administrativo não autorizado.');setAdminUsers([]);setAdminLoading(false);return}
+    setIsAdmin(true);setAdminUsers(data||[])
     setAdminLoading(false);setScreen('admin');window.scrollTo({top:0,behavior:'smooth'})
   }
 
@@ -632,7 +633,7 @@ export default function App() {
           </nav>
           <div className="visual-bottom">
 
-            {isAdmin && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
+            {user && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
             <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
