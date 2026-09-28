@@ -474,3 +474,12 @@
 @media(max-width:700px){.guest-landing{display:block!important;min-height:100dvh!important}.guest-landing .premium-opening-frame{width:100%!important;max-width:520px!important;margin:0 auto!important}.guest-landing .premium-opening-frame>img{max-height:none!important}.guest-landing .guest-landing-actions{bottom:auto!important}}
 
 /* Compilação de validação da pré-visualização: sem alterações funcionais adicionais. */
+
+/* Ações da capa: três ícones redondos com legendas independentes. */
+.guest-landing .guest-landing-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:start!important;gap:12px!important;padding:19px 12px 24px!important;background:linear-gradient(180deg,#25170f,#1c100d)!important}
+.guest-landing .guest-landing-actions .guest-round-action{grid-column:auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#f7e6c4!important;cursor:pointer!important}
+.guest-landing .guest-round-icon{display:grid;place-items:center;width:70px;height:70px;max-width:100%;flex-shrink:0;border:2px solid #d4ae70;border-radius:50%;background:radial-gradient(circle at 35% 20%,#b78a4d,#624024 72%);color:#fff2d1;font:normal 34px/1 Georgia,serif;box-shadow:0 6px 16px #0007,inset 0 1px 3px #f6d99c66;transition:transform .2s,border-color .2s}
+.guest-landing .guest-round-label{display:block;text-align:center;font:700 clamp(12px,2.6vw,15px)/1.35 Georgia,serif;max-width:150px;overflow-wrap:normal}
+.guest-landing .guest-round-action:hover .guest-round-icon{transform:translateY(-3px);border-color:#f5dba5}
+.guest-landing .guest-round-action:focus-visible{outline:2px solid #f5dba5!important;outline-offset:5px;border-radius:12px!important}
+@media(max-width:400px){.guest-landing .guest-landing-actions{gap:6px!important;padding:14px 7px 19px!important}.guest-landing .guest-round-icon{width:57px;height:57px;font-size:28px}.guest-landing .guest-round-label{font-size:12px}}
