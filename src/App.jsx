@@ -102,7 +102,7 @@ export default function App() {
     if(!user||!supabase){setIsAdmin(false);return}
     let cancelled=false
     supabase.rpc('is_app_admin').then(({data,error})=>{
-      if(!cancelled) setIsAdmin(Boolean(data)&&!error)
+      if(!cancelled) setIsAdmin(error ? false : data === true)
     })
     return()=>{cancelled=true}
   },[user?.id])
