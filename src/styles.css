@@ -390,3 +390,40 @@
 .guest-cover-bottom{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 12px 22px;background:#241712}
 .guest-cover-bottom button{flex:1 1 135px;max-width:235px;min-height:42px;padding:9px 10px;font:700 clamp(13px,3.6vw,16px) Georgia,serif;color:#fff2dc;background:#50311b;border:1px solid #ad8446;border-radius:22px;cursor:pointer}
 @media(min-height:850px){.guest-cover-shell{justify-content:space-between}}
+
+/* Cartões mensais: a arte editorial deve aparecer inteira dentro da borda. */
+.months-grid .month-card-illustrated {
+  display:flex!important;
+  flex-direction:column!important;
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:18px!important;
+  box-sizing:border-box!important;
+}
+.months-grid .month-card-illustrated .month-cover-image {
+  position:static!important;
+  display:block!important;
+  flex:none!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:2 / 3!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  transform:none!important;
+  background:#302016!important;
+}
+.months-grid .month-card-illustrated .month-cover-caption {
+  position:static!important;
+  inset:auto!important;
+  flex:none!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:82px!important;
+  box-sizing:border-box!important;
+  padding:12px!important;
+}
