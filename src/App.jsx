@@ -336,6 +336,20 @@ export default function App() {
     [10,'Outubro','Gratidão'],[11,'Novembro','Generosidade'],[12,'Dezembro','Esperança e celebração']
   ]
 
+  async function requirePaidAccess(action) {
+    if (!user || !supabase) { setScreen('login'); setMessage('Entre na sua conta para continuar.'); return false }
+    const { data, error } = await supabase.rpc('get_my_app_access')
+    const access = Array.isArray(data) ? data[0] : data
+    if (error || !access?.allowed) {
+      setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
+      setScreen('accessRestricted')
+      window.scrollTo({top:0,behavior:'smooth'})
+      return false
+    }
+    if (typeof action === 'function') action()
+    return true
+  }
+
   async function openNotes() {
     if (!user || !supabase) return
     setNotesLoading(true); setMessage('')
@@ -599,6 +613,8 @@ export default function App() {
     </section>
   </main>
 
+  if (screen === 'accessRestricted' && user) return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Controle de acesso</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ÁREA DO LEITOR</p><h1>Acesso restrito</h1><p>{message || 'Seu acesso ao conteúdo protegido ainda não está liberado.'}</p><button type="button" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+
   if (screen === 'dashboard') {
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
     return (
@@ -616,8 +632,8 @@ export default function App() {
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
-              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
+              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
               ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/menu-chimarrao.webp",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
