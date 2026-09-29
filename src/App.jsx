@@ -647,16 +647,16 @@ export default function App() {
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
-              ["Devocional","365 encontros com Deus","/card-devocional.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/card-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
-              ["Minha Caminhada","Registre e acompanhe","/card-caminhada.webp",()=>openJourney(),"⌁"],
-              ["Favoritos","Encontros que tocaram você","/card-favoritos.webp",()=>openFavorites(),"♡"],
-              ["Minhas Anotações","Suas reflexões e orações","/card-anotacoes.webp",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/card-meus-livros.webp",()=>setScreen('books'),"▤"],
-              ["Livros do Romulo","Conheça todas as obras","/card-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
-              ["Ideias e Reflexões","Conteúdos para inspirar","/card-ideias.webp",()=>setScreen('ideas'),"✧"],
-              ["Hora do Mate","Não perca seu encontro","/card-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
-              ["Sobre o Autor","Conheça Romulo Schutz","/card-sobre-autor.webp",()=>setScreen('author'),"♙"],
+              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
+              ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
+              ["Favoritos","Encontros que tocaram você","/menu-favoritos-v2.webp",()=>openFavorites(),"♡"],
+              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
+              ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
+              ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
+              ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias.webp",()=>setScreen('ideas'),"✧"],
+              ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
+              ["Sobre o Autor","Conheça Romulo Schutz","/menu-autor-oficial.webp",()=>setScreen('author'),"♙"],
             ].map(([title,subtitle,image,action,symbol])=><button key={title} type="button" className="visual-card individual-card" style={{backgroundImage:`url("${image}")`}} onClick={user ? action : title === "Devocional" ? ()=>setScreen("devotional") : title === "Encontro de Hoje" ? ()=>openEncounter(1) : ()=>setScreen("guestDemo")} aria-disabled={!user}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-card visual-social-card individual-card" style={{backgroundImage:'url("/card-redes.webp")'}} aria-label="Siga Romulo Schutz nas redes sociais"><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div></div>
             <div className="visual-card visual-quote visual-quote-tile individual-card" style={{backgroundImage:'url("/card-mensagem.webp")'}} aria-label="Todo dia é um novo encontro com Deus. Romulo Schutz"></div>
