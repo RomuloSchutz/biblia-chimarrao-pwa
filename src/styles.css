@@ -564,3 +564,16 @@
   background-position:center!important;
   background-repeat:no-repeat!important;
 }
+
+
+/* Cards: usar fotografias limpas + tipografia nativa do app.
+   Apenas o card Sobre o Autor é uma arte pronta e não recebe sobreposição. */
+.visual-card:not(.visual-social-card):not(.visual-quote-tile) .visual-card-copy{
+  display:flex!important;
+  min-height:100%!important;
+  justify-content:flex-end!important;
+  background:linear-gradient(180deg,rgba(3,25,19,0) 0%,rgba(3,25,19,.04) 42%,rgba(3,32,24,.58) 67%,rgba(3,32,24,.96) 100%)!important;
+}
+.visual-card[style*="menu-autor-oficial.webp"] .visual-card-copy{
+  display:none!important;
+}
