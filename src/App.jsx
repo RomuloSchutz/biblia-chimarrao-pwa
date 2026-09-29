@@ -648,14 +648,14 @@ export default function App() {
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
               ["Devocional","365 encontros com Deus","/menu-chimarrao-v2.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro-v2.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
-              ["Minha Caminhada","Registre e acompanhe","/menu-caminhada-v2.webp",()=>openJourney(),"⌁"],
-              ["Favoritos","Encontros que tocaram você","/menu-favoritos-v2.webp",()=>openFavorites(),"♡"],
-              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes-v2.webp",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/menu-meus-livros-v2.webp",()=>setScreen('books'),"▤"],
-              ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo-v2.webp",()=>setScreen('authorBooks'),"▥"],
-              ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias-v2.webp",()=>setScreen('ideas'),"✧"],
-              ["Hora do Mate","Não perca seu encontro","/menu-hora-mate-v2.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
+              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
+              ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
+              ["Favoritos","Encontros que tocaram você","/capa-devocional-oficial.jpg",()=>openFavorites(),"♡"],
+              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
+              ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
+              ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
+              ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias.webp",()=>setScreen('ideas'),"✧"],
+              ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
               ["Sobre o Autor","Conheça Romulo Schutz","/menu-autor-oficial.webp",()=>setScreen('author'),"♙"],
               
             ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : title === "Devocional" ? ()=>setScreen("devotional") : title === "Encontro de Hoje" ? ()=>openEncounter(1) : ()=>setScreen("guestDemo")} aria-disabled={!user} style={{backgroundImage:`url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
