@@ -603,9 +603,3 @@
 .final-card-sprite .visual-card-copy{position:relative;z-index:1;background:linear-gradient(180deg,transparent 0%,rgba(4,31,24,.18) 35%,rgba(4,31,24,.72) 100%)!important}
 .final-card-sprite.visual-social-card{background-image:url("/cards-final-sprite.webp")!important}
 .final-card-sprite.visual-quote-tile{background-image:url("/cards-final-sprite.webp")!important}
-
-/* Cards finais individuais: proporção original 600x300, sem sprite e sem recorte */
-.visual-card-grid .individual-card{aspect-ratio:2/1!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important;min-height:0!important}
-.visual-card-grid .individual-card.visual-social-card,.visual-card-grid .individual-card.visual-quote-tile{aspect-ratio:2/1!important;background-size:contain!important;background-position:center!important;background-repeat:no-repeat!important}
-@media(max-width:700px){.visual-card-grid .individual-card,.visual-card-grid .individual-card.visual-social-card,.visual-card-grid .individual-card.visual-quote-tile{aspect-ratio:2/1!important}}
-@media(max-width:350px){.visual-card-grid .individual-card{aspect-ratio:2/1!important}}
