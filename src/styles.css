@@ -597,3 +597,9 @@
 .final-card-sprite.visual-social-card .visual-social-links{position:relative;z-index:2;margin-bottom:8px}
 .final-card-sprite.visual-quote-tile{min-height:0!important;padding:0!important}
 @media(max-width:700px){.final-card-sprite{aspect-ratio:2/1!important}.final-card-sprite .visual-card-copy{padding:10px 9px 8px!important}.final-card-sprite .visual-card-symbol{width:30px;height:30px;font-size:19px;margin-bottom:3px}.final-card-sprite strong{font-size:clamp(14px,3.8vw,18px)!important}.final-card-sprite small{font-size:10px!important}}
+
+
+/* Correção visual: preservar a fotografia dos cards finais */
+.final-card-sprite .visual-card-copy{position:relative;z-index:1;background:linear-gradient(180deg,transparent 0%,rgba(4,31,24,.18) 35%,rgba(4,31,24,.72) 100%)!important}
+.final-card-sprite.visual-social-card{background-image:url("/cards-final-sprite.webp")!important}
+.final-card-sprite.visual-quote-tile{background-image:url("/cards-final-sprite.webp")!important}
