@@ -592,3 +592,26 @@
 .visual-card-grid .individual-card.visual-quote-tile{min-height:0!important;padding:0!important}
 @media(max-width:700px){.visual-card-grid .individual-card{aspect-ratio:2/1!important}.visual-card-grid .individual-card .visual-card-symbol{width:30px;height:30px;font-size:19px;margin-bottom:3px}.visual-card-grid .individual-card strong{font-size:clamp(14px,3.8vw,18px)!important}.visual-card-grid .individual-card small{font-size:10px!important}}
 @media(max-width:350px){.visual-card-grid .individual-card{aspect-ratio:2/1!important}}
+
+/* Cards oficiais JPG 1600x800 - 29/09 */
+.visual-card-grid .individual-card{
+  aspect-ratio:2/1!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  min-height:0!important;
+}
+.visual-card-grid .individual-card .visual-card-copy{
+  position:relative!important;
+  z-index:2!important;
+}
+.visual-card-grid .visual-social-card{
+  background-image:url("/card-redes.jpg")!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+}
+.visual-card-grid .visual-quote-tile{
+  background-image:url("/card-mensagem.jpg")!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+}
