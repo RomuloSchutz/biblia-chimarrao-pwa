@@ -63,6 +63,11 @@ export default function App() {
   const [reminderSaving, setReminderSaving] = useState(false)
   const [savedReminder, setSavedReminder] = useState(null)
   const [reminderClock, setReminderClock] = useState('')
+  const [isAdmin,setIsAdmin]=useState(false)
+  const [adminUsers,setAdminUsers]=useState([])
+  const [adminLoading,setAdminLoading]=useState(false)
+  const [adminMessage,setAdminMessage]=useState('')
+  const [adminSearch,setAdminSearch]=useState('')
 
   useEffect(()=>{
     localStorage.setItem('bc-appearance',appearance)
@@ -93,6 +98,15 @@ export default function App() {
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  useEffect(()=>{
+    if(!user||!supabase){setIsAdmin(false);return}
+    let cancelled=false
+    supabase.rpc('is_app_admin').then(({data,error})=>{
+      if(!cancelled) setIsAdmin(error ? false : data === true)
+    })
+    return()=>{cancelled=true}
+  },[user?.id])
 
   useEffect(() => {
     if (!user || !supabase) return
@@ -323,6 +337,20 @@ export default function App() {
     [10,'Outubro','Gratidão'],[11,'Novembro','Generosidade'],[12,'Dezembro','Esperança e celebração']
   ]
 
+  async function requirePaidAccess(action) {
+    if (!user || !supabase) { setScreen('login'); setMessage('Entre na sua conta para continuar.'); return false }
+    const { data, error } = await supabase.rpc('get_my_app_access')
+    const access = Array.isArray(data) ? data[0] : data
+    if (error || !access?.allowed) {
+      setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
+      setScreen('accessRestricted')
+      window.scrollTo({top:0,behavior:'smooth'})
+      return false
+    }
+    if (typeof action === 'function') action()
+    return true
+  }
+
   async function openNotes() {
     if (!user || !supabase) return
     setNotesLoading(true); setMessage('')
@@ -396,6 +424,16 @@ export default function App() {
   async function openEncounter(dayNumber = 1) {
     if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }
     if (!supabase) { setMessage('Prévia indisponível: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY nas variáveis de compilação do Cloudflare.'); setScreen('devotional'); return }
+    if (user) {
+      const { data: accessData, error: accessError } = await supabase.rpc('get_my_app_access')
+      const access = Array.isArray(accessData) ? accessData[0] : accessData
+      if (accessError || !access?.allowed) {
+        setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
+        setScreen('accessRestricted')
+        window.scrollTo({top:0,behavior:'smooth'})
+        return
+      }
+    }
     setEncounterLoading(true)
     setEncounterStatus('')
     const { data, error } = await supabase.from('encontros').select('*').eq('edition_id','e9ced096-9c32-4f64-b3af-d25fc6781fb6').eq('day_number',dayNumber).eq('is_published',true).maybeSingle()
@@ -559,6 +597,39 @@ export default function App() {
 
   if (screen === 'opening' && user) return <main className="premium-opening"><div className="premium-opening-frame"><img src="/capa-app-oficial.png" alt="Capa oficial do aplicativo Bíblia + Chimarrão"/><div className="premium-opening-actions"><button onClick={()=>setScreen('dashboard')}>Entrar no aplicativo →</button></div></div></main>
 
+  async function openAdminPanel(){
+    if(!user||!supabase)return
+    setAdminLoading(true);setAdminMessage('')
+    const {data,error}=await supabase.rpc('admin_list_users')
+    if(error){setAdminMessage('Acesso administrativo não autorizado.');setAdminUsers([]);setAdminLoading(false);return}
+    setIsAdmin(true);setAdminUsers(data||[])
+    setAdminLoading(false);setScreen('admin');window.scrollTo({top:0,behavior:'smooth'})
+  }
+
+  async function changeAdminAccess(item,status){
+    if(!isAdmin||!supabase||item.is_admin)return
+    setAdminMessage('Atualizando acesso...')
+    const {error}=await supabase.rpc('admin_set_user_access',{target_user_id:item.user_id,new_status:status,new_access_until:null,admin_notes:'Alteração manual pelo painel administrativo'})
+    if(error){setAdminMessage('Erro ao atualizar: '+error.message);return}
+    setAdminUsers(list=>list.map(u=>u.user_id===item.user_id?{...u,status,source:'manual',access_until:null}:u))
+    setAdminMessage(status==='active'?'✓ Acesso liberado.':'✓ Acesso bloqueado.')
+  }
+
+  if(screen==='admin'&&user&&isAdmin){
+    const filteredAdminUsers=adminUsers.filter(item=>{const q=adminSearch.trim().toLocaleLowerCase('pt-BR');return !q||String(item.full_name||'').toLocaleLowerCase('pt-BR').includes(q)||String(item.email||'').toLocaleLowerCase('pt-BR').includes(q)})
+    return <main className="dashboard admin-page">
+      <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
+      <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Leitores</h1><p>Clientes, edições adquiridas e controle de acesso.</p></div>
+        <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
+        <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
+        {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
+        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
+      </section>
+    </main>
+  }
+
+  if (screen === 'accessRestricted' && user) return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Controle de acesso</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ÁREA DO LEITOR</p><h1>Acesso restrito</h1><p>{message || 'Seu acesso ao conteúdo protegido ainda não está liberado.'}</p><button type="button" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+
   if (screen === 'dashboard') {
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
     return (
@@ -576,8 +647,8 @@ export default function App() {
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
-              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>setScreen('devotional'),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>setScreen('todayHome'),"☀"],
+              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
               ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/menu-chimarrao.webp",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
@@ -593,6 +664,7 @@ export default function App() {
           </nav>
           <div className="visual-bottom">
 
+            {user && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
             <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
           </div>
         </section>
