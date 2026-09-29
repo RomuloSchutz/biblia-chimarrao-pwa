@@ -615,3 +615,28 @@
   background-size:100% 100%!important;
   background-position:center!important;
 }
+
+/* Acabamento dos dois cards finais */
+.visual-card-grid .visual-social-card,.visual-card-grid .visual-quote-tile{position:relative!important;overflow:hidden!important}
+.visual-social-copy,.visual-quote-copy{position:absolute;left:10px;right:10px;bottom:8px;z-index:3;text-align:center;color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.9)}
+.visual-social-copy strong{display:block;font-family:Georgia,serif;font-size:clamp(14px,2vw,22px);line-height:1}
+.visual-social-copy small{display:block;font-size:10px;margin-top:2px}
+.visual-social-links{position:absolute!important;left:8px!important;top:8px!important;z-index:4!important;display:flex!important;gap:6px!important}
+.visual-social-links a{width:30px!important;height:30px!important;display:grid!important;place-items:center!important;border-radius:9px!important;color:#fff!important;font-weight:800!important;text-decoration:none!important;font-family:Arial,sans-serif!important}
+.visual-social-links .social-instagram{background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)!important;font-size:20px!important}
+.visual-social-links .social-facebook{background:#1877f2!important;font-size:20px!important}
+.visual-social-links .social-youtube{background:#f00!important;font-size:15px!important}
+.visual-quote-copy{top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px;background:rgba(2,25,18,.34)}
+.visual-quote-copy strong{font-family:Georgia,serif;font-size:clamp(13px,2vw,21px);line-height:1.12;max-width:95%}
+.visual-quote-copy span{font-family:cursive;font-size:clamp(11px,1.6vw,17px);margin-top:5px;color:#f2cf78}
+@media(max-width:700px){
+ .visual-social-copy,.visual-quote-copy{left:5px;right:5px;bottom:5px}
+ .visual-social-links{left:6px!important;top:6px!important;gap:4px!important}
+ .visual-social-links a{width:25px!important;height:25px!important;border-radius:7px!important}
+ .visual-social-links .social-instagram,.visual-social-links .social-facebook{font-size:17px!important}
+ .visual-social-links .social-youtube{font-size:12px!important}
+ .visual-social-copy strong{font-size:13px!important}
+ .visual-social-copy small{font-size:8px!important}
+ .visual-quote-copy strong{font-size:12px!important}
+ .visual-quote-copy span{font-size:11px!important}
+}
