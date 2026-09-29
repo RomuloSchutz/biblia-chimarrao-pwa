@@ -106,3 +106,19 @@
   border-radius:clamp(8px,2vw,18px)!important;
   box-shadow:none!important;
 }
+
+/* Enquadramento de todos os 12 cards: manter a proporção nativa de cada arte.
+   Dez fotografias originais: 1600x800 (2:1); duas artes finais: 1003x570. */
+.visual-dashboard .visual-card-grid .individual-card:not(.visual-social-card):not(.visual-quote-tile) {
+  aspect-ratio:2 / 1!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  background-size:contain!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+}
+@media(max-width:350px){
+  .visual-dashboard .visual-card-grid {grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
