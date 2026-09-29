@@ -650,7 +650,7 @@ export default function App() {
               ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
               ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
               ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
-              ["Favoritos","Encontros que tocaram você","/menu-chimarrao.webp",()=>openFavorites(),"♡"],
+              ["Favoritos","Encontros que tocaram você","/capa-devocional-oficial.jpg",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
               ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
               ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
@@ -665,7 +665,7 @@ export default function App() {
           <div className="visual-bottom">
 
             {user && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
-            <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><strong>Configurações</strong><span aria-hidden="true">→</span></button>
+            <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><span><strong>Configurações</strong><small>Personalize seu aplicativo</small></span><span aria-hidden="true">→</span></button>
           </div>
         </section>
         {message && <p className="dash-message">{message}</p>}
