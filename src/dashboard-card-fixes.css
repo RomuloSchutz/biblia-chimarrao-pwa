@@ -90,3 +90,27 @@
  .visual-card-grid .individual-card.visual-social-card .visual-social-links {top:5px!important;left:6px!important;gap:4px!important;}
  .visual-card-grid .individual-card.visual-social-card .visual-social-links a {width:24px!important;height:24px!important;border-radius:6px!important;}
 }
+
+/* Ajuste direcionado: três cards identificados na captura de 29/09.
+   Sobre o Autor e demais cards aprovados permanecem intocados. */
+.visual-dashboard .visual-card-grid .individual-card[style*="card-hora-mate.jpg"] {
+  background-position:center center!important;
+  background-size:100% 100%!important;
+}
+/* As duas artes finais já possuem moldura dourada na própria imagem:
+   retirar apenas a borda CSS duplicada, sem cortar a arte. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  box-sizing:border-box!important;
+  aspect-ratio:1003 / 570!important;
+  background-size:100% 100%!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+/* Os ícones permanecem elementos HTML clicáveis acima da imagem. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links {z-index:6!important;}
