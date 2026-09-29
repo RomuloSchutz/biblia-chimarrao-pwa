@@ -1,0 +1,57 @@
+/* Ajustes isolados do dashboard: cards aprovados em duas colunas. */
+.visual-card-grid .individual-card {position:relative!important;overflow:hidden!important;min-width:0!important;}
+.visual-card-grid .individual-card:not(.visual-social-card):not(.visual-quote-tile) .visual-card-copy {
+  box-sizing:border-box!important;width:100%!important;min-width:0!important;
+  display:flex!important;align-items:flex-start!important;justify-content:flex-end!important;
+  gap:3px!important;padding:8px 10px 9px!important;
+}
+.visual-card-grid .individual-card .visual-card-copy strong {
+  display:block!important;max-width:100%!important;overflow-wrap:break-word!important;
+  font-size:clamp(14px,2.65vw,24px)!important;line-height:1.04!important;
+}
+.visual-card-grid .individual-card .visual-card-copy small {
+  display:block!important;max-width:100%!important;overflow-wrap:break-word!important;
+  font-size:clamp(10px,1.4vw,14px)!important;line-height:1.15!important;margin-top:3px!important;
+}
+.visual-card-grid .individual-card .visual-card-symbol {flex-shrink:0!important;}
+.visual-card-grid .individual-card.visual-social-card .visual-social-links {
+  position:absolute!important;top:7px!important;left:8px!important;bottom:auto!important;
+  display:flex!important;align-items:center!important;gap:6px!important;margin:0!important;
+}
+.visual-card-grid .individual-card.visual-social-card .visual-social-links a {
+  display:grid!important;place-items:center!important;flex-shrink:0!important;
+}
+.visual-card-grid .individual-card.visual-social-card .social-instagram svg {
+  display:block!important;width:72%!important;height:72%!important;
+}
+.visual-card-grid .individual-card.visual-social-card .visual-social-copy {
+  left:6px!important;right:6px!important;bottom:7px!important;
+}
+.visual-card-grid .individual-card.visual-social-card .visual-social-copy strong {
+  font-size:clamp(14px,2.65vw,23px)!important;line-height:1.05!important;
+}
+.visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy {
+  box-sizing:border-box!important;left:0!important;right:0!important;top:0!important;bottom:0!important;
+  width:100%!important;padding:6px 10px!important;
+}
+.visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy strong {
+  max-width:100%!important;font-size:clamp(13px,2.6vw,24px)!important;line-height:1.08!important;
+  overflow-wrap:break-word!important;
+}
+.visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy span {
+  font-size:clamp(10px,1.45vw,17px)!important;margin-top:4px!important;
+}
+@media(max-width:700px){
+  .visual-card-grid .individual-card:not(.visual-social-card):not(.visual-quote-tile) .visual-card-copy {
+    padding:5px 7px 7px!important;gap:1px!important;
+  }
+  .visual-card-grid .individual-card .visual-card-copy strong {font-size:clamp(13px,3.6vw,17px)!important;line-height:1.02!important;}
+  .visual-card-grid .individual-card .visual-card-copy small {font-size:clamp(9px,2.4vw,11px)!important;line-height:1.12!important;margin-top:2px!important;}
+  .visual-card-grid .individual-card .visual-card-symbol {
+    width:27px!important;height:27px!important;font-size:17px!important;margin-bottom:2px!important;
+  }
+  .visual-card-grid .individual-card.visual-social-card .visual-social-copy strong {font-size:clamp(13px,3.4vw,16px)!important;}
+  .visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy {padding:5px 7px!important;}
+  .visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy strong {font-size:clamp(12px,3.25vw,16px)!important;line-height:1.08!important;}
+  .visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy span {font-size:clamp(10px,2.6vw,13px)!important;}
+}
