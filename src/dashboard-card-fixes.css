@@ -55,3 +55,38 @@
   .visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy strong {font-size:clamp(11px,3vw,15px)!important;line-height:1.08!important;}
   .visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy span {font-size:clamp(10px,2.6vw,13px)!important;}
 }
+
+/* Dois cards aprovados: arte limpa, sem efeito radial e sem textos duplicados.
+   Manter links reais em HTML sobre a imagem, para serem clicáveis. */
+.visual-card-grid .individual-card.visual-social-card,
+.visual-card-grid .individual-card.visual-quote-tile {
+  aspect-ratio:1003/570!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.visual-card-grid .individual-card.visual-social-card {
+  background-image:url("/card-redes-novo.webp")!important;
+}
+.visual-card-grid .individual-card.visual-quote-tile {
+  background-image:url("/card-mensagem-novo.webp")!important;
+}
+.visual-card-grid .individual-card.visual-social-card::before,
+.visual-card-grid .individual-card.visual-quote-tile::before,
+.visual-card-grid .individual-card.visual-social-card::after,
+.visual-card-grid .individual-card.visual-quote-tile::after {content:none!important;display:none!important;}
+.visual-card-grid .individual-card.visual-social-card .visual-social-copy,
+.visual-card-grid .individual-card.visual-quote-tile .visual-quote-copy {display:none!important;}
+.visual-card-grid .individual-card.visual-social-card .visual-social-links {
+  position:absolute!important;top:8px!important;left:10px!important;bottom:auto!important;
+  z-index:5!important;display:flex!important;gap:7px!important;
+}
+.visual-card-grid .individual-card.visual-social-card .visual-social-links a {
+  width:clamp(25px,3vw,36px)!important;height:clamp(25px,3vw,36px)!important;
+  border-radius:9px!important;
+}
+@media(max-width:700px){
+ .visual-card-grid .individual-card.visual-social-card .visual-social-links {top:5px!important;left:6px!important;gap:4px!important;}
+ .visual-card-grid .individual-card.visual-social-card .visual-social-links a {width:24px!important;height:24px!important;border-radius:6px!important;}
+}
