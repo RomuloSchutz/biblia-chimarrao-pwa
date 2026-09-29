@@ -647,20 +647,19 @@ export default function App() {
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
-              ["Devocional","365 encontros com Deus","/menu-chimarrao.webp",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
-              ["Encontro de Hoje","Seu encontro de hoje","/menu-encontro.webp",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
-              ["Minha Caminhada","Registre e acompanhe","/menu-caminhada.webp",()=>openJourney(),"⌁"],
-              ["Favoritos","Encontros que tocaram você","/menu-favoritos-v2.webp",()=>openFavorites(),"♡"],
-              ["Minhas Anotações","Suas reflexões e orações","/menu-anotacoes.webp",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/menu-meus-livros.webp",()=>setScreen('books'),"▤"],
-              ["Livros do Romulo","Conheça todas as obras","/menu-livros-romulo.webp",()=>setScreen('authorBooks'),"▥"],
-              ["Ideias e Reflexões","Conteúdos para inspirar","/menu-ideias.webp",()=>setScreen('ideas'),"✧"],
-              ["Hora do Mate","Não perca seu encontro","/menu-hora-mate.webp",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
-              ["Sobre o Autor","Conheça Romulo Schutz","/menu-autor-oficial.webp",()=>setScreen('author'),"♙"],
-              
-            ].map(([title,subtitle,photo,action,symbol])=><button key={title} type="button" className="visual-card" onClick={user ? action : title === "Devocional" ? ()=>setScreen("devotional") : title === "Encontro de Hoje" ? ()=>openEncounter(1) : ()=>setScreen("guestDemo")} aria-disabled={!user} style={{backgroundImage:`url("${photo}")`}}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
-            <div className="visual-card visual-social-card"><strong>Siga nas redes sociais</strong><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div><small>Romulo Schutz</small></div>
-            <div className="visual-card visual-quote visual-quote-tile" aria-label="Mensagem do autor"><span className="visual-quote-leaf">❧</span><blockquote>“Todo dia é um novo encontro com Deus.”</blockquote><span className="visual-quote-signature">Romulo Schutz</span></div>
+              ["Devocional","365 encontros com Deus","sprite-0",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
+              ["Encontro de Hoje","Seu encontro de hoje","sprite-1",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
+              ["Minha Caminhada","Registre e acompanhe","sprite-1",()=>openJourney(),"⌁"],
+              ["Favoritos","Encontros que tocaram você","sprite-2",()=>openFavorites(),"♡"],
+              ["Minhas Anotações","Suas reflexões e orações","sprite-3",()=>openNotes(),"✎"],
+              ["Meus Livros","Sua biblioteca particular","sprite-4",()=>setScreen('books'),"▤"],
+              ["Livros do Romulo","Conheça todas as obras","sprite-9",()=>setScreen('authorBooks'),"▥"],
+              ["Ideias e Reflexões","Conteúdos para inspirar","sprite-5",()=>setScreen('ideas'),"✧"],
+              ["Hora do Mate","Não perca seu encontro","sprite-6",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
+              ["Sobre o Autor","Conheça Romulo Schutz","sprite-10",()=>setScreen('author'),"♙"],
+            ].map(([title,subtitle,sprite,action,symbol])=><button key={title} type="button" className={`visual-card final-card-sprite ${sprite}`} onClick={user ? action : title === "Devocional" ? ()=>setScreen("devotional") : title === "Encontro de Hoje" ? ()=>openEncounter(1) : ()=>setScreen("guestDemo")} aria-disabled={!user}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
+            <div className="visual-card visual-social-card final-card-sprite sprite-8"><div className="visual-social-links"><a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a><a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a><a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">▶</a></div></div>
+            <div className="visual-card visual-quote visual-quote-tile final-card-sprite sprite-11" aria-label="Todo dia é um novo encontro com Deus. Romulo Schutz"></div>
           </nav>
           <div className="visual-bottom">
 
