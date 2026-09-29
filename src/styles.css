@@ -577,3 +577,23 @@
 .visual-card[style*="menu-autor-oficial.webp"] .visual-card-copy{
   display:none!important;
 }
+
+
+/* Cards finais aprovados - sprite 3x4 (1536x1024) */
+.final-card-sprite{background-image:url("/cards-final-sprite.webp")!important;background-size:300% 400%!important;background-repeat:no-repeat!important;aspect-ratio:2/1!important}
+.final-card-sprite.sprite-0{background-position:0% 0%!important}
+.final-card-sprite.sprite-1{background-position:50% 0%!important}
+.final-card-sprite.sprite-2{background-position:100% 0%!important}
+.final-card-sprite.sprite-3{background-position:0% 33.333%!important}
+.final-card-sprite.sprite-4{background-position:50% 33.333%!important}
+.final-card-sprite.sprite-5{background-position:100% 33.333%!important}
+.final-card-sprite.sprite-6{background-position:0% 66.667%!important}
+.final-card-sprite.sprite-7{background-position:50% 66.667%!important}
+.final-card-sprite.sprite-8{background-position:100% 66.667%!important}
+.final-card-sprite.sprite-9{background-position:0% 100%!important}
+.final-card-sprite.sprite-10{background-position:50% 100%!important}
+.final-card-sprite.sprite-11{background-position:100% 100%!important}
+.final-card-sprite.visual-social-card{justify-content:flex-end;padding:12px!important}
+.final-card-sprite.visual-social-card .visual-social-links{position:relative;z-index:2;margin-bottom:8px}
+.final-card-sprite.visual-quote-tile{min-height:0!important;padding:0!important}
+@media(max-width:700px){.final-card-sprite{aspect-ratio:2/1!important}.final-card-sprite .visual-card-copy{padding:10px 9px 8px!important}.final-card-sprite .visual-card-symbol{width:30px;height:30px;font-size:19px;margin-bottom:3px}.final-card-sprite strong{font-size:clamp(14px,3.8vw,18px)!important}.final-card-sprite small{font-size:10px!important}}
