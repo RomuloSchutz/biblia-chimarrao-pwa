@@ -552,3 +552,15 @@
 @media(min-width:700px){
   .stage3-author-hero .author-profile-photo{aspect-ratio:1.5/1!important}
 }
+
+
+/* Cards finais: os arquivos de fundo já contêm título/subtítulo/ícone.
+   Evita duplicação de texto sobre a própria arte. */
+.visual-card:not(.visual-social-card):not(.visual-quote-tile) .visual-card-copy{
+  display:none!important;
+}
+.visual-card:not(.visual-social-card):not(.visual-quote-tile){
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
