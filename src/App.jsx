@@ -67,6 +67,7 @@ export default function App() {
   const [adminUsers,setAdminUsers]=useState([])
   const [adminLoading,setAdminLoading]=useState(false)
   const [adminMessage,setAdminMessage]=useState('')
+  const [adminSearch,setAdminSearch]=useState('')
 
   useEffect(()=>{
     localStorage.setItem('bc-appearance',appearance)
@@ -614,14 +615,18 @@ export default function App() {
     setAdminMessage(status==='active'?'✓ Acesso liberado.':'✓ Acesso bloqueado.')
   }
 
-  if(screen==='admin'&&user&&isAdmin)return <main className="dashboard admin-page">
-    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
-    <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Painel Administrativo</h1><p>Controle de usuários e acessos ao aplicativo.</p></div>
-      <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Usuários</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
-      {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
-      {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{adminUsers.map(item=><article className="admin-user-card" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><dl><div><dt>Origem</dt><dd>{item.is_admin?'Administrativo':item.source==='mercado_pago'?'Mercado Pago':item.source==='gift'?'Presente':item.source==='promotion'?'Promoção':'Manual'}</dd></div><div><dt>Vencimento</dt><dd>{item.access_until?new Date(item.access_until).toLocaleDateString('pt-BR'):'Sem vencimento'}</dd></div></dl>{!item.is_admin&&<div className="admin-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar acesso</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button></div>}</article>)}</div>}
-    </section>
-  </main>
+  if(screen==='admin'&&user&&isAdmin){
+    const filteredAdminUsers=adminUsers.filter(item=>{const q=adminSearch.trim().toLocaleLowerCase('pt-BR');return !q||String(item.full_name||'').toLocaleLowerCase('pt-BR').includes(q)||String(item.email||'').toLocaleLowerCase('pt-BR').includes(q)})
+    return <main className="dashboard admin-page">
+      <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
+      <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Leitores</h1><p>Clientes, edições adquiridas e controle de acesso.</p></div>
+        <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
+        <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
+        {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
+        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Avisar atualização</button></div>}</article>)}</div>}
+      </section>
+    </main>
+  }
 
   if (screen === 'accessRestricted' && user) return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Controle de acesso</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ÁREA DO LEITOR</p><h1>Acesso restrito</h1><p>{message || 'Seu acesso ao conteúdo protegido ainda não está liberado.'}</p><button type="button" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
 
