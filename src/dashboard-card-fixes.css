@@ -90,3 +90,71 @@
  .visual-card-grid .individual-card.visual-social-card .visual-social-links {top:5px!important;left:6px!important;gap:4px!important;}
  .visual-card-grid .individual-card.visual-social-card .visual-social-links a {width:24px!important;height:24px!important;border-radius:6px!important;}
 }
+
+/* Ajuste direcionado: três cards identificados na captura de 29/09.
+   Sobre o Autor e demais cards aprovados permanecem intocados. */
+.visual-dashboard .visual-card-grid .individual-card[style*="card-hora-mate.jpg"] {
+  background-position:center center!important;
+  background-size:100% 100%!important;
+}
+/* As duas artes finais já possuem moldura dourada na própria imagem:
+   retirar apenas a borda CSS duplicada, sem cortar a arte. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  box-sizing:border-box!important;
+  aspect-ratio:1003 / 570!important;
+  background-size:100% 100%!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+/* Os ícones permanecem elementos HTML clicáveis acima da imagem. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links {z-index:6!important;}
+
+/* Padronização estrutural: os doze cards compartilham a mesma caixa 2:1.
+   JPGs originais 2:1 são exibidos integralmente; os dois WEBP 1003:570
+   usam contain (sem esticar/cortar) e fundo escuro nas pequenas margens. */
+.visual-dashboard .visual-card-grid .individual-card {
+  width:100%!important;
+  aspect-ratio:2 / 1!important;
+  height:auto!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  aspect-ratio:2 / 1!important;
+  background-color:#071f18!important;
+  /* A arte final tem moldura e texto embutidos: preencher a caixa 2:1
+     sem faixas laterais e sem crop que cortaria letras. */
+  background-size:100% 100%!important;
+  border:0!important;
+  border-radius:22px!important;
+  box-shadow:0 5px 15px #0008!important;
+}
+@media(max-width:700px){
+  .visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+  .visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {border-radius:15px!important;}
+}
+
+/* Prévia: contorno dourado uniforme de 4px sem alterar a caixa ou a
+   posição da imagem. Outline interno evita deslocar os cards e mantém
+   a área clicável dos ícones. Não modifica os arquivos das artes. */
+.visual-dashboard .visual-card-grid .individual-card {
+  border:0!important;
+  outline:4px solid #c99a43!important;
+  outline-offset:-4px!important;
+  border-radius:22px!important;
+}
+@media(max-width:700px){
+  .visual-dashboard .visual-card-grid .individual-card {
+    border-radius:15px!important;
+    outline-width:4px!important;
+  }
+}
