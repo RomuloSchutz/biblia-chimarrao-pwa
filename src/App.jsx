@@ -538,7 +538,7 @@ export default function App() {
 
   if (screen === 'authorBooks' && user) {
     const works = [
-      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/menu-favoritos-v2.webp',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
+      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/capa-devocional-oficial.jpg',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
       {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',meta:'História · Filosofia · Teologia',image:'/1000769251.jpg',status:'LIVRO PUBLICADO',text:'Uma obra sobre tempo, calendário, história e fé, percorrendo a construção humana do tempo e sua relação com a compreensão cristã.'},
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',meta:'Trilogia em desenvolvimento',image:'/image (1).png',status:'EM DESENVOLVIMENTO',text:'Uma narrativa sobre cidade, escolhas, relações, fé e consequências. Três movimentos de uma mesma história: NASCE, CRESCE e VIVE.'}
@@ -550,8 +550,8 @@ export default function App() {
 
   if (screen === 'books' && user) {
     const books = [
-      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/menu-favoritos-v2.webp',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
-      {title:'Chimarrão com Deus — 365 Encontros com Deus',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/menu-favoritos-v2.webp',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
+      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
+      {title:'Chimarrão com Deus — 365 Encontros com Deus',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
       {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',image:'/1000769251.jpg',status:'Livro publicado · leitura digital em preparação',group:'publicados',action:'Conhecer leitor'},
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Corpo · Alma · Espírito',cover:'ja',image:'/1000670931(1).jpg',status:'Livro publicado · leitura digital em preparação',group:'publicados',action:'Conhecer leitor'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',kind:'Trilogia em desenvolvimento',cover:'cidade',image:'/image (1).png',status:'Em breve',group:'projetos',action:'Projeto em desenvolvimento'}
