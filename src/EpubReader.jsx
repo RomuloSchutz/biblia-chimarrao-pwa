@@ -10,10 +10,13 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
   const selectedStartRef=useRef(null)
+  const audioStateRef=useRef('parado')
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
   const [highlights,setHighlights]=useState(()=>readJson('bc-epub-highlights:'+title,[]))
   const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina'), [audioRate,setAudioRate]=useState(1)
   const audioRef=useRef({chunks:[],index:0,offset:0,utterance:null,token:0,continuous:false,startedAt:0,rate:.92})
+
+  useEffect(()=>{audioStateRef.current=audioState},[audioState])
 
   const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
   const saveHighlights=items=>{setHighlights(items);localStorage.setItem('bc-epub-highlights:'+title,JSON.stringify(items))}
@@ -27,7 +30,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       view.themes.fontSize(fontSize+'%')
       view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}
         const ref=audioRef.current
-        if(ref && audioState==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
+        if(ref && audioStateRef.current==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
       })
       view.on('selected',(cfiRange,contents)=>{
         const text=contents?.window?.getSelection?.()?.toString?.().trim()||''
