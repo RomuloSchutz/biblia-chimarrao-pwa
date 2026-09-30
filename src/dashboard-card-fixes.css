@@ -131,3 +131,15 @@
 @media(max-width:700px){
   .visual-dashboard .visual-card-grid .individual-card {border-radius:15px!important;}
 }
+
+/* Ajuste experimental localizado: não tocar nos cards já aprovados.
+   Zoom mínimo para ocultar bordas internas das artes JPG sem deformar proporções. */
+.visual-dashboard .visual-card-grid .individual-card.visual-frame-tune {
+  background-size:102% 102%!important;
+  background-position:center center!important;
+}
+/* A arte final contém texto e assinatura incorporados: evitar zoom/corte nela. */
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  background-size:100% 100%!important;
+  background-position:center center!important;
+}
