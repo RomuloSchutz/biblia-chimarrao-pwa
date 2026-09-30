@@ -131,8 +131,10 @@
 .visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
   aspect-ratio:2 / 1!important;
   background-color:#071f18!important;
-  background-size:contain!important;
-  border:2px solid #c99a43!important;
+  /* A arte final tem moldura e texto embutidos: preencher a caixa 2:1
+     sem faixas laterais e sem crop que cortaria letras. */
+  background-size:100% 100%!important;
+  border:0!important;
   border-radius:22px!important;
   box-shadow:0 5px 15px #0008!important;
 }
