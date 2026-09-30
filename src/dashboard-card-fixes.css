@@ -229,3 +229,29 @@
 .author-profile-photo.premium-author-welcome>img{display:block!important;width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;object-position:center!important;filter:none!important;opacity:1!important}
 .author-profile-photo.premium-author-welcome>img:not([style*="display: none"]) + .author-photo-fallback{display:none!important}
 @media(max-width:700px){.premium-library-banner>img,.stage3-reminder .premium-mate-image>img,.premium-author-welcome>img{width:100%!important;height:auto!important;object-fit:contain!important}}
+
+/* 30/09 — páginas internas: fotografia natural, sem tonalização marrom. */
+.stage2-banner::after{background:linear-gradient(90deg,rgba(0,31,24,.62) 0%,rgba(0,31,24,.18) 55%,transparent 100%)!important}
+.stage2-banner-image{filter:none!important;opacity:1!important}
+.stage2-banner-content{background:transparent!important}
+
+/* Livros do Romulo e Ideias: remove o gradiente marrom da própria propriedade background. */
+.stage3-authorbooks-head{
+  background-image:url("/capa-app-oficial.png")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+  background-color:transparent!important;background-blend-mode:normal!important;filter:none!important;
+}
+.stage3-ideas-head{
+  background-image:url("/devocional/mes_07.jpg")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+  background-color:transparent!important;background-blend-mode:normal!important;filter:none!important;
+}
+.stage3-authorbooks-head::after,.stage3-ideas-head::after{content:none!important;display:none!important}
+
+/* Minhas Anotações: somente o banner superior. A miniatura repetida do card é removida. */
+.notes-list .stage2-list-card{padding-top:18px!important}
+.notes-list .stage2-list-card .stage2-list-thumb{display:none!important}
+
+@media(max-width:700px){
+ .stage2-banner::after{background:linear-gradient(0deg,rgba(0,31,24,.60),rgba(0,31,24,.08))!important}
+}
