@@ -150,3 +150,71 @@
   background-size:108% 108%!important;
   background-position:50% 50%!important;
 }
+
+
+/* Polimento das páginas internas — imagens naturais, sem véu marrom. */
+.stage2-banner,
+.stage3-library-head,
+.stage3-authorbooks-head,
+.stage3-ideas-head,
+.stage3-author-hero { isolation:isolate; overflow:hidden; }
+
+.stage2-banner::before,
+.stage3-library-head::before,
+.stage3-authorbooks-head::before,
+.stage3-ideas-head::before,
+.stage3-author-hero::before { background:transparent!important; opacity:0!important; }
+
+.stage2-banner-image { filter:none!important; opacity:1!important; }
+
+.stage2-banner-content {
+  background:linear-gradient(90deg,rgba(0,31,24,.78) 0%,rgba(0,31,24,.30) 56%,transparent 100%)!important;
+  border-radius:inherit;
+}
+
+/* Minhas Anotações: um único banner no topo; cards sem segunda faixa fotográfica dominante. */
+.notes-list .stage2-list-card .stage2-list-thumb {
+  height:110px!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  filter:none!important;
+}
+
+/* Hora do Mate: substituir o pictograma improvisado pela arte fotográfica já aprovada. */
+.stage3-reminder .stage3-reminder-art {
+  min-height:clamp(230px,34vw,430px)!important;
+  background:url("/hora-do-mate-premium.webp") center/cover no-repeat!important;
+  border:2px solid #c99a43!important;
+  border-radius:22px!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.28)!important;
+}
+.stage3-reminder .stage3-reminder-art > span { display:none!important; }
+
+/* Biblioteca e páginas editoriais: retirar tonalização marrom pesada mantendo legibilidade. */
+.stage3-library-head,
+.stage3-authorbooks-head,
+.stage3-ideas-head {
+  background-color:transparent!important;
+  background-blend-mode:normal!important;
+  filter:none!important;
+}
+
+/* Sobre o Autor: garantir que o conteúdo nunca desapareça por conflito de camadas/altura. */
+.stage3-author-hero,
+.author-profile-body,
+.author-profile-works,
+.author-profile-quote { position:relative!important; z-index:1!important; visibility:visible!important; opacity:1!important; }
+
+/* Livros do Romulo: sinal visual de clique; o JSX recebe a navegação em etapa própria. */
+.stage3-authorbooks-grid .author-book-card {
+  transition:transform .18s ease,box-shadow .18s ease!important;
+}
+.stage3-authorbooks-grid .author-book-card:hover {
+  transform:translateY(-3px)!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.28)!important;
+}
+
+@media(max-width:700px){
+  .stage2-banner-content {background:linear-gradient(0deg,rgba(0,31,24,.82),rgba(0,31,24,.18))!important;}
+  .stage3-reminder .stage3-reminder-art {min-height:210px!important;border-radius:16px!important;}
+}
