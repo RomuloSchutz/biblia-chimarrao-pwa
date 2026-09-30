@@ -296,3 +296,10 @@
 
 /* Acompanhamento visual da narração EPUB */
 .epub-content mark.bc-speaking{background:#f1cf68!important;color:inherit!important;border-radius:3px!important;padding:0 2px!important;box-shadow:0 0 0 2px rgba(241,207,104,.18)!important}
+
+/* Abertura: acessos sobre a arte, sem faixa marrom extra abaixo */
+.guest-landing .landing-cover-frame{position:relative!important;overflow:hidden!important;line-height:0!important}
+.guest-landing .landing-cover-frame>img{display:block!important;width:100%!important;height:auto!important}
+.guest-landing .landing-overlay-actions{position:absolute!important;left:0!important;right:0!important;bottom:3.2%!important;z-index:4!important;display:flex!important;justify-content:center!important;align-items:flex-end!important;gap:24px!important;padding:12px 20px!important;background:linear-gradient(0deg,rgba(20,10,5,.68),rgba(20,10,5,.18),transparent)!important;line-height:normal!important}
+.guest-landing .landing-overlay-actions .guest-round-action{margin:0!important}
+@media(max-width:700px){.guest-landing .landing-overlay-actions{bottom:2%!important;gap:8px!important;padding:10px 8px!important}.guest-landing .landing-overlay-actions .guest-round-label{font-size:.78rem!important}}
