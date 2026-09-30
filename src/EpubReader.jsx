@@ -12,7 +12,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
   const [highlights,setHighlights]=useState(()=>readJson('bc-epub-highlights:'+title,[]))
   const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina')
-  const audioRef=useRef({chunks:[],index:0,offset:0,utterance:null,token:0,continuous:false})
+  const audioRef=useRef({chunks:[],index:0,offset:0,utterance:null,token:0,continuous:false,startedAt:0,rate:.92})
 
   const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
   const saveHighlights=items=>{setHighlights(items);localStorage.setItem('bc-epub-highlights:'+title,JSON.stringify(items))}
@@ -82,7 +82,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(ref.index>=ref.chunks.length){clearSpokenHighlight();if(ref.continuous)return advanceAndContinue(token);setAudioState('parado');ref.index=0;ref.offset=0;return}
     const full=ref.chunks[ref.index], spoken=full.slice(ref.offset).trim();if(!spoken){ref.index++;ref.offset=0;return playChunk(token)}
     markSpeaking(spoken)
-    const utter=new SpeechSynthesisUtterance(spoken);utter.lang='pt-BR';utter.rate=.92;const voice=chooseVoice();if(voice)utter.voice=voice;ref.utterance=utter
+    const utter=new SpeechSynthesisUtterance(spoken);utter.lang='pt-BR';utter.rate=ref.rate;ref.startedAt=Date.now();const voice=chooseVoice();if(voice)utter.voice=voice;ref.utterance=utter
     utter.onboundary=ev=>{if(token===ref.token&&typeof ev.charIndex==='number')ref.offset=Math.min(full.length,ref.offset+ev.charIndex)}
     utter.onend=()=>{if(token!==ref.token)return;ref.index+=1;ref.offset=0;playChunk(token)}
     utter.onerror=()=>{if(token===ref.token)setAudioState('parado')}
@@ -91,7 +91,17 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const speak=()=>{
     if(!('speechSynthesis'in window)){setError('A leitura em voz alta não é suportada neste navegador.');return}
     const ref=audioRef.current
-    if(audioState==='tocando'){ref.token+=1;speechSynthesis.cancel();clearSpokenHighlight();setAudioState('pausado');return}
+    if(audioState==='tocando'){
+      /* Alguns Androids não disparam onboundary. Estimamos o avanço pelo tempo falado,
+         preservando o ponto da frase em vez de reiniciar a página. */
+      if(ref.utterance){
+        const elapsed=Math.max(0,(Date.now()-ref.startedAt)/1000)
+        const spoken=ref.chunks[ref.index]||''
+        const estimated=Math.min(spoken.length-ref.offset,Math.floor(elapsed*14*ref.rate))
+        ref.offset=Math.min(spoken.length,ref.offset+estimated)
+      }
+      ref.token+=1;speechSynthesis.cancel();clearSpokenHighlight();setAudioState('pausado');return
+    }
     if(audioState==='pausado'){ref.token+=1;playChunk(ref.token);return}
     if(!loadCurrentPage()){setError('Não encontrei texto nesta página para leitura em voz alta.');return}
     ref.continuous=true;ref.token+=1;speechSynthesis.cancel();playChunk(ref.token)
