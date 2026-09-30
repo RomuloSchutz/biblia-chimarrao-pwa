@@ -24,7 +24,10 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       setLoading(true);setError(''); book=ePub(epubUrl); bookRef.current=book
       const view=book.renderTo(host.current,{width:'100%',height:'76vh',flow:'paginated'}); rendition.current=view
       view.themes.fontSize(fontSize+'%')
-      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}})
+      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}
+        const ref=audioRef.current
+        if(ref && audioState==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
+      })
       view.on('selected',(cfiRange,contents)=>{
         const text=contents?.window?.getSelection?.()?.toString?.().trim()||''
         if(text&&confirm('Sublinhar este trecho e guardar em “Marcações do livro”?')){
@@ -103,10 +106,11 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       ref.token+=1;speechSynthesis.cancel();clearSpokenHighlight();setAudioState('pausado');return
     }
     if(audioState==='pausado'){ref.token+=1;playChunk(ref.token);return}
+    ref.chunks=[];ref.index=0;ref.offset=0
     if(!loadCurrentPage()){setError('Não encontrei texto nesta página para leitura em voz alta.');return}
     ref.continuous=true;ref.token+=1;speechSynthesis.cancel();playChunk(ref.token)
   }
-  const stopAudio=()=>{const ref=audioRef.current;ref.token+=1;speechSynthesis?.cancel();clearSpokenHighlight();ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false;setAudioState('parado')}
+  const stopAudio=()=>{const ref=audioRef.current;ref.token+=1;speechSynthesis?.cancel();clearSpokenHighlight();ref.chunks=[];ref.index=0;ref.offset=0;ref.utterance=null;ref.startedAt=0;ref.continuous=false;setAudioState('parado')}
 
   return <main className="dashboard epub-page">
     <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Leitor digital</small></div><button className="logout" onClick={onBack}>← Minha biblioteca</button></header>
