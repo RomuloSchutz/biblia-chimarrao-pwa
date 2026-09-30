@@ -303,3 +303,8 @@
 .guest-landing .landing-overlay-actions{position:absolute!important;left:0!important;right:0!important;bottom:3.2%!important;z-index:4!important;display:flex!important;justify-content:center!important;align-items:flex-end!important;gap:24px!important;padding:12px 20px!important;background:linear-gradient(0deg,rgba(20,10,5,.68),rgba(20,10,5,.18),transparent)!important;line-height:normal!important}
 .guest-landing .landing-overlay-actions .guest-round-action{margin:0!important}
 @media(max-width:700px){.guest-landing .landing-overlay-actions{bottom:2%!important;gap:8px!important;padding:10px 8px!important}.guest-landing .landing-overlay-actions .guest-round-label{font-size:.78rem!important}}
+
+/* Obras do autor também funcionam como entrada para a biblioteca */
+.author-book-clickable{cursor:pointer!important;transition:transform .18s ease,border-color .18s ease!important}
+.author-book-clickable:hover,.author-book-clickable:focus-visible{transform:translateY(-3px)!important;border-color:#d8ad58!important;outline:2px solid rgba(216,173,88,.35)!important;outline-offset:3px!important}
+.author-book-open{display:block!important;margin-top:14px!important;color:#d8ad58!important}
