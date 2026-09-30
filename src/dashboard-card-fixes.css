@@ -255,3 +255,28 @@
 @media(max-width:700px){
  .stage2-banner::after{background:linear-gradient(0deg,rgba(0,31,24,.60),rgba(0,31,24,.08))!important}
 }
+
+/* 30/09 — legibilidade sem retornar ao véu marrom.
+   A foto permanece com cor natural; só a área atrás do texto recebe fosqueado neutro/verde. */
+.stage2-banner::after{
+  background:linear-gradient(90deg,rgba(3,24,19,.68) 0%,rgba(3,24,19,.38) 48%,rgba(3,24,19,.08) 78%,transparent 100%)!important;
+  backdrop-filter:blur(1.4px)!important;
+  -webkit-backdrop-filter:blur(1.4px)!important;
+}
+.stage2-banner-content{position:relative!important;z-index:1!important;background:transparent!important;text-shadow:0 2px 7px rgba(0,0,0,.82)!important}
+
+/* Cabeçalhos editoriais: fosqueado localizado atrás do texto, sem tingir a fotografia inteira. */
+.stage3-authorbooks-head,.stage3-ideas-head{position:relative!important;isolation:isolate!important}
+.stage3-authorbooks-head::after,.stage3-ideas-head::after{
+  content:""!important;display:block!important;position:absolute!important;z-index:-1!important;
+  left:0!important;top:0!important;bottom:0!important;width:72%!important;
+  background:linear-gradient(90deg,rgba(3,24,19,.70),rgba(3,24,19,.40) 62%,transparent)!important;
+  backdrop-filter:blur(1.2px)!important;-webkit-backdrop-filter:blur(1.2px)!important;
+  pointer-events:none!important;
+}
+.stage3-authorbooks-head,.stage3-ideas-head{text-shadow:0 2px 7px rgba(0,0,0,.86)!important}
+
+@media(max-width:700px){
+ .stage2-banner::after{background:linear-gradient(0deg,rgba(3,24,19,.72),rgba(3,24,19,.22) 72%,rgba(3,24,19,.05))!important}
+ .stage3-authorbooks-head::after,.stage3-ideas-head::after{width:100%!important;background:linear-gradient(0deg,rgba(3,24,19,.72),rgba(3,24,19,.20) 80%)!important}
+}
