@@ -218,3 +218,14 @@
   .stage2-banner-content {background:linear-gradient(0deg,rgba(0,31,24,.82),rgba(0,31,24,.18))!important;}
   .stage3-reminder .stage3-reminder-art {min-height:210px!important;border-radius:16px!important;}
 }
+
+/* Artes oficiais enviadas em 30/09: exibir sem véu, sem recorte e sem duplicar texto. */
+.premium-library-banner{padding:0!important;background:none!important;border:2px solid #c99a43!important;overflow:hidden!important;min-height:0!important}
+.premium-library-banner::before,.premium-library-banner::after{display:none!important;content:none!important}
+.premium-library-banner>img{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;filter:none!important;opacity:1!important}
+.stage3-reminder .stage3-reminder-art.premium-mate-image{padding:0!important;background:none!important;height:auto!important;min-height:0!important;overflow:hidden!important}
+.stage3-reminder .stage3-reminder-art.premium-mate-image>img{display:block!important;width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;filter:none!important}
+.author-profile-photo.premium-author-welcome{overflow:hidden!important;background:none!important}
+.author-profile-photo.premium-author-welcome>img{display:block!important;width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;object-position:center!important;filter:none!important;opacity:1!important}
+.author-profile-photo.premium-author-welcome>img:not([style*="display: none"]) + .author-photo-fallback{display:none!important}
+@media(max-width:700px){.premium-library-banner>img,.stage3-reminder .premium-mate-image>img,.premium-author-welcome>img{width:100%!important;height:auto!important;object-fit:contain!important}}
