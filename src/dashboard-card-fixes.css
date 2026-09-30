@@ -142,3 +142,19 @@
   .visual-dashboard .visual-card-grid .individual-card.visual-social-card,
   .visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {border-radius:15px!important;}
 }
+
+/* Prévia: contorno dourado uniforme de 4px sem alterar a caixa ou a
+   posição da imagem. Outline interno evita deslocar os cards e mantém
+   a área clicável dos ícones. Não modifica os arquivos das artes. */
+.visual-dashboard .visual-card-grid .individual-card {
+  border:0!important;
+  outline:4px solid #c99a43!important;
+  outline-offset:-4px!important;
+  border-radius:22px!important;
+}
+@media(max-width:700px){
+  .visual-dashboard .visual-card-grid .individual-card {
+    border-radius:15px!important;
+    outline-width:4px!important;
+  }
+}
