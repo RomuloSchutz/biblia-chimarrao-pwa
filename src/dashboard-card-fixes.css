@@ -280,3 +280,16 @@
  .stage2-banner::after{background:linear-gradient(0deg,rgba(3,24,19,.72),rgba(3,24,19,.22) 72%,rgba(3,24,19,.05))!important}
  .stage3-authorbooks-head::after,.stage3-ideas-head::after{width:100%!important;background:linear-gradient(0deg,rgba(3,24,19,.72),rgba(3,24,19,.20) 80%)!important}
 }
+
+/* Leitor EPUB — ferramentas, marcações e área de leitura ampliada */
+.epub-content{min-height:76vh!important}
+.epub-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+.epub-tools button,.epub-tools select{min-height:42px;border-radius:10px}
+.epub-tools label{display:flex;gap:8px;align-items:center;font-weight:700}
+.epub-tip{margin:6px 0 14px;opacity:.82;font-size:.94rem}
+.epub-marks{margin-top:22px;padding:18px;border:1px solid rgba(201,154,67,.45);border-radius:16px}
+.epub-marks h3{margin-top:0}
+.epub-mark{display:flex;gap:8px;align-items:center;margin:8px 0}
+.epub-mark>button:first-child{flex:1;text-align:left}
+.epub-mark .mark-remove{flex:0 0 auto}
+@media(max-width:700px){.epub-content{min-height:70vh!important}.epub-tools{align-items:stretch}.epub-tools>*{width:100%}.epub-tools label select{flex:1}.epub-mark{align-items:stretch;flex-direction:column}}
