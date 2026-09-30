@@ -114,3 +114,29 @@
 }
 /* Os ícones permanecem elementos HTML clicáveis acima da imagem. */
 .visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links {z-index:6!important;}
+
+/* Padronização estrutural: os doze cards compartilham a mesma caixa 2:1.
+   JPGs originais 2:1 são exibidos integralmente; os dois WEBP 1003:570
+   usam contain (sem esticar/cortar) e fundo escuro nas pequenas margens. */
+.visual-dashboard .visual-card-grid .individual-card {
+  width:100%!important;
+  aspect-ratio:2 / 1!important;
+  height:auto!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  aspect-ratio:2 / 1!important;
+  background-color:#071f18!important;
+  background-size:contain!important;
+  border:2px solid #c99a43!important;
+  border-radius:22px!important;
+  box-shadow:0 5px 15px #0008!important;
+}
+@media(max-width:700px){
+  .visual-dashboard .visual-card-grid .individual-card.visual-social-card,
+  .visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {border-radius:15px!important;}
+}
