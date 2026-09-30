@@ -143,3 +143,10 @@
   background-size:100% 100%!important;
   background-position:center center!important;
 }
+
+/* Mensagem final: a arte traz margem/moldura interna embutida.
+   Recorte simétrico discreto só neste card, preservando a moldura CSS externa. */
+.visual-dashboard .visual-card-grid .individual-card.visual-quote-tile {
+  background-size:108% 108%!important;
+  background-position:50% 50%!important;
+}
