@@ -12,6 +12,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
   const [highlights,setHighlights]=useState(()=>readJson('bc-epub-highlights:'+title,[]))
   const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina')
+  const audioRef=useRef({chunks:[],index:0,utterance:null,token:0})
 
   const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
   const saveHighlights=items=>{setHighlights(items);localStorage.setItem('bc-epub-highlights:'+title,JSON.stringify(items))}
@@ -55,21 +56,40 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   }
   const removeBookmark=cfi=>saveBookmarks(bookmarks.filter(b=>b.cfi!==cfi))
   const removeHighlight=cfi=>{try{rendition.current?.annotations.remove(cfi,'highlight')}catch{};saveHighlights(highlights.filter(h=>h.cfi!==cfi))}
+  const pageText=()=>{const contents=rendition.current?.getContents?.()||[];return contents.map(c=>c.document?.body?.innerText||'').join(' ').replace(/\\s+/g,' ').trim()}
+  const splitSpeech=text=>{
+    const parts=text.match(/[^.!?;:]+[.!?;:]?|[^.!?;:]+$/g)||[text]
+    const chunks=[];let current=''
+    for(const part of parts){if((current+' '+part).length>240&&current){chunks.push(current.trim());current=part}else current+=(current?' ':'')+part}
+    if(current.trim())chunks.push(current.trim());return chunks
+  }
+  const chooseVoice=()=>{
+    const voices=speechSynthesis.getVoices().filter(v=>/^pt(-|_)/i.test(v.lang)||/portugu/i.test(v.lang))
+    return voices.find(v=>audioVoice==='feminina'?voiceLooksFemale(v.name):voiceLooksMale(v.name))||voices[audioVoice==='feminina'?1:0]||voices[0]
+  }
+  const playChunk=(token)=>{
+    const ref=audioRef.current;if(token!==ref.token)return
+    if(ref.index>=ref.chunks.length){setAudioState('parado');ref.index=0;return}
+    const utter=new SpeechSynthesisUtterance(ref.chunks[ref.index]);utter.lang='pt-BR';utter.rate=.92
+    const voice=chooseVoice();if(voice)utter.voice=voice
+    ref.utterance=utter
+    utter.onend=()=>{if(token!==ref.token)return;ref.index+=1;playChunk(token)}
+    utter.onerror=()=>{if(token===ref.token)setAudioState('parado')}
+    speechSynthesis.speak(utter);setAudioState('tocando')
+  }
   const speak=()=>{
     if(!('speechSynthesis'in window)){setError('A leitura em voz alta não é suportada neste navegador.');return}
-    if(audioState==='tocando'){speechSynthesis.pause();setAudioState('pausado');return}
-    if(audioState==='pausado'){speechSynthesis.resume();setAudioState('tocando');return}
-    const contents=rendition.current?.getContents?.()||[]
-    const text=contents.map(c=>c.document?.body?.innerText||'').join(' ').replace(/\s+/g,' ').trim()
-    if(!text){setError('Não encontrei texto nesta página para leitura em voz alta.');return}
-    const utter=new SpeechSynthesisUtterance(text); utter.lang='pt-BR'; utter.rate=.92
-    const voices=speechSynthesis.getVoices().filter(v=>/^pt(-|_)/i.test(v.lang)||/portugu/i.test(v.lang))
-    const preferred=voices.find(v=>audioVoice==='feminina'?voiceLooksFemale(v.name):voiceLooksMale(v.name))||voices[audioVoice==='feminina'?1:0]||voices[0]
-    if(preferred)utter.voice=preferred
-    utter.onend=()=>setAudioState('parado'); utter.onerror=()=>setAudioState('parado')
-    speechSynthesis.cancel();speechSynthesis.speak(utter);setAudioState('tocando')
+    const ref=audioRef.current
+    if(audioState==='tocando'){
+      /* Android/Chrome costuma falhar ao retomar speechSynthesis.pause().
+         Cancelamos só o pequeno bloco atual e mantemos o índice para continuar. */
+      ref.token+=1;speechSynthesis.cancel();setAudioState('pausado');return
+    }
+    if(audioState==='pausado'){ref.token+=1;playChunk(ref.token);return}
+    const text=pageText();if(!text){setError('Não encontrei texto nesta página para leitura em voz alta.');return}
+    ref.chunks=splitSpeech(text);ref.index=0;ref.token+=1;speechSynthesis.cancel();playChunk(ref.token)
   }
-  const stopAudio=()=>{speechSynthesis?.cancel();setAudioState('parado')}
+  const stopAudio=()=>{const ref=audioRef.current;ref.token+=1;speechSynthesis?.cancel();ref.chunks=[];ref.index=0;setAudioState('parado')}
 
   return <main className="dashboard epub-page">
     <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Leitor digital</small></div><button className="logout" onClick={onBack}>← Minha biblioteca</button></header>
