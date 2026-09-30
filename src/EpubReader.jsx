@@ -9,9 +9,10 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const host=useRef(null), rendition=useRef(null), bookRef=useRef(null)
   const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
+  const selectedStartRef=useRef(null)
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
   const [highlights,setHighlights]=useState(()=>readJson('bc-epub-highlights:'+title,[]))
-  const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina')
+  const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina'), [audioRate,setAudioRate]=useState(1)
   const audioRef=useRef({chunks:[],index:0,offset:0,utterance:null,token:0,continuous:false,startedAt:0,rate:.92})
 
   const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
@@ -30,6 +31,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       })
       view.on('selected',(cfiRange,contents)=>{
         const text=contents?.window?.getSelection?.()?.toString?.().trim()||''
+        selectedStartRef.current={cfi:cfiRange,text}
         if(text&&confirm('Sublinhar este trecho e guardar em “Marcações do livro”?')){
           const item={cfi:cfiRange,text:text.slice(0,500),createdAt:Date.now()}
           const next=[...readJson('bc-epub-highlights:'+title,[]),item]; saveHighlights(next)
@@ -85,7 +87,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(ref.index>=ref.chunks.length){clearSpokenHighlight();if(ref.continuous)return advanceAndContinue(token);setAudioState('parado');ref.index=0;ref.offset=0;return}
     const full=ref.chunks[ref.index], spoken=full.slice(ref.offset).trim();if(!spoken){ref.index++;ref.offset=0;return playChunk(token)}
     markSpeaking(spoken)
-    const utter=new SpeechSynthesisUtterance(spoken);utter.lang='pt-BR';utter.rate=ref.rate;ref.startedAt=Date.now();const voice=chooseVoice();if(voice)utter.voice=voice;ref.utterance=utter
+    const utter=new SpeechSynthesisUtterance(spoken);utter.lang='pt-BR';utter.rate=ref.rate;ref.startedAt=Date.now();utter.rate=audioRate;ref.rate=audioRate;const voice=chooseVoice();if(voice)utter.voice=voice;ref.utterance=utter
     utter.onboundary=ev=>{if(token===ref.token&&typeof ev.charIndex==='number')ref.offset=Math.min(full.length,ref.offset+ev.charIndex)}
     utter.onend=()=>{if(token!==ref.token)return;ref.index+=1;ref.offset=0;playChunk(token)}
     utter.onerror=()=>{if(token===ref.token)setAudioState('parado')}
@@ -110,6 +112,17 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(!loadCurrentPage()){setError('Não encontrei texto nesta página para leitura em voz alta.');return}
     ref.continuous=true;ref.token+=1;speechSynthesis.cancel();playChunk(ref.token)
   }
+  const startFromSelection=async()=>{
+    const selected=selectedStartRef.current
+    if(!selected?.cfi){setError('Selecione primeiro uma palavra ou trecho do livro.');return}
+    stopAudio()
+    try{await rendition.current?.display(selected.cfi);await new Promise(r=>setTimeout(r,120))}catch{}
+    const text=pageText();if(!text)return
+    const needle=(selected.text||'').trim();let start=needle?text.indexOf(needle):-1
+    const from=start>=0?text.slice(start):text
+    const ref=audioRef.current;ref.chunks=splitSpeech(from);ref.index=0;ref.offset=0;ref.continuous=true;ref.rate=audioRate;ref.token+=1
+    speechSynthesis.cancel();playChunk(ref.token)
+  }
   const stopAudio=()=>{const ref=audioRef.current;ref.token+=1;speechSynthesis?.cancel();clearSpokenHighlight();ref.chunks=[];ref.index=0;ref.offset=0;ref.utterance=null;ref.startedAt=0;ref.continuous=false;setAudioState('parado')}
 
   return <main className="dashboard epub-page">
@@ -123,6 +136,8 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       <div className="epub-tools" aria-label="Ferramentas do livro">
         <button onClick={addBookmark}>🔖 Favoritar página</button>
         <label>Áudio <select value={audioVoice} onChange={e=>{stopAudio();setAudioVoice(e.target.value)}}><option value="masculina">Voz masculina</option><option value="feminina">Voz feminina</option></select></label>
+        <label>Velocidade <select value={audioRate} onChange={e=>{const next=Number(e.target.value);stopAudio();setAudioRate(next)}}><option value="0.75">0,75× · Lento</option><option value="1">1,0× · Normal</option><option value="1.25">1,25× · Rápido</option></select></label>
+        <button onClick={startFromSelection}>🎯 Ouvir a partir da seleção</button>
         <button onClick={speak}>{audioState==='tocando'?'⏸ Pausar':audioState==='pausado'?'▶ Continuar':'🔊 Ouvir página'}</button>
         {audioState!=='parado'&&<button onClick={stopAudio}>■ Parar</button>}
       </div>
