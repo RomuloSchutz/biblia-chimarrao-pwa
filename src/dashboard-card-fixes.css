@@ -293,3 +293,6 @@
 .epub-mark>button:first-child{flex:1;text-align:left}
 .epub-mark .mark-remove{flex:0 0 auto}
 @media(max-width:700px){.epub-content{min-height:70vh!important}.epub-tools{align-items:stretch}.epub-tools>*{width:100%}.epub-tools label select{flex:1}.epub-mark{align-items:stretch;flex-direction:column}}
+
+/* Acompanhamento visual da narração EPUB */
+.epub-content mark.bc-speaking{background:#f1cf68!important;color:inherit!important;border-radius:3px!important;padding:0 2px!important;box-shadow:0 0 0 2px rgba(241,207,104,.18)!important}
