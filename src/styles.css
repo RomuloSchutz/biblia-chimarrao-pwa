@@ -640,3 +640,12 @@
  .visual-quote-copy strong{font-size:12px!important}
  .visual-quote-copy span{font-size:11px!important}
 }
+
+
+/* Biblioteca: leitura no app + arquivo EPUB pessoal */
+.book-actions{display:grid;gap:8px;margin-top:13px}
+.book-actions button{margin:0}
+.book-download{display:flex;align-items:center;justify-content:center;min-height:42px;padding:9px 10px;border:1px solid #c99d49;border-radius:10px;color:#f5dfa1;text-decoration:none;font-weight:800;text-align:center;background:rgba(7,35,27,.72)}
+.book-download:hover,.book-download:focus-visible{background:rgba(201,157,73,.16);outline:2px solid #d9b45a;outline-offset:2px}
+.book-license-note{display:block!important;min-height:0!important;color:#bdb29a!important;font-size:10px;line-height:1.35;text-align:center}
+@media(max-width:520px){.book-actions{gap:6px}.book-download{min-height:36px;padding:8px 5px;font-size:11px}.book-license-note{font-size:9px}}
