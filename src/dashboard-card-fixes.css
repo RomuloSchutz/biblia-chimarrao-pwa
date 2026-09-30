@@ -91,10 +91,9 @@
  .visual-card-grid .individual-card.visual-social-card .visual-social-links a {width:24px!important;height:24px!important;border-radius:6px!important;}
 }
 
-/* EXPERIMENTO ISOLADO: Sobre o Autor (referência) x Redes Sociais.
-   Uma única moldura interna, sem alterar dimensões ou cliques. */
-.visual-dashboard .visual-card-grid .individual-card[style*="card-sobre-autor.jpg"],
-.visual-dashboard .visual-card-grid .individual-card.visual-social-card {
+/* Moldura estrutural única, validada no desktop e celular nos cards piloto.
+   Não altera as artes nem os links; elimina bordas concorrentes. */
+.visual-dashboard .visual-card-grid .individual-card {
   position:relative!important;
   box-sizing:border-box!important;
   aspect-ratio:2 / 1!important;
@@ -104,16 +103,14 @@
   padding:0!important;
   overflow:hidden!important;
   border:0!important;
+  outline:0!important;
   border-radius:22px!important;
-  background-position:center center!important;
+  background-position:center!important;
   background-size:100% 100%!important;
   background-repeat:no-repeat!important;
   box-shadow:0 5px 15px #0008!important;
 }
-/* A borda pertence ao componente, não à fotografia.
-   Inset evita que 4px mudem as dimensões da imagem. */
-.visual-dashboard .visual-card-grid .individual-card[style*="card-sobre-autor.jpg"]::after,
-.visual-dashboard .visual-card-grid .individual-card.visual-social-card::after {
+.visual-dashboard .visual-card-grid .individual-card::after {
   content:""!important;
   display:block!important;
   position:absolute!important;
@@ -125,10 +122,12 @@
   pointer-events:none!important;
   z-index:10!important;
 }
-.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links {
-  z-index:11!important;
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links {z-index:11!important;}
+/* As barras inferiores também recebem a espessura de 4px aprovada. */
+.visual-dashboard .visual-bottom .visual-settings-bar {
+  box-sizing:border-box!important;
+  border:4px solid #c99a43!important;
 }
 @media(max-width:700px){
-  .visual-dashboard .visual-card-grid .individual-card[style*="card-sobre-autor.jpg"],
-  .visual-dashboard .visual-card-grid .individual-card.visual-social-card {border-radius:15px!important;}
+  .visual-dashboard .visual-card-grid .individual-card {border-radius:15px!important;}
 }
