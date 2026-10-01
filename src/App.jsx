@@ -171,7 +171,10 @@ export default function App() {
     setBookAccessMessage('')
     const access=bookAccess[title]
     if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return}
-    const {data,error}=await supabase.storage.from(access.bucket_id).download(access.object_path)
+    const {data:verified,error:verifyError}=await supabase.rpc('get_my_epub_signed_url',{target_edition_id:access.edition_id})
+    if(verifyError||!verified){setBookAccessMessage('Não foi possível autorizar este livro: '+(verifyError?.message||'acesso não confirmado.'));return}
+    const separator=verified.indexOf('|');const bucket=verified.slice(0,separator);const objectPath=verified.slice(separator+1)
+    const {data,error}=await supabase.storage.from(bucket).download(objectPath)
     if(error||!data){setBookAccessMessage('Não foi possível carregar o livro para leitura: '+(error?.message||'erro ao obter o EPUB.'));return}
     const url=URL.createObjectURL(data)
     setReaderTitle(title);setReaderUrl(url);setScreen('epub-reader');window.scrollTo(0,0)
