@@ -244,7 +244,7 @@ export default function App() {
     return Uint8Array.from(binary, character => character.charCodeAt(0))
   }
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
+  // O estado isStandalone definido no início também atende às notificações.
 
   async function registerClosedAppNotifications() {
     if (!user || !supabase) { setReminderMessage('Entre na sua conta para ativar as notificações.'); return }
