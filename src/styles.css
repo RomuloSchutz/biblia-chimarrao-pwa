@@ -676,3 +676,24 @@
 .encounter-audio-controls button{flex:1 1 120px;min-height:48px;border:1px solid #bfa064;border-radius:14px;background:#173d30;color:#f7edcf;font-weight:700;font-size:15px;padding:10px 14px;cursor:pointer}
 .encounter-audio-controls button:disabled{opacity:.48;cursor:default}
 .stage2-encounter .dash-message small{display:block;margin-top:10px;font-size:.95rem;line-height:1.4;color:#ead8aa}
+
+
+/* Área do Autor — formulário responsivo */
+.admin-page .reader-settings-panel{display:flex;flex-direction:column;gap:16px;width:100%;box-sizing:border-box}
+.admin-page .reader-settings-panel>label{display:flex;flex-direction:column;gap:7px;width:100%;margin:0;color:#f2dfbd;font-weight:700;line-height:1.3}
+.admin-page .reader-settings-panel input:not([type="checkbox"]),
+.admin-page .reader-settings-panel select,
+.admin-page .reader-settings-panel textarea{display:block;width:100%;max-width:100%;box-sizing:border-box;margin:0;padding:13px 14px;border:1px solid rgba(190,135,49,.6);border-radius:12px;background:#102019;color:#fff7e8;font:inherit;line-height:1.35}
+.admin-page .reader-settings-panel textarea{min-height:180px;resize:vertical}
+.admin-page .reader-settings-panel>label:has(input[type="checkbox"]){display:grid;grid-template-columns:28px 1fr;align-items:center;gap:10px}
+.admin-page .reader-settings-panel input[type="checkbox"]{width:24px;height:24px;margin:0;accent-color:#9a601d}
+.admin-page .reader-settings-panel .admin-actions{width:100%;margin-top:4px}
+@media(max-width:520px){
+  .admin-page .reader-settings-panel{padding:20px 16px;gap:15px}
+  .admin-page .reader-settings-panel h2{font-size:clamp(28px,8vw,38px);margin:0 0 4px}
+  .admin-page .reader-settings-panel input:not([type="checkbox"]),
+  .admin-page .reader-settings-panel select,
+  .admin-page .reader-settings-panel textarea{font-size:16px;min-height:48px}
+  .admin-page .reader-settings-panel textarea{min-height:210px}
+  .admin-page .reader-settings-panel .admin-actions{grid-template-columns:1fr}
+}
