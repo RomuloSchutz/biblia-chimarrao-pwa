@@ -137,13 +137,6 @@ export default function App() {
     return()=>{cancelled=true}
   },[user?.id])
 
-  async function openBooks(){
-    setBookAccessMessage('')
-    await loadBookAccess()
-    setScreen('books')
-    window.scrollTo(0,0)
-  }
-
   async function loadBookAccess(){
     if(!user||!supabase)return
     setBookAccessLoading(true);setBookAccessMessage('')
@@ -154,6 +147,12 @@ export default function App() {
     setBookAccess(map);setBookAccessLoading(false)
   }
   useEffect(()=>{if(user?.id)loadBookAccess();else setBookAccess({})},[user?.id])
+  async function openBooks(){
+    setBookAccessMessage('')
+    await loadBookAccess()
+    setScreen('books')
+    window.scrollTo(0,0)
+  }
 
   async function secureBookUrl(title,download=false){
     setBookAccessMessage('')
