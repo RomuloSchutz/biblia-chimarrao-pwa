@@ -25,7 +25,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(!epubUrl||!host.current){setLoading(false);setError('Arquivo EPUB não encontrado.');return}
     let cancelled=false, book
     try{
-      setLoading(true);setError(''); book=ePub(epubUrl); bookRef.current=book
+      setLoading(true);setError(''); book=ePub(epubUrl,{openAs:'epub'}); bookRef.current=book
       const view=book.renderTo(host.current,{width:'100%',height:'76vh',flow:'paginated'}); rendition.current=view
       view.themes.fontSize(fontSize+'%')
       view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}
