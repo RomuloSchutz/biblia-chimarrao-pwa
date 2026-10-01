@@ -55,6 +55,10 @@ export default function App() {
   const [bookFilter, setBookFilter] = useState('todos')
   const [bookSearch, setBookSearch] = useState('')
   const [readerTitle, setReaderTitle] = useState('')
+  const [readerUrl, setReaderUrl] = useState('')
+  const [bookAccess,setBookAccess]=useState({})
+  const [bookAccessLoading,setBookAccessLoading]=useState(false)
+  const [bookAccessMessage,setBookAccessMessage]=useState('')
   const [reminderTime, setReminderTime] = useState('08:00')
   const [weeklySchedule, setWeeklySchedule] = useState(null)
   const WEEKDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
@@ -132,6 +136,33 @@ export default function App() {
     })
     return()=>{cancelled=true}
   },[user?.id])
+
+  async function loadBookAccess(){
+    if(!user||!supabase)return
+    setBookAccessLoading(true);setBookAccessMessage('')
+    const {data,error}=await supabase.rpc('my_book_library')
+    if(error){setBookAccessMessage('Não foi possível verificar sua biblioteca.');setBookAccess({});setBookAccessLoading(false);return}
+    const map={}
+    ;(data||[]).forEach(item=>{map[item.title]={...item}})
+    setBookAccess(map);setBookAccessLoading(false)
+  }
+  useEffect(()=>{if(user?.id)loadBookAccess();else setBookAccess({})},[user?.id])
+
+  async function secureBookUrl(title,download=false){
+    const access=bookAccess[title]
+    if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
+    const {data,error}=await supabase.storage.from(access.bucket_id).createSignedUrl(access.object_path,300,{download:download?title+'.epub':false})
+    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido. Tente novamente.');return null}
+    return data.signedUrl
+  }
+  async function openSecureBook(title){
+    const url=await secureBookUrl(title,false);if(!url)return
+    setReaderTitle(title);setReaderUrl(url);setScreen('epub-reader');window.scrollTo(0,0)
+  }
+  async function downloadSecureBook(title){
+    const url=await secureBookUrl(title,true);if(!url)return
+    window.location.assign(url)
+  }
 
   useEffect(() => {
     if (!user || !supabase) return
@@ -572,12 +603,7 @@ export default function App() {
   }
 
   if (screen === 'epub-reader' && user) {
-    const epubFiles = {
-      'Chimarrão com Deus — 365 Encontros com Deus':'/chimarrao-com-deus.epub.epub',
-      'Entre os Tempos':'/entre-os-tempos.epub.epub',
-      'Entre o Já e o Ainda Não':'/entre-o-ja-e-o-ainda-nao.epub.epub'
-    }
-    return <EpubReader title={readerTitle} epubUrl={epubFiles[readerTitle]} onBack={() => setScreen('books')} />
+    return <EpubReader title={readerTitle} epubUrl={readerUrl} onBack={() => {setReaderUrl('');setScreen('books')}} />
   }
 
   if (screen === 'books' && user) {
@@ -588,7 +614,7 @@ export default function App() {
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Corpo · Alma · Espírito',cover:'ja',image:'/1000670931(1).jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',kind:'Trilogia em desenvolvimento',cover:'cidade',image:'/image (1).png',status:'Em breve',group:'projetos',action:'Projeto em desenvolvimento'}
     ]
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os três EPUBs oficiais já estão integrados ao leitor digital. O devocional também continua disponível no formato diário do aplicativo.</p></div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title}><div className={'book-cover '+book.cover}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={book.open}>{book.action} →</button>:(book.group==='publicados'||book.action==='Ler EPUB')?<div className="book-actions"><button onClick={()=>{setReaderTitle(book.title);setScreen('epub-reader');window.scrollTo(0,0)}}>Ler no aplicativo →</button><a className="book-download" href={{'Chimarrão com Deus — 365 Encontros com Deus':'/chimarrao-com-deus.epub.epub','Entre os Tempos':'/entre-os-tempos.epub.epub','Entre o Já e o Ainda Não':'/entre-o-ja-e-o-ainda-nao.epub.epub'}[book.title]} download>Baixar EPUB ↓</a><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os EPUBs ficam protegidos por conta. Livros adquiridos ou liberados pelo administrador podem ser lidos no aplicativo e baixados para uso pessoal.</p>{bookAccessMessage&&<p className="encounter-save-status">{bookAccessMessage}</p>}</div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title}><div className={'book-cover '+book.cover}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={book.open}>{book.action} →</button>:(book.group==='publicados'||book.action==='Ler EPUB')?(bookAccessLoading?<button className="book-disabled" disabled>Verificando acesso...</button>:bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={()=>openSecureBook(book.title)}>Ler no aplicativo →</button><button className="book-download" onClick={()=>downloadSecureBook(book.title)}>Baixar EPUB ↓</button><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<div className="book-actions"><button className="book-disabled" disabled>🔒 Livro não adquirido</button><small className="book-license-note">Após a compra ou liberação pelo administrador, a leitura e o download serão habilitados nesta conta.</small></div>):<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}</main>
   }
 
   if (screen === 'notes' && user) {
