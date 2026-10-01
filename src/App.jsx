@@ -156,10 +156,12 @@ export default function App() {
   useEffect(()=>{if(user?.id)loadBookAccess();else setBookAccess({})},[user?.id])
 
   async function secureBookUrl(title,download=false){
+    setBookAccessMessage('')
     const access=bookAccess[title]
     if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
-    const {data,error}=await supabase.storage.from(access.bucket_id).createSignedUrl(access.object_path,300,{download:download?title+'.epub':false})
-    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido. Tente novamente.');return null}
+    const options=download?{download:title+'.epub'}:undefined
+    const {data,error}=await supabase.storage.from(access.bucket_id).createSignedUrl(access.object_path,300,options)
+    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(error?.message||'erro ao gerar acesso temporário.'));return null}
     return data.signedUrl
   }
   async function openSecureBook(title){
@@ -168,7 +170,7 @@ export default function App() {
   }
   async function downloadSecureBook(title){
     const url=await secureBookUrl(title,true);if(!url)return
-    window.location.assign(url)
+    const link=document.createElement('a');link.href=url;link.download=title+'.epub';link.rel='noopener';document.body.appendChild(link);link.click();link.remove()
   }
 
   useEffect(() => {
