@@ -26,6 +26,7 @@ export default function App() {
   const [pensarNote, setPensarNote] = useState('')
   const [passoNote, setPassoNote] = useState('')
   const [encounterStatus, setEncounterStatus] = useState('')
+  const [encounterAudioState, setEncounterAudioState] = useState('stopped')
   const [encounter, setEncounter] = useState(null)
   const [encounterLoading, setEncounterLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -573,6 +574,59 @@ export default function App() {
     }
   }
 
+  function stopEncounterAudio() {
+    if (!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    setEncounterAudioState('stopped')
+  }
+
+  function pauseResumeEncounterAudio() {
+    if (!('speechSynthesis' in window)) return
+    if (encounterAudioState === 'playing') {
+      window.speechSynthesis.pause()
+      setEncounterAudioState('paused')
+    } else if (encounterAudioState === 'paused') {
+      window.speechSynthesis.resume()
+      setEncounterAudioState('playing')
+    }
+  }
+
+  function playEncounterAudio() {
+    if (!encounter || !('speechSynthesis' in window)) {
+      setEncounterStatus('A leitura em voz alta não está disponível neste dispositivo.')
+      return
+    }
+    window.speechSynthesis.cancel()
+    const voices = window.speechSynthesis.getVoices()
+    const ptVoices = voices.filter(v => /^pt(-|_)/i.test(v.lang || ''))
+    const narratorVoice = ptVoices[0] || voices[0] || null
+    const bibleVoice = ptVoices.find(v => v.voiceURI !== narratorVoice?.voiceURI) || voices.find(v => v.voiceURI !== narratorVoice?.voiceURI) || narratorVoice
+    const segments = [
+      ['narrator', 'Dia ' + encounter.day_number + '. ' + (encounter.title || '')],
+      ['narrator', 'Bom Dia, Deus. ' + (encounter.bom_dia_deus || '')],
+      ['narrator', 'A Palavra. ' + (encounter.verse_reference || '') + '. ' + (encounter.bible_version || 'Almeida 1911') + '.'],
+      ['bible', encounter.verse_text || ''],
+      ['narrator', 'Mate da Reflexão. ' + (encounter.reflection || '')],
+      ['narrator', 'Para Pensar. ' + (encounter.para_pensar || '')],
+      ['narrator', 'Conversa com Deus. ' + (encounter.conversa_com_deus || '')],
+      ['narrator', 'Um Passo para Hoje. ' + (encounter.um_passo_para_hoje || '')]
+    ].filter(([,text]) => String(text).trim())
+    if (!segments.length) return
+    setEncounterAudioState('playing')
+    segments.forEach(([role,text],index) => {
+      const utterance = new SpeechSynthesisUtterance(String(text).replace(/\s+/g,' ').trim())
+      utterance.lang = 'pt-BR'
+      utterance.rate = role === 'bible' ? 0.88 : 0.94
+      utterance.pitch = role === 'bible' ? 0.92 : 1
+      utterance.voice = role === 'bible' ? bibleVoice : narratorVoice
+      if (index === segments.length - 1) {
+        utterance.onend = () => setEncounterAudioState('stopped')
+        utterance.onerror = () => setEncounterAudioState('stopped')
+      }
+      window.speechSynthesis.speak(utterance)
+    })
+  }
+
   function goPrevious() {
     if (!encounter || encounter.day_number <= 1) { setEncounterStatus('Este é o primeiro encontro da edição.'); return }
     openEncounter(encounter.day_number - 1)
@@ -664,7 +718,7 @@ export default function App() {
 
   if (screen === 'encounter') {
     if (encounterLoading || !encounter) return <main className="dashboard"><p className="encounter-save-status">Carregando encontro...</p></main>
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Prévia 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><article className="welcome stage2-encounter"><div className="stage2-encounter-hero"><img src={"/devocional/mes_"+String(months.find(m=>m[1]?.toLowerCase()===String(encounter.month_name||"").toLowerCase())?.[0]||1).padStart(2,"0")+".jpg"} alt=""/><div className="stage2-encounter-heading"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2></div></div><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small>{encounter.verse_reference}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea disabled={!user} value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea disabled={!user} value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div>{!user && <div className="guest-preview-note"><strong>Gostou da experiência?</strong><p>Crie sua conta para registrar suas anotações e continuar sua caminhada.</p><button onClick={()=>setScreen("signup")}>Criar minha conta</button></div>}<nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={user ? saveEncounterNotes : ()=>setScreen("signup")}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={user ? toggleEncounterFavorite : ()=>setScreen("signup")}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={user || encounter.day_number<3 ? goNext : ()=>setScreen("guestDemo")}><span>Próximo</span> →</button></nav><button className="complete-encounter" onClick={user ? markEncounterCompleted : ()=>setScreen("signup")}>✓ Concluir este encontro</button>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Prévia 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><article className="welcome stage2-encounter"><div className="stage2-encounter-hero"><img src={"/devocional/mes_"+String(months.find(m=>m[1]?.toLowerCase()===String(encounter.month_name||"").toLowerCase())?.[0]||1).padStart(2,"0")+".jpg"} alt=""/><div className="stage2-encounter-heading"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2></div></div><div className="encounter-audio-controls" role="group" aria-label="Leitura em voz alta do encontro"><button type="button" onClick={playEncounterAudio} disabled={encounterAudioState==='playing'}>🔊 {encounterAudioState==='stopped'?'Ouvir o Encontro':'Reiniciar'}</button><button type="button" onClick={pauseResumeEncounterAudio} disabled={encounterAudioState==='stopped'}>{encounterAudioState==='paused'?'▶ Continuar':'⏸ Pausar'}</button><button type="button" onClick={stopEncounterAudio} disabled={encounterAudioState==='stopped'}>■ Parar</button></div><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small><strong>{encounter.verse_reference}</strong>{encounter.bible_version ? ' — '+encounter.bible_version : ' — Almeida 1911'}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea disabled={!user} value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea disabled={!user} value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div>{!user && <div className="guest-preview-note"><strong>Gostou da experiência?</strong><p>Crie sua conta para registrar suas anotações e continuar sua caminhada.</p><button onClick={()=>setScreen("signup")}>Criar minha conta</button></div>}<nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={user ? saveEncounterNotes : ()=>setScreen("signup")}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={user ? toggleEncounterFavorite : ()=>setScreen("signup")}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={user || encounter.day_number<3 ? goNext : ()=>setScreen("guestDemo")}><span>Próximo</span> →</button></nav><button className="complete-encounter" onClick={user ? markEncounterCompleted : ()=>setScreen("signup")}>✓ Concluir este encontro</button>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
   }
 
   if (screen === 'reminder' && user) {
