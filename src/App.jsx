@@ -68,6 +68,9 @@ export default function App() {
   const [adminLoading,setAdminLoading]=useState(false)
   const [adminMessage,setAdminMessage]=useState('')
   const [adminSearch,setAdminSearch]=useState('')
+  const [adminBookUser,setAdminBookUser]=useState(null)
+  const [adminBookEntitlements,setAdminBookEntitlements]=useState([])
+  const [adminBookLoading,setAdminBookLoading]=useState(false)
 
   useEffect(()=>{
     localStorage.setItem('bc-appearance',appearance)
@@ -613,6 +616,28 @@ export default function App() {
     setAdminLoading(false);setScreen('admin');window.scrollTo({top:0,behavior:'smooth'})
   }
 
+  async function openAdminBooks(item){
+    if(!isAdmin||!supabase)return
+    setAdminBookUser(item);setAdminBookLoading(true);setAdminMessage('')
+    const {data,error}=await supabase.rpc('admin_list_book_entitlements',{target_user_id:item.user_id})
+    if(error){setAdminMessage('Erro ao carregar livros: '+error.message);setAdminBookEntitlements([])}
+    else setAdminBookEntitlements(data||[])
+    setAdminBookLoading(false)
+  }
+
+  async function changeBookEntitlement(book,grant){
+    if(!adminBookUser||!isAdmin||!supabase)return
+    setAdminMessage(grant?'Liberando livro...':'Removendo acesso ao livro...')
+    const rpc=grant?'admin_grant_book':'admin_revoke_book'
+    const args=grant?{target_user_id:adminBookUser.user_id,target_edition_id:book.edition_id,grant_source:'admin'}:{target_user_id:adminBookUser.user_id,target_edition_id:book.edition_id}
+    const {error}=await supabase.rpc(rpc,args)
+    if(error){setAdminMessage('Erro: '+error.message);return}
+    await openAdminBooks(adminBookUser)
+    const {data}=await supabase.rpc('admin_list_users')
+    if(data)setAdminUsers(data)
+    setAdminMessage(grant?'✓ Livro liberado para este leitor.':'✓ Acesso ao livro removido.')
+  }
+
   async function changeAdminAccess(item,status){
     if(!isAdmin||!supabase||item.is_admin)return
     setAdminMessage('Atualizando acesso...')
@@ -630,7 +655,8 @@ export default function App() {
         <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
         <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
         {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
-        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
+        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" onClick={()=>openAdminBooks(item)}>📚 Livros</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
+        {adminBookUser&&<section className="admin-book-access"><div className="admin-book-access-head"><div><p className="eyebrow">BIBLIOTECA DO LEITOR</p><h2>{adminBookUser.full_name||adminBookUser.email}</h2><p>Libere ou remova cada obra individualmente. Esta é a mesma permissão que futuramente será concedida automaticamente pelo Mercado Pago.</p></div><button type="button" onClick={()=>{setAdminBookUser(null);setAdminBookEntitlements([])}}>Fechar</button></div>{adminBookLoading?<p>Carregando livros...</p>:<div className="admin-book-list">{adminBookEntitlements.map(book=><article key={book.edition_id}><div><strong>{book.title}</strong>{book.subtitle&&<small>{book.subtitle}</small>}<span>{book.has_access?'✓ Liberado'+(book.source?' · '+book.source:''):'Não adquirido'}</span></div><button type="button" className={book.has_access?'admin-block':''} onClick={()=>changeBookEntitlement(book,!book.has_access)}>{book.has_access?'Remover acesso':'Liberar livro'}</button></article>)}</div>}</section>}
       </section>
     </main>
   }
