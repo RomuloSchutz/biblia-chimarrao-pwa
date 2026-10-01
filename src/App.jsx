@@ -160,10 +160,13 @@ export default function App() {
   async function secureBookUrl(title,download=false){
     setBookAccessMessage('')
     const access=bookAccess[title]
-    if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
+    if(!access?.has_access||!access?.edition_id){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
     const {data:sessionData}=await supabase.auth.getSession()
     if(!sessionData?.session){setBookAccessMessage('Sua sessão expirou. Entre novamente na sua conta para acessar o livro.');return null}
-    const {data,error}=await supabase.storage.from(access.bucket_id).createSignedUrl(access.object_path,300)
+    const {data:verified,error:verifyError}=await supabase.rpc('get_my_epub_path',{target_edition_id:access.edition_id})
+    const verifiedPath=verified?.[0]
+    if(verifyError||!verifiedPath){setBookAccessMessage('Não foi possível autorizar este livro: '+(verifyError?.message||'acesso não confirmado.'));return null}
+    const {data,error}=await supabase.storage.from(verifiedPath.bucket_id).createSignedUrl(verifiedPath.object_path,300)
     if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(error?.message||'erro ao gerar acesso temporário.'));return null}
     return data.signedUrl
   }
