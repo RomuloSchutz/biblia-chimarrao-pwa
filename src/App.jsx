@@ -143,7 +143,10 @@ export default function App() {
     const {data,error}=await supabase.rpc('my_book_library')
     if(error){setBookAccessMessage('Não foi possível verificar sua biblioteca.');setBookAccess({});setBookAccessLoading(false);return}
     const map={}
-    ;(data||[]).forEach(item=>{map[item.title]={...item}})
+    ;(data||[]).forEach(item=>{
+      map[item.title]={...item}
+      if(item.title==='Bíblia + Chimarrão')map['Chimarrão com Deus — 365 Encontros com Deus']={...item}
+    })
     setBookAccess(map);setBookAccessLoading(false)
   }
   useEffect(()=>{if(user?.id)loadBookAccess();else setBookAccess({})},[user?.id])
