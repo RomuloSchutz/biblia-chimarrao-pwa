@@ -71,6 +71,9 @@ export default function App() {
   const [adminBookUser,setAdminBookUser]=useState(null)
   const [adminBookEntitlements,setAdminBookEntitlements]=useState([])
   const [adminBookLoading,setAdminBookLoading]=useState(false)
+  const [installPrompt,setInstallPrompt]=useState(null)
+  const [installMessage,setInstallMessage]=useState('')
+  const [isStandalone,setIsStandalone]=useState(()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true)
 
   useEffect(()=>{
     localStorage.setItem('bc-appearance',appearance)
@@ -80,6 +83,25 @@ export default function App() {
     media.addEventListener?.('change',apply)
     return ()=>media.removeEventListener?.('change',apply)
   },[appearance])
+  useEffect(()=>{
+    const onPrompt=e=>{e.preventDefault();setInstallPrompt(e)}
+    const onInstalled=()=>{setInstallPrompt(null);setIsStandalone(true);setInstallMessage('✓ Bíblia + Chimarrão instalado.')}
+    window.addEventListener('beforeinstallprompt',onPrompt)
+    window.addEventListener('appinstalled',onInstalled)
+    return()=>{window.removeEventListener('beforeinstallprompt',onPrompt);window.removeEventListener('appinstalled',onInstalled)}
+  },[])
+
+  async function installApp(){
+    if(installPrompt){
+      await installPrompt.prompt()
+      const choice=await installPrompt.userChoice
+      if(choice.outcome==='accepted')setInstallMessage('Instalação iniciada. O ícone ficará na tela do seu celular.')
+      setInstallPrompt(null);return
+    }
+    const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent)
+    setInstallMessage(isiOS?'No iPhone/iPad: abra no Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.':'No navegador, abra o menu ⋮ e escolha “Instalar aplicativo” ou “Adicionar à tela inicial”.')
+  }
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(err =>
@@ -758,7 +780,7 @@ export default function App() {
     )
   }
 
-  if (screen === 'landing') return <main className="premium-opening guest-landing"><div className="premium-opening-frame landing-cover-frame"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/><div className="premium-opening-actions guest-landing-actions landing-overlay-actions"><button className="guest-round-action" onClick={()=>setScreen(user ? 'dashboard' : 'guestDemo')}><span className="guest-round-icon" aria-hidden="true">✦</span><span className="guest-round-label">{user ? 'Entrar no aplicativo' : 'Conhecer o aplicativo'}</span></button>{!user && <><button className="guest-round-action" onClick={()=>setScreen('signup')}><span className="guest-round-icon" aria-hidden="true">＋</span><span className="guest-round-label">Criar minha conta</span></button><button className="guest-round-action" onClick={()=>setScreen('login')}><span className="guest-round-icon" aria-hidden="true">↳</span><span className="guest-round-label">Já tenho uma conta</span></button></>}</div></div></main>
+  if (screen === 'landing') return <main className="premium-opening guest-landing"><div className="premium-opening-frame landing-cover-frame"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/><div className="premium-opening-actions guest-landing-actions landing-overlay-actions"><button className="guest-round-action" onClick={()=>setScreen(user ? 'dashboard' : 'guestDemo')}><span className="guest-round-icon" aria-hidden="true">✦</span><span className="guest-round-label">{user ? 'Entrar no aplicativo' : 'Conhecer o aplicativo'}</span></button>{!isStandalone&&<button className="guest-round-action install-round-action" onClick={installApp}><span className="guest-round-icon" aria-hidden="true">↓</span><span className="guest-round-label">Instalar aplicativo</span></button>}{installMessage&&<span className="install-message" role="status">{installMessage}</span>}{!user && <><button className="guest-round-action" onClick={()=>setScreen('signup')}><span className="guest-round-icon" aria-hidden="true">＋</span><span className="guest-round-label">Criar minha conta</span></button><button className="guest-round-action" onClick={()=>setScreen('login')}><span className="guest-round-icon" aria-hidden="true">↳</span><span className="guest-round-label">Já tenho uma conta</span></button></>}</div></div></main>
 
   if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-boas-vindas-oficial.webp" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Conheça a proposta do devocional e crie sua conta para acessar os recursos disponíveis.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
 
