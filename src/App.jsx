@@ -165,7 +165,12 @@ export default function App() {
     return data.signedUrl
   }
   async function openSecureBook(title){
-    const url=await secureBookUrl(title,false);if(!url)return
+    setBookAccessMessage('')
+    const access=bookAccess[title]
+    if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return}
+    const {data,error}=await supabase.storage.from(access.bucket_id).download(access.object_path)
+    if(error||!data){setBookAccessMessage('Não foi possível carregar o livro para leitura: '+(error?.message||'erro ao obter o EPUB.'));return}
+    const url=URL.createObjectURL(data)
     setReaderTitle(title);setReaderUrl(url);setScreen('epub-reader');window.scrollTo(0,0)
   }
   async function downloadSecureBook(title){
