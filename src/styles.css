@@ -664,3 +664,8 @@
 .admin-book-list span{color:#d9b45a;font-size:11px;font-weight:800}
 .admin-book-list button{margin:0;min-width:125px}
 @media(max-width:620px){.admin-book-access{padding:14px}.admin-book-access-head{display:block}.admin-book-access-head>button{margin:0 0 12px}.admin-book-list article{align-items:stretch;flex-direction:column}.admin-book-list button{width:100%}}
+
+
+/* Instalação PWA na tela inicial */
+.install-round-action .guest-round-icon{font-size:25px;font-weight:900}
+.install-message{grid-column:1/-1;display:block;max-width:360px;margin:2px auto 0;padding:7px 10px;border-radius:10px;background:rgba(5,31,23,.88);color:#f4dfa3;font-size:11px;line-height:1.35;text-align:center}
