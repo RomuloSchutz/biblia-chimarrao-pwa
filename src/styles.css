@@ -669,3 +669,10 @@
 /* Instalação PWA na tela inicial */
 .install-round-action .guest-round-icon{font-size:25px;font-weight:900}
 .install-message{grid-column:1/-1;display:block;max-width:360px;margin:2px auto 0;padding:7px 10px;border-radius:10px;background:rgba(5,31,23,.88);color:#f4dfa3;font-size:11px;line-height:1.35;text-align:center}
+
+
+/* Leitura acessível dos 365 encontros */
+.encounter-audio-controls{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 18px;padding:14px;border:1px solid rgba(191,160,100,.55);border-radius:16px;background:rgba(23,61,48,.72)}
+.encounter-audio-controls button{flex:1 1 120px;min-height:48px;border:1px solid #bfa064;border-radius:14px;background:#173d30;color:#f7edcf;font-weight:700;font-size:15px;padding:10px 14px;cursor:pointer}
+.encounter-audio-controls button:disabled{opacity:.48;cursor:default}
+.stage2-encounter .dash-message small{display:block;margin-top:10px;font-size:.95rem;line-height:1.4;color:#ead8aa}
