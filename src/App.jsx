@@ -137,6 +137,13 @@ export default function App() {
     return()=>{cancelled=true}
   },[user?.id])
 
+  async function openBooks(){
+    setBookAccessMessage('')
+    await loadBookAccess()
+    setScreen('books')
+    window.scrollTo(0,0)
+  }
+
   async function loadBookAccess(){
     if(!user||!supabase)return
     setBookAccessLoading(true);setBookAccessMessage('')
@@ -599,7 +606,7 @@ export default function App() {
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',meta:'Trilogia em desenvolvimento',image:'/image (1).png',status:'EM DESENVOLVIMENTO',text:'Uma narrativa sobre cidade, escolhas, relações, fé e consequências. Três movimentos de uma mesma história: NASCE, CRESCE e VIVE.'}
     ]
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Obras de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome author-books-head stage3-authorbooks-head"><p className="eyebrow">LIVROS DO ROMULO</p><h2>Tempo, história, fé e esperança.</h2><p>Conheça as obras e projetos de Romulo Schutz — livros que percorrem o tempo, a vida e as perguntas que acompanham a caminhada humana.</p><div className="author-signature">Romulo Schutz<small>Autor · História · Fé · Reflexão</small></div></section><section className="author-books-grid stage3-authorbooks-grid">{works.map(work=>{const openWork=()=>{setBookSearch(work.title);setBookFilter('todos');setScreen('books');window.scrollTo(0,0)};return <article className="author-book-card author-book-clickable" key={work.title} role="button" tabIndex={0} onClick={openWork} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openWork()}}}><div className="author-book-cover"><img src={work.image} alt={'Capa de '+work.title} loading="lazy" /></div><div className="author-book-copy"><span>{work.status}</span><h3>{work.title}</h3><h4>{work.sub}</h4><p>{work.text}</p><small>{work.meta}</small><strong className="author-book-open">Ver na biblioteca →</strong></div></article>})}</section><section className="author-books-footer"><strong>Uma obra. Uma ideia. Uma conversa que continua.</strong><p>Este espaço acompanhará os livros publicados e os projetos em desenvolvimento.</p></section></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Obras de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome author-books-head stage3-authorbooks-head"><p className="eyebrow">LIVROS DO ROMULO</p><h2>Tempo, história, fé e esperança.</h2><p>Conheça as obras e projetos de Romulo Schutz — livros que percorrem o tempo, a vida e as perguntas que acompanham a caminhada humana.</p><div className="author-signature">Romulo Schutz<small>Autor · História · Fé · Reflexão</small></div></section><section className="author-books-grid stage3-authorbooks-grid">{works.map(work=>{const openWork=()=>{setBookSearch(work.title);setBookFilter('todos');openBooks()};return <article className="author-book-card author-book-clickable" key={work.title} role="button" tabIndex={0} onClick={openWork} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openWork()}}}><div className="author-book-cover"><img src={work.image} alt={'Capa de '+work.title} loading="lazy" /></div><div className="author-book-copy"><span>{work.status}</span><h3>{work.title}</h3><h4>{work.sub}</h4><p>{work.text}</p><small>{work.meta}</small><strong className="author-book-open">Ver na biblioteca →</strong></div></article>})}</section><section className="author-books-footer"><strong>Uma obra. Uma ideia. Uma conversa que continua.</strong><p>Este espaço acompanhará os livros publicados e os projetos em desenvolvimento.</p></section></main>
   }
 
   if (screen === 'epub-reader' && user) {
@@ -733,7 +740,7 @@ export default function App() {
               ["Minha Caminhada","Registre e acompanhe","/card-caminhada.jpg",()=>openJourney(),"⌁"],
               ["Favoritos","Encontros que tocaram você","/card-favoritos.jpg",()=>openFavorites(),"♡"],
               ["Minhas Anotações","Suas reflexões e orações","/card-anotacoes.jpg",()=>openNotes(),"✎"],
-              ["Meus Livros","Sua biblioteca particular","/card-meus-livros.jpg",()=>setScreen('books'),"▤"],
+              ["Meus Livros","Sua biblioteca particular","/card-meus-livros.jpg",()=>openBooks(),"▤"],
               ["Livros do Romulo","Conheça todas as obras","/card-livros-romulo.jpg",()=>setScreen('authorBooks'),"▥"],
               ["Ideias e Reflexões","Conteúdos para inspirar","/card-ideias.jpg",()=>setScreen('ideas'),"✧"],
               ["Hora do Mate","Não perca seu encontro","/card-hora-mate.jpg",()=>{setReminderMessage('');setScreen('reminder')},"◷"],
@@ -779,7 +786,7 @@ export default function App() {
                 <p>Prepare seu chimarrão e venha ter um encontro com Deus hoje.</p>
                 <div className="stage1-day-title"><small>DEVOCIONAL DO DIA</small><strong>Seu encontro com Deus</strong></div>
                 <button className="stage1-enter" onClick={()=>{const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',month:'numeric',day:'numeric'}).formatToParts(new Date());const m=Number(parts.find(p=>p.type==='month')?.value);const d=Number(parts.find(p=>p.type==='day')?.value);const day=new Date(2027,m-1,d);const start=new Date(2027,0,1);openEncounter(Math.floor((day-start)/86400000)+1)}}>📖 Entrar no Encontro de Hoje <span aria-hidden="true">›</span></button>
-                <div className="stage1-quick"><button onClick={openJourney}><span>▥</span>Minha Caminhada</button><button onClick={openFavorites}><span>♡</span>Meus Favoritos</button><button onClick={openNotes}><span>✎</span>Minhas Anotações</button><button onClick={()=>setScreen('books')}><span>▤</span>Meus Livros</button></div>
+                <div className="stage1-quick"><button onClick={openJourney}><span>▥</span>Minha Caminhada</button><button onClick={openFavorites}><span>♡</span>Meus Favoritos</button><button onClick={openNotes}><span>✎</span>Minhas Anotações</button><button onClick={()=>openBooks()}><span>▤</span>Meus Livros</button></div>
               </div>
             </section>
           </div>
