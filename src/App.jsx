@@ -76,6 +76,10 @@ export default function App() {
   const [adminBookUser,setAdminBookUser]=useState(null)
   const [adminBookEntitlements,setAdminBookEntitlements]=useState([])
   const [adminBookLoading,setAdminBookLoading]=useState(false)
+  const [adminAuthorItems,setAdminAuthorItems]=useState([])
+  const [adminAuthorLoading,setAdminAuthorLoading]=useState(false)
+  const [adminAuthorMessage,setAdminAuthorMessage]=useState('')
+  const [adminAuthorForm,setAdminAuthorForm]=useState({id:null,content_type:'reflection',book_key:'',theme:'',title:'',highlight:'',body:'',is_published:false})
   const [installPrompt,setInstallPrompt]=useState(null)
   const [installMessage,setInstallMessage]=useState('')
   const [isStandalone,setIsStandalone]=useState(()=>window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone===true)
@@ -766,6 +770,41 @@ export default function App() {
     setAdminMessage(grant?'✓ Livro liberado para este leitor.':'✓ Acesso ao livro removido.')
   }
 
+  async function openAuthorArea(){
+    if(!isAdmin||!supabase)return
+    setAdminAuthorLoading(true);setAdminAuthorMessage('');setScreen('adminAuthor')
+    const {data,error}=await supabase.from('author_content').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false})
+    setAdminAuthorLoading(false)
+    if(error){setAdminAuthorMessage('Erro ao carregar: '+error.message);return}
+    setAdminAuthorItems(data||[])
+  }
+
+  function resetAuthorForm(){
+    setAdminAuthorForm({id:null,content_type:'reflection',book_key:'',theme:'',title:'',highlight:'',body:'',is_published:false})
+  }
+
+  async function saveAuthorContent(e){
+    e.preventDefault();if(!isAdmin||!supabase)return
+    if(!adminAuthorForm.title.trim()){setAdminAuthorMessage('Informe o título.');return}
+    setAdminAuthorLoading(true);setAdminAuthorMessage('Salvando...')
+    const payload={content_type:adminAuthorForm.content_type,book_key:adminAuthorForm.book_key||null,theme:adminAuthorForm.theme||null,title:adminAuthorForm.title.trim(),highlight:adminAuthorForm.highlight||null,body:adminAuthorForm.body||null,is_published:adminAuthorForm.is_published,published_at:adminAuthorForm.is_published?new Date().toISOString():null,updated_at:new Date().toISOString()}
+    let result
+    if(adminAuthorForm.id) result=await supabase.from('author_content').update(payload).eq('id',adminAuthorForm.id)
+    else result=await supabase.from('author_content').insert({...payload,created_by:user.id})
+    if(result.error){setAdminAuthorLoading(false);setAdminAuthorMessage('Erro ao salvar: '+result.error.message);return}
+    resetAuthorForm();setAdminAuthorMessage('✓ Conteúdo salvo.')
+    const {data}=await supabase.from('author_content').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false})
+    setAdminAuthorItems(data||[]);setAdminAuthorLoading(false)
+  }
+
+  async function toggleAuthorPublish(item){
+    const next=!item.is_published
+    const {error}=await supabase.from('author_content').update({is_published:next,published_at:next?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq('id',item.id)
+    if(error){setAdminAuthorMessage('Erro: '+error.message);return}
+    setAdminAuthorItems(list=>list.map(x=>x.id===item.id?{...x,is_published:next}:x))
+    setAdminAuthorMessage(next?'✓ Publicado.':'✓ Retirado da publicação.')
+  }
+
   async function changeAdminAccess(item,status){
     if(!isAdmin||!supabase||item.is_admin)return
     setAdminMessage('Atualizando acesso...')
@@ -775,12 +814,33 @@ export default function App() {
     setAdminMessage(status==='active'?'✓ Acesso liberado.':'✓ Acesso bloqueado.')
   }
 
+  if(screen==='adminAuthor'&&user&&isAdmin){
+    const typeNames={reflection:'Ideia / Reflexão',book_page:'Página complementar',quote:'Citação / Frase',note:'Nota do autor'}
+    const books=['Entre os Tempos','Entre o Já e o Ainda Não','Entre a Cidade e o Silêncio','Entre os Sistemas I','Entre os Sistemas II','Entre a Honra e a Gratidão']
+    return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Área do Autor</small></div><button className="logout" onClick={()=>setScreen('admin')}>← Painel</button></header>
+      <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA DO AUTOR</p><h1>Publicações e conteúdos</h1><p>Crie e edite reflexões, citações, notas e páginas complementares dos livros. Os EPUBs permanecem separados e não são alterados aqui.</p></div>
+      <form className="reader-settings-panel" onSubmit={saveAuthorContent}><h2>{adminAuthorForm.id?'Editar conteúdo':'Novo conteúdo'}</h2>
+        <label>Tipo<select value={adminAuthorForm.content_type} onChange={e=>setAdminAuthorForm(v=>({...v,content_type:e.target.value}))}>{Object.entries(typeNames).map(([k,n])=><option key={k} value={k}>{n}</option>)}</select></label>
+        {adminAuthorForm.content_type!=='reflection'&&<label>Livro<select value={adminAuthorForm.book_key} onChange={e=>setAdminAuthorForm(v=>({...v,book_key:e.target.value}))}><option value="">Selecione...</option>{books.map(b=><option key={b}>{b}</option>)}</select></label>}
+        <label>Tema<input value={adminAuthorForm.theme} onChange={e=>setAdminAuthorForm(v=>({...v,theme:e.target.value}))} placeholder="Ex.: Tempo, Esperança, Fé" /></label>
+        <label>Título<input value={adminAuthorForm.title} onChange={e=>setAdminAuthorForm(v=>({...v,title:e.target.value}))} required /></label>
+        <label>Frase de destaque<input value={adminAuthorForm.highlight} onChange={e=>setAdminAuthorForm(v=>({...v,highlight:e.target.value}))} /></label>
+        <label>Texto<textarea rows="8" value={adminAuthorForm.body} onChange={e=>setAdminAuthorForm(v=>({...v,body:e.target.value}))} /></label>
+        <label><input type="checkbox" checked={adminAuthorForm.is_published} onChange={e=>setAdminAuthorForm(v=>({...v,is_published:e.target.checked}))} /> Publicar para os leitores</label>
+        <div className="admin-actions"><button disabled={adminAuthorLoading}>{adminAuthorForm.id?'Salvar alterações':'Criar conteúdo'}</button>{adminAuthorForm.id&&<button type="button" onClick={resetAuthorForm}>Cancelar edição</button>}</div>
+      </form>
+      {adminAuthorMessage&&<p className="admin-message" role="status">{adminAuthorMessage}</p>}
+      <h2>Conteúdos cadastrados</h2>{adminAuthorLoading&&!adminAuthorItems.length?<p>Carregando...</p>:<div className="admin-user-list">{adminAuthorItems.map(item=><article className="admin-user-card" key={item.id}><div className="admin-user-head"><div><strong>{item.title}</strong><small>{typeNames[item.content_type]}{item.book_key?' · '+item.book_key:''}</small></div><span className={'admin-status '+(item.is_published?'active':'pending')}>{item.is_published?'Publicado':'Rascunho'}</span></div>{item.highlight&&<p>“{item.highlight}”</p>}<div className="admin-actions compact-actions"><button type="button" onClick={()=>{setAdminAuthorForm({id:item.id,content_type:item.content_type,book_key:item.book_key||'',theme:item.theme||'',title:item.title||'',highlight:item.highlight||'',body:item.body||'',is_published:item.is_published});window.scrollTo({top:0,behavior:'smooth'})}}>Editar</button><button type="button" onClick={()=>toggleAuthorPublish(item)}>{item.is_published?'Despublicar':'Publicar'}</button></div></article>)}</div>}
+      </section></main>
+  }
+
   if(screen==='admin'&&user&&isAdmin){
     const filteredAdminUsers=adminUsers.filter(item=>{const q=adminSearch.trim().toLocaleLowerCase('pt-BR');return !q||String(item.full_name||'').toLocaleLowerCase('pt-BR').includes(q)||String(item.email||'').toLocaleLowerCase('pt-BR').includes(q)})
     return <main className="dashboard admin-page">
       <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
       <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Leitores</h1><p>Clientes, edições adquiridas e controle de acesso.</p></div>
         <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
+        <button type="button" className="support-copy" onClick={openAuthorArea}>✍ Área do Autor — publicar e editar conteúdos</button>
         <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
         {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
         {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" onClick={()=>openAdminBooks(item)}>📚 Livros</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
