@@ -850,13 +850,15 @@ export default function App() {
   async function saveAuthorContent(e){
     e.preventDefault();if(!isAdmin||!supabase)return
     if(!adminAuthorForm.title.trim()){setAdminAuthorMessage('Informe o título.');return}
+    if(adminAuthorForm.content_type!=='reflection'&&!adminAuthorForm.book_key){setAdminAuthorMessage('Selecione o livro deste conteúdo.');return}
     setAdminAuthorLoading(true);setAdminAuthorMessage('Salvando...')
     const payload={content_type:adminAuthorForm.content_type,book_key:adminAuthorForm.book_key||null,theme:adminAuthorForm.theme||null,title:adminAuthorForm.title.trim(),highlight:adminAuthorForm.highlight||null,body:adminAuthorForm.body||null,is_published:adminAuthorForm.is_published,published_at:adminAuthorForm.is_published?new Date().toISOString():null,updated_at:new Date().toISOString()}
     let result
     if(adminAuthorForm.id) result=await supabase.from('author_content').update(payload).eq('id',adminAuthorForm.id)
     else result=await supabase.from('author_content').insert({...payload,created_by:user.id})
     if(result.error){setAdminAuthorLoading(false);setAdminAuthorMessage('Erro ao salvar: '+result.error.message);return}
-    resetAuthorForm();setAdminAuthorMessage('✓ Conteúdo salvo.')
+    setPublishedAuthorContent(list=>adminAuthorForm.id?list.map(x=>x.id===adminAuthorForm.id?{...x,...payload}:x):list)
+    resetAuthorForm();setAdminAuthorMessage(adminAuthorForm.is_published?'✓ Conteúdo salvo e publicado.':'✓ Rascunho salvo.')
     const {data}=await supabase.from('author_content').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false})
     setAdminAuthorItems(data||[]);setAdminAuthorLoading(false)
   }
@@ -865,8 +867,10 @@ export default function App() {
     const next=!item.is_published
     const {error}=await supabase.from('author_content').update({is_published:next,published_at:next?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq('id',item.id)
     if(error){setAdminAuthorMessage('Erro: '+error.message);return}
-    setAdminAuthorItems(list=>list.map(x=>x.id===item.id?{...x,is_published:next}:x))
-    setAdminAuthorMessage(next?'✓ Publicado.':'✓ Retirado da publicação.')
+    setAdminAuthorItems(list=>list.map(x=>x.id===item.id?{...x,is_published:next,published_at:next?new Date().toISOString():null}:x))
+    if(next)setPublishedAuthorContent(list=>list.some(x=>x.id===item.id)?list.map(x=>x.id===item.id?{...x,is_published:true}:x):[...list,{...item,is_published:true}])
+    else setPublishedAuthorContent(list=>list.filter(x=>x.id!==item.id))
+    setAdminAuthorMessage(next?'✓ Publicado para os leitores.':'✓ Retirado da publicação. O conteúdo continua salvo como rascunho.')
   }
 
   async function changeAdminAccess(item,status){
@@ -894,7 +898,7 @@ export default function App() {
         <div className="admin-actions"><button disabled={adminAuthorLoading}>{adminAuthorForm.id?'Salvar alterações':'Criar conteúdo'}</button>{adminAuthorForm.id&&<button type="button" onClick={resetAuthorForm}>Cancelar edição</button>}</div>
       </form>
       {adminAuthorMessage&&<p className="admin-message" role="status">{adminAuthorMessage}</p>}
-      <h2>Conteúdos cadastrados</h2>{adminAuthorLoading&&!adminAuthorItems.length?<p>Carregando...</p>:<div className="admin-user-list">{adminAuthorItems.map(item=><article className="admin-user-card" key={item.id}><div className="admin-user-head"><div><strong>{item.title}</strong><small>{typeNames[item.content_type]}{item.book_key?' · '+item.book_key:''}</small></div><span className={'admin-status '+(item.is_published?'active':'pending')}>{item.is_published?'Publicado':'Rascunho'}</span></div>{item.highlight&&<p>“{item.highlight}”</p>}<div className="admin-actions compact-actions"><button type="button" onClick={()=>{setAdminAuthorForm({id:item.id,content_type:item.content_type,book_key:item.book_key||'',theme:item.theme||'',title:item.title||'',highlight:item.highlight||'',body:item.body||'',is_published:item.is_published});window.scrollTo({top:0,behavior:'smooth'})}}>Editar</button><button type="button" onClick={()=>toggleAuthorPublish(item)}>{item.is_published?'Despublicar':'Publicar'}</button><button type="button" className="admin-block" onClick={async()=>{if(!window.confirm('Excluir definitivamente “'+item.title+'”? Esta ação não pode ser desfeita.'))return;const {error}=await supabase.from('author_content').delete().eq('id',item.id);if(error){setAdminAuthorMessage('Erro ao excluir: '+error.message);return}setAdminAuthorItems(list=>list.filter(x=>x.id!==item.id));setPublishedAuthorContent(list=>list.filter(x=>x.id!==item.id));setAdminAuthorMessage('✓ Conteúdo excluído.')}}>Excluir</button></div></article>)}</div>}
+      <div className="admin-author-summary"><div><strong>{adminAuthorItems.length}</strong><span>Total</span></div><div><strong>{adminAuthorItems.filter(x=>x.is_published).length}</strong><span>Publicados</span></div><div><strong>{adminAuthorItems.filter(x=>!x.is_published).length}</strong><span>Rascunhos</span></div></div><h2>Conteúdos cadastrados</h2>{adminAuthorLoading&&!adminAuthorItems.length?<p>Carregando...</p>:<div className="admin-user-list">{adminAuthorItems.map(item=><article className="admin-user-card" key={item.id}><div className="admin-user-head"><div><strong>{item.title}</strong><small>{typeNames[item.content_type]}{item.book_key?' · '+item.book_key:''}</small></div><span className={'admin-status '+(item.is_published?'active':'pending')}>{item.is_published?'Publicado':'Rascunho'}</span></div>{item.highlight&&<p>“{item.highlight}”</p>}<div className="admin-actions compact-actions"><button type="button" onClick={()=>{setAdminAuthorForm({id:item.id,content_type:item.content_type,book_key:item.book_key||'',theme:item.theme||'',title:item.title||'',highlight:item.highlight||'',body:item.body||'',is_published:item.is_published});window.scrollTo({top:0,behavior:'smooth'})}}>Editar</button><button type="button" onClick={()=>toggleAuthorPublish(item)}>{item.is_published?'Despublicar':'Publicar'}</button><button type="button" className="admin-block" onClick={async()=>{if(!window.confirm('Excluir definitivamente “'+item.title+'”? Esta ação não pode ser desfeita.'))return;const {error}=await supabase.from('author_content').delete().eq('id',item.id);if(error){setAdminAuthorMessage('Erro ao excluir: '+error.message);return}setAdminAuthorItems(list=>list.filter(x=>x.id!==item.id));setPublishedAuthorContent(list=>list.filter(x=>x.id!==item.id));setAdminAuthorMessage('✓ Conteúdo excluído.')}}>Excluir</button></div></article>)}</div>}
       </section></main>
   }
 
