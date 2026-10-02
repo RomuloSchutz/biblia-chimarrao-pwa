@@ -792,3 +792,10 @@
 .admin-author-summary strong{display:block;font-size:24px;color:#f0c979}
 .admin-author-summary span{display:block;margin-top:3px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
 @media(max-width:520px){.admin-author-summary{gap:6px}.admin-author-summary div{padding:11px 5px}.admin-author-summary strong{font-size:20px}.admin-author-summary span{font-size:9px}}
+
+
+/* Busca e filtros editoriais */
+.admin-author-filters{display:grid;grid-template-columns:1.25fr 1fr .7fr;gap:10px;margin:18px 0;padding:14px;border:1px solid rgba(190,135,49,.3);border-radius:16px;background:rgba(12,34,26,.48)}
+.admin-author-filters label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase}
+.admin-author-filters input,.admin-author-filters select{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;border:1px solid rgba(190,135,49,.4);background:#10291f;color:#f5e8cf;font:inherit;text-transform:none;letter-spacing:normal}
+@media(max-width:680px){.admin-author-filters{grid-template-columns:1fr}.admin-author-filters input,.admin-author-filters select{font-size:16px}}
