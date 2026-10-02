@@ -697,3 +697,10 @@
   .admin-page .reader-settings-panel textarea{min-height:210px}
   .admin-page .reader-settings-panel .admin-actions{grid-template-columns:1fr}
 }
+
+
+/* Novidades publicadas pelo autor */
+.visual-quick-ring{position:relative}
+.visual-notification-badge{position:absolute;top:-7px;right:-8px;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#b66a20;color:#fff8e8;border:2px solid #06170f;font-size:11px;line-height:1;font-weight:900}
+.has-new-author-content .visual-quick-ring{box-shadow:0 0 0 2px rgba(198,145,66,.65),0 0 18px rgba(198,145,66,.35)}
+.ideas-grid .idea-card h3{margin:6px 0 8px;color:#f5dfb8;font-size:1.18rem}
