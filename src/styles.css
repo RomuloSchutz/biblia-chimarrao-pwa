@@ -704,3 +704,11 @@
 .visual-notification-badge{position:absolute;top:-7px;right:-8px;display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:999px;background:#b66a20;color:#fff8e8;border:2px solid #06170f;font-size:11px;line-height:1;font-weight:900}
 .has-new-author-content .visual-quick-ring{box-shadow:0 0 0 2px rgba(198,145,66,.65),0 0 18px rgba(198,145,66,.35)}
 .ideas-grid .idea-card h3{margin:6px 0 8px;color:#f5dfb8;font-size:1.18rem}
+
+
+/* Central de novidades — cartões navegáveis e estado lido */
+.author-news-card{display:block;width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.author-news-card:hover,.author-news-card:focus-visible{border-color:#d4a65e;outline:none;box-shadow:0 0 0 2px rgba(212,166,94,.22)}
+.author-news-card blockquote{margin:12px 0;color:#ead8b8}
+.author-news-open{display:inline-block;margin-top:12px;color:#e0b56f;font-size:14px}
+.author-news-read{margin:16px 0;padding:12px 14px;border-radius:12px;background:#0d2a1e;color:#d8c39e}
