@@ -79,6 +79,7 @@ export default function App() {
   const [adminAuthorItems,setAdminAuthorItems]=useState([])
   const [publishedAuthorContent,setPublishedAuthorContent]=useState([])
   const [authorContentLoading,setAuthorContentLoading]=useState(false)
+  const [readAuthorContentIds,setReadAuthorContentIds]=useState([])
   const [adminAuthorLoading,setAdminAuthorLoading]=useState(false)
   const [adminAuthorMessage,setAdminAuthorMessage]=useState('')
   const [adminAuthorForm,setAdminAuthorForm]=useState({id:null,content_type:'reflection',book_key:'',theme:'',title:'',highlight:'',body:'',is_published:false})
@@ -153,6 +154,28 @@ export default function App() {
     })
     return()=>{cancelled=true}
   },[user?.id])
+
+  useEffect(()=>{
+    if(!user?.id){setReadAuthorContentIds([]);return}
+    try{setReadAuthorContentIds(JSON.parse(localStorage.getItem('bc-author-read-'+user.id)||'[]'))}catch{setReadAuthorContentIds([])}
+  },[user?.id])
+
+  function markAuthorContentRead(id){
+    if(!user?.id||!id)return
+    setReadAuthorContentIds(current=>{
+      if(current.includes(id))return current
+      const next=[...current,id]
+      localStorage.setItem('bc-author-read-'+user.id,JSON.stringify(next))
+      return next
+    })
+  }
+
+  function openAuthorNotification(item){
+    markAuthorContentRead(item.id)
+    if(item.content_type==='reflection'){setScreen('ideas');return}
+    if(item.book_key){setBookSearch(item.book_key);setBookFilter('todos');openBooks();return}
+    setScreen('ideas')
+  }
 
   async function loadBookAccess(){
     if(!user||!supabase)return
@@ -662,7 +685,9 @@ export default function App() {
 
 
   if(screen==='support'&&user){return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apoie as obras</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header><section className="support-page"><span className="support-heart">♥</span><h1>Apoie as obras de Romulo Schutz</h1><p>Se os livros, devocionais e reflexões têm contribuído para sua caminhada, você pode apoiar espontaneamente a continuidade deste trabalho. Toda contribuição é voluntária.</p><div className="support-qr-frame"><ApoiePixQR/></div><strong>Contribuição via Pix · Mercado Pago</strong><p>Chave Pix: <b>biblia.chimarrao@gmail.com</b></p><button className="support-copy" onClick={async()=>{try{await navigator.clipboard.writeText(PIX_COPIA_COLA);setMessage('Código Pix copiado. Confira os dados no aplicativo do seu banco.')}catch{setMessage('Use a chave Pix informada acima.')}}}>Copiar código Pix</button>{message&&<p role="status">{message}</p>}<p>Confira o destinatário antes de confirmar. Obrigado pelo apoio!</p></section></main>}
-  if(screen==='news'&&user){return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Notificações</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header><section className="support-page"><h1>Novidades do autor</h1>{authorContentLoading?<p>Carregando novidades...</p>:publishedAuthorContent.length?<div className="admin-user-list">{publishedAuthorContent.slice(0,12).map(item=><article className="admin-user-card" key={item.id}><div className="admin-user-head"><div><strong>{item.title}</strong><small>{item.theme||item.book_key||'Publicação de Romulo Schutz'}</small></div><span className="admin-status active">NOVO</span></div>{item.highlight&&<blockquote>“{item.highlight}”</blockquote>}{item.body&&<p>{item.body}</p>}</article>)}</div>:<p>Nenhuma nova publicação do autor no momento.</p>}<button className="support-copy" onClick={()=>setScreen('reminder')}>Configurar Hora do Mate</button></section></main>}
+  if(screen==='news'&&user){
+    const unread=publishedAuthorContent.filter(item=>!readAuthorContentIds.includes(item.id))
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Notificações</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Voltar</button></header><section className="support-page"><h1>Novidades do autor</h1>{authorContentLoading?<p>Carregando novidades...</p>:publishedAuthorContent.length?<div className="admin-user-list">{publishedAuthorContent.slice(0,12).map(item=>{const isNew=!readAuthorContentIds.includes(item.id);return <button type="button" className="admin-user-card author-news-card" key={item.id} onClick={()=>openAuthorNotification(item)}><div className="admin-user-head"><div><strong>{item.title}</strong><small>{item.theme||item.book_key||'Publicação de Romulo Schutz'}</small></div>{isNew&&<span className="admin-status active">NOVO</span>}</div>{item.highlight&&<blockquote>“{item.highlight}”</blockquote>}<strong className="author-news-open">Abrir conteúdo →</strong></button>})}</div>:<p>Nenhuma publicação do autor no momento.</p>}{unread.length===0&&publishedAuthorContent.length>0&&<p className="author-news-read">✓ Você está em dia com as novidades.</p>}<button className="support-copy" onClick={()=>setScreen('reminder')}>Configurar Hora do Mate</button></section></main>}
   if (screen === 'ideas' && user) {
     const defaults = [
       {id:'default-tempo',theme:'TEMPO',highlight:'O tempo passa. O que fazemos com ele deixa marcas.',body:'Um espaço para perceber a vida com mais atenção — sem correr para uma resposta antes de compreender a pergunta.'},
@@ -876,7 +901,7 @@ export default function App() {
           <div className="visual-dashboard-top">
             <div className="visual-brand"><span>ROMULO SCHUTZ</span><small>Livros · Devocionais · Histórias<br/>Ideias · Reflexões</small></div>
 
-            <div className="visual-quick"><button className={publishedAuthorContent.length?'has-new-author-content':''} onClick={()=>user?setScreen('news'):setScreen("guestDemo")} aria-label={publishedAuthorContent.length?`Notificações — ${publishedAuthorContent.length} novidade(s)`:'Notificações'}><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>{publishedAuthorContent.length>0&&<b className="visual-notification-badge">{publishedAuthorContent.length>9?'9+':publishedAuthorContent.length}</b>}</span><small>{publishedAuthorContent.length?'Novidades':'Notificações'}</small></button><button onClick={()=>{setMessage('');setScreen(user?'support':'guestInfo')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
+            <div className="visual-quick">{(()=>{const unreadCount=publishedAuthorContent.filter(item=>!readAuthorContentIds.includes(item.id)).length;return <button className={unreadCount?'has-new-author-content':''} onClick={()=>user?setScreen('news'):setScreen("guestDemo")} aria-label={unreadCount?`Notificações — ${unreadCount} novidade(s) não lida(s)`:'Notificações'}><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>{unreadCount>0&&<b className="visual-notification-badge">{unreadCount>9?'9+':unreadCount}</b>}</span><small>{unreadCount?'Novidades':'Notificações'}</small></button>})()}<button onClick={()=>{setMessage('');setScreen(user?'support':'guestInfo')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
           </div>
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
           {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
