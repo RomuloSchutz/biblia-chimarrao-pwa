@@ -784,3 +784,11 @@
 .author-content-heading h2{margin:4px 0 7px;font:700 clamp(24px,4vw,34px) Georgia,serif}
 .author-content-heading p{margin:0;color:#d2c1a4}
 @media(max-width:650px){.author-work-detail{grid-template-columns:1fr;gap:18px;padding:18px}.author-work-detail-cover{display:flex;justify-content:center}.author-work-detail-cover img{width:min(68%,230px);max-height:330px}.author-work-detail-copy{text-align:center}.author-work-detail-copy p{text-align:left}.author-content-heading{text-align:center}}
+
+
+/* Resumo editorial da Área do Autor */
+.admin-author-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.admin-author-summary div{padding:14px 10px;border:1px solid rgba(190,135,49,.35);border-radius:14px;background:rgba(22,44,34,.7);text-align:center}
+.admin-author-summary strong{display:block;font-size:24px;color:#f0c979}
+.admin-author-summary span{display:block;margin-top:3px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+@media(max-width:520px){.admin-author-summary{gap:6px}.admin-author-summary div{padding:11px 5px}.admin-author-summary strong{font-size:20px}.admin-author-summary span{font-size:9px}}
