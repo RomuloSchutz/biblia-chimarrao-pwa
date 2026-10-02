@@ -735,3 +735,12 @@
 .visual-quote-tile .visual-quote-copy{position:relative;z-index:1;text-shadow:0 2px 5px rgba(0,0,0,.95)}
 .visual-quote-tile .visual-quote-copy strong{color:#fff7df!important;opacity:1!important;font-weight:900!important}
 .visual-quote-tile .visual-quote-copy span{color:#f1c879!important;opacity:1!important;font-weight:800!important}
+
+
+/* Card da mensagem — otimizado para telas pequenas */
+.visual-quote-tile{background-position:center!important}
+.visual-quote-tile::before{background:linear-gradient(90deg,rgba(0,14,9,.54),rgba(0,14,9,.12))!important}
+.visual-quote-tile .visual-quote-copy{width:100%;padding:8px 10px;box-sizing:border-box}
+.visual-quote-tile .visual-quote-copy strong{display:block;font-size:clamp(17px,4.5vw,23px)!important;line-height:1.03!important;font-weight:950!important;letter-spacing:.01em;text-shadow:0 2px 5px #000,0 0 8px rgba(255,225,166,.2)}
+.visual-quote-tile .quote-line{display:block!important;color:#fff8e6!important}
+.visual-quote-tile .quote-signature{display:block;margin-top:6px;color:#ffd27d!important;font-size:clamp(13px,3.4vw,17px)!important;line-height:1.05!important;font-weight:900!important;text-shadow:0 2px 4px #000}
