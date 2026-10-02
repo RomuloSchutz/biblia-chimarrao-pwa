@@ -815,3 +815,12 @@
 
 
 .author-unsaved-warning{margin:10px 0 0!important;color:#f0c979!important;font-size:12px!important;font-weight:800}
+
+
+/* Narrativa editorial das obras */
+.author-work-editorial{max-width:980px;margin:26px auto;padding:0 18px}
+.author-work-editorial>article{margin:14px 0;padding:24px;border:1px solid rgba(190,145,75,.28);border-radius:18px;background:rgba(255,255,255,.035)}
+.author-work-editorial h2{margin:0 0 12px;font-family:Georgia,serif}
+.author-work-editorial p{margin:0;white-space:pre-line;line-height:1.75}
+.author-work-special{background:linear-gradient(145deg,rgba(95,65,31,.18),rgba(20,48,37,.22))!important}
+@media(max-width:640px){.author-work-editorial{padding:0 12px}.author-work-editorial>article{padding:18px}}
