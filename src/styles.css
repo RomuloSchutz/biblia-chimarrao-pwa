@@ -829,3 +829,20 @@
 /* Imagens editoriais das obras */
 .author-work-editorial-image{display:block;width:100%;height:auto;max-height:680px;object-fit:contain;margin:0 0 20px;border-radius:14px;background:rgba(0,0,0,.12)}
 @media(max-width:640px){.author-work-editorial-image{max-height:none;border-radius:10px;margin-bottom:16px}}
+
+
+/* Card definitivo "Todo dia é um novo encontro com Deus" — 02/10 */
+.visual-card-grid .visual-quote.visual-quote-tile.individual-card{
+  background-image:url("/card-todo-dia-novo-encontro.png")!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  padding:0!important;
+  opacity:1!important;
+  filter:none!important;
+}
+.visual-card-grid .visual-quote.visual-quote-tile.individual-card::before,
+.visual-card-grid .visual-quote.visual-quote-tile.individual-card::after{
+  display:none!important;
+  content:none!important;
+}
