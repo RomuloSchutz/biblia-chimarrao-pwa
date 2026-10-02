@@ -812,3 +812,6 @@
 .author-preview-card footer{margin-top:22px;color:#e0bd80;font:italic 700 16px Georgia,serif}
 .author-preview-card>em{display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(207,158,76,.25);font-size:11px;color:#c9bba2}
 .author-preview-close{position:absolute;right:12px;top:10px;width:36px;height:36px;border-radius:50%;border:1px solid rgba(207,158,76,.4);background:#0d211a;color:#fff;font-size:25px;line-height:1;cursor:pointer}
+
+
+.author-unsaved-warning{margin:10px 0 0!important;color:#f0c979!important;font-size:12px!important;font-weight:800}
