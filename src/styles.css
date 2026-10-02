@@ -824,3 +824,8 @@
 .author-work-editorial p{margin:0;white-space:pre-line;line-height:1.75}
 .author-work-special{background:linear-gradient(145deg,rgba(95,65,31,.18),rgba(20,48,37,.22))!important}
 @media(max-width:640px){.author-work-editorial{padding:0 12px}.author-work-editorial>article{padding:18px}}
+
+
+/* Imagens editoriais das obras */
+.author-work-editorial-image{display:block;width:100%;height:auto;max-height:680px;object-fit:contain;margin:0 0 20px;border-radius:14px;background:rgba(0,0,0,.12)}
+@media(max-width:640px){.author-work-editorial-image{max-height:none;border-radius:10px;margin-bottom:16px}}
