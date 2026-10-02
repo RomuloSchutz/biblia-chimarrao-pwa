@@ -728,3 +728,10 @@
 .author-content-card.quote blockquote{border:0;padding:0;font-size:clamp(20px,5vw,28px)}
 .author-content-empty{text-align:center;padding:34px 22px}
 @media(max-width:520px){.author-content-head{padding:24px 16px 14px}.author-content-card{padding:18px 16px}}
+
+
+/* Card da mensagem — legibilidade e destaque equivalentes aos demais cards */
+.visual-quote-tile::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(90deg,rgba(0,15,10,.72),rgba(0,15,10,.28));pointer-events:none}
+.visual-quote-tile .visual-quote-copy{position:relative;z-index:1;text-shadow:0 2px 5px rgba(0,0,0,.95)}
+.visual-quote-tile .visual-quote-copy strong{color:#fff7df!important;opacity:1!important;font-weight:900!important}
+.visual-quote-tile .visual-quote-copy span{color:#f1c879!important;opacity:1!important;font-weight:800!important}
