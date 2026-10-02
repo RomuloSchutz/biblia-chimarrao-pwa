@@ -769,3 +769,18 @@
  .visual-card-grid .visual-quote-tile .quote-message{font-size:clamp(20px,2.25vw,29px)!important}
  .visual-card-grid .visual-quote-tile .quote-signature{font-size:clamp(15px,1.6vw,20px)!important}
 }
+
+
+/* Página individual das obras do autor */
+.author-work-detail{width:min(940px,calc(100% - 28px));margin:28px auto 18px;display:grid;grid-template-columns:minmax(170px,260px) 1fr;gap:28px;align-items:center;padding:24px;border:1px solid rgba(190,135,49,.45);border-radius:24px;background:linear-gradient(145deg,#0d2b20,#251a10);color:#f5e8cf;box-sizing:border-box}
+.author-work-detail-cover img{display:block;width:100%;max-height:390px;object-fit:contain;border-radius:12px;box-shadow:0 12px 30px #0008}
+.author-work-detail-copy h1{margin:10px 0 4px;font:700 clamp(29px,5vw,46px)/1.02 Georgia,serif}
+.author-work-detail-copy h2{margin:0 0 16px;color:#e0bd80;font:600 clamp(17px,3vw,23px)/1.25 Georgia,serif}
+.author-work-detail-copy p{line-height:1.65;font-size:15px}
+.author-work-detail-copy>small{display:block;margin:12px 0;color:#cdbb99}
+.author-work-detail-copy .primary{margin-top:15px}
+.author-work-status{display:inline-block;padding:6px 10px;border:1px solid #b78b49;border-radius:999px;color:#f0cd8e;font-size:11px;font-weight:900;letter-spacing:.06em}
+.author-content-heading{width:min(900px,calc(100% - 28px));margin:30px auto 12px;color:#f5e8cf}
+.author-content-heading h2{margin:4px 0 7px;font:700 clamp(24px,4vw,34px) Georgia,serif}
+.author-content-heading p{margin:0;color:#d2c1a4}
+@media(max-width:650px){.author-work-detail{grid-template-columns:1fr;gap:18px;padding:18px}.author-work-detail-cover{display:flex;justify-content:center}.author-work-detail-cover img{width:min(68%,230px);max-height:330px}.author-work-detail-copy{text-align:center}.author-work-detail-copy p{text-align:left}.author-content-heading{text-align:center}}
