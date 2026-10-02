@@ -744,3 +744,28 @@
 .visual-quote-tile .visual-quote-copy strong{display:block;font-size:clamp(17px,4.5vw,23px)!important;line-height:1.03!important;font-weight:950!important;letter-spacing:.01em;text-shadow:0 2px 5px #000,0 0 8px rgba(255,225,166,.2)}
 .visual-quote-tile .quote-line{display:block!important;color:#fff8e6!important}
 .visual-quote-tile .quote-signature{display:block;margin-top:6px;color:#ffd27d!important;font-size:clamp(13px,3.4vw,17px)!important;line-height:1.05!important;font-weight:900!important;text-shadow:0 2px 4px #000}
+
+
+/* Card da mensagem — versão final: encobrir texto incorporado à arte e controlar a tipografia no app */
+.visual-card-grid .visual-quote-tile .visual-quote-copy{
+  position:absolute!important;inset:0!important;z-index:5!important;
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  width:auto!important;padding:10px 12px!important;box-sizing:border-box!important;
+  background:linear-gradient(90deg,rgba(3,25,18,.20),rgba(3,25,18,.66) 25%,rgba(3,25,18,.72) 75%,rgba(3,25,18,.20))!important;
+}
+.visual-card-grid .visual-quote-tile .quote-message{
+  display:block!important;margin:0!important;color:#fff9e9!important;
+  font-family:Georgia,serif!important;font-size:clamp(18px,4.7vw,27px)!important;
+  line-height:1.04!important;font-weight:900!important;text-align:center!important;
+  text-shadow:0 2px 5px #000,0 0 8px rgba(0,0,0,.8)!important;
+}
+.visual-card-grid .visual-quote-tile .quote-signature{
+  display:block!important;margin-top:7px!important;color:#ffd47f!important;
+  font-family:Georgia,serif!important;font-style:italic!important;
+  font-size:clamp(14px,3.6vw,19px)!important;line-height:1!important;font-weight:900!important;
+  text-shadow:0 2px 4px #000!important;
+}
+@media(min-width:701px){
+ .visual-card-grid .visual-quote-tile .quote-message{font-size:clamp(20px,2.25vw,29px)!important}
+ .visual-card-grid .visual-quote-tile .quote-signature{font-size:clamp(15px,1.6vw,20px)!important}
+}
