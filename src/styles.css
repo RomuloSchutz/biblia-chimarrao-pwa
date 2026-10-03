@@ -880,3 +880,12 @@
 .notebook-toolbar{margin-top:10px}
 .notebook-toolbar button:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:600px){.notebook-editor{padding:18px!important}.notebook-editor textarea{min-height:260px;font-size:1rem}}
+
+/* Meu Caderno - composição final do card */
+.notes-notebook-entry>button{min-height:142px;display:grid!important;grid-template-columns:minmax(0,1fr) 92px 190px;gap:14px;align-items:center!important;padding:18px 20px!important;background:linear-gradient(110deg,#21180f 0%,#3b2a18 54%,#18120d 100%)!important;border:1px solid rgba(218,174,94,.62)!important}
+.notes-notebook-entry>button:before{display:none!important}
+.notebook-card-copy{max-width:none!important;align-self:center}.notebook-card-copy strong{font-family:Georgia,serif!important;font-size:1.8rem!important;color:#e9b84f!important;margin-bottom:8px!important}.notebook-card-copy small{font-size:.9rem!important;line-height:1.35!important;color:#f0d995!important}
+.notebook-card-stamp{width:82px;height:82px;border:2px solid rgba(219,174,87,.72);border-radius:50%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;color:#ddb25f;font-size:.58rem;font-weight:800;line-height:1.25;transform:rotate(-4deg);box-shadow:inset 0 0 0 3px rgba(219,174,87,.1)}
+.notebook-card-art{height:104px;border-radius:14px;position:relative;overflow:hidden;background:radial-gradient(circle at 75% 30%,rgba(226,176,91,.28),transparent 38%),linear-gradient(145deg,#4a321d,#1b130d);box-shadow:inset 0 0 24px rgba(0,0,0,.4)}
+.notebook-writing{position:absolute;right:36px;bottom:22px;font-size:2.1rem;transform:rotate(-5deg)}.notebook-watch{position:absolute;left:13px;bottom:13px;font-size:2rem;color:#d8a84f}.notebook-mate{position:absolute;right:10px;top:9px;font-size:2.25rem}
+@media(max-width:600px){.notes-notebook-entry>button{grid-template-columns:minmax(0,1fr) 58px 112px;gap:8px;padding:14px!important;min-height:126px}.notebook-card-copy strong{font-size:1.35rem!important}.notebook-card-copy small{font-size:.72rem!important}.notebook-card-stamp{width:54px;height:54px;font-size:.4rem}.notebook-card-art{height:88px}.notebook-writing{font-size:1.55rem;right:24px}.notebook-watch{font-size:1.35rem;left:7px}.notebook-mate{font-size:1.6rem;right:4px}}
