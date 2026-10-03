@@ -508,6 +508,23 @@ export default function App() {
     setScreen('notebook');setNotebookLoading(false);window.scrollTo({top:0,behavior:'smooth'})
   }
 
+  function formatNotebook(kind){
+    const el=document.getElementById('notebook-body-editor');if(!el)return
+    const start=el.selectionStart,end=el.selectionEnd,selected=el.value.slice(start,end)
+    const formats={bold:['**','**'],italic:['*','*'],underline:['__','__'],highlight:['==','==']}
+    if(kind==='list'){
+      const text=selected||el.value.slice(start)
+      const changed=text.split('\n').map(line=>line.trim()?'- '+line.replace(/^[-•]\s*/,''):line).join('\n')
+      const next=el.value.slice(0,start)+changed+el.value.slice(end)
+      setNotebookForm(v=>({...v,body:next}));return
+    }
+    const pair=formats[kind];if(!pair)return
+    const replacement=pair[0]+selected+pair[1]
+    const next=el.value.slice(0,start)+replacement+el.value.slice(end)
+    setNotebookForm(v=>({...v,body:next}))
+    setTimeout(()=>{el.focus();const pos=start+pair[0].length+(selected?selected.length+pair[1].length:0);el.setSelectionRange(pos,pos)},0)
+  }
+
   async function saveNotebookEntry(e){
     e.preventDefault();if(!user||!supabase)return
     const title=notebookForm.title.trim()||'Minha anotação',body=notebookForm.body.trim()
@@ -838,7 +855,7 @@ export default function App() {
   if(screen==='notebook'&&user){
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Meu Caderno</small></div><div className="header-actions"><button className="logout" onClick={()=>setScreen('notes')}>← Anotações</button><button className="logout" onClick={()=>setScreen('dashboard')}>⌂ Início</button></div></header>
       <section className="welcome notes-head stage2-banner"><img src="/devocional/mes_05.jpg" alt="" className="stage2-banner-image"/><div className="stage2-banner-content"><p className="eyebrow">MEU CADERNO</p><h2>Um espaço só seu</h2><p>Escreva pensamentos, orações, ideias e reflexões pessoais. Estas páginas pertencem à sua conta.</p></div></section>
-      <section className="notebook-shell"><form className="reader-settings-panel notebook-editor" onSubmit={saveNotebookEntry}><h2>{notebookForm.id?'Editar página':'Nova página'}</h2><label>Título<input value={notebookForm.title} onChange={e=>setNotebookForm(v=>({...v,title:e.target.value}))} placeholder="Ex.: Reflexão de hoje"/></label><label>Escreva livremente<textarea rows="10" value={notebookForm.body} onChange={e=>setNotebookForm(v=>({...v,body:e.target.value}))} placeholder="Este espaço é seu. Escreva uma oração, pensamento, trecho que deseja guardar ou uma reflexão pessoal..."/></label><div className="admin-actions"><button disabled={notebookLoading}>{notebookForm.id?'Salvar alterações':'Guardar no meu caderno'}</button>{notebookForm.id&&<button type="button" onClick={()=>setNotebookForm({id:null,title:'',body:''})}>Cancelar</button>}</div>{notebookMessage&&<p role="status">{notebookMessage}</p>}</form>
+      <section className="notebook-shell"><form className="reader-settings-panel notebook-editor" onSubmit={saveNotebookEntry}><h2>{notebookForm.id?'Editar página':'Nova página'}</h2><label>Título<input value={notebookForm.title} onChange={e=>setNotebookForm(v=>({...v,title:e.target.value}))} placeholder="Ex.: Reflexão de hoje"/></label><label>Escreva livremente<div className="notebook-toolbar" aria-label="Formatação do caderno"><button type="button" onClick={()=>formatNotebook('bold')} title="Negrito"><b>B</b></button><button type="button" onClick={()=>formatNotebook('italic')} title="Itálico"><i>I</i></button><button type="button" onClick={()=>formatNotebook('underline')} title="Sublinhar"><u>U</u></button><button type="button" onClick={()=>formatNotebook('highlight')} title="Destacar">🖍</button><button type="button" onClick={()=>formatNotebook('list')} title="Lista">☷</button></div><small className="notebook-format-hint">Selecione uma palavra ou frase e escolha a formatação.</small><textarea id="notebook-body-editor" rows="10" value={notebookForm.body} onChange={e=>setNotebookForm(v=>({...v,body:e.target.value}))} placeholder="Este espaço é seu. Escreva uma oração, pensamento, trecho que deseja guardar ou uma reflexão pessoal..."/></label><div className="admin-actions"><button disabled={notebookLoading}>{notebookForm.id?'Salvar alterações':'Guardar no meu caderno'}</button>{notebookForm.id&&<button type="button" onClick={()=>setNotebookForm({id:null,title:'',body:''})}>Cancelar</button>}</div>{notebookMessage&&<p role="status">{notebookMessage}</p>}</form>
       <section className="notebook-pages"><h2>Minhas páginas</h2>{notebookLoading&&!notebookItems.length?<p>Carregando...</p>:notebookItems.length?notebookItems.map(item=><article className="note-card notebook-page" key={item.id}><small>{new Date(item.updated_at).toLocaleDateString('pt-BR')}</small><h3>{item.title}</h3><p>{item.body}</p><div className="admin-actions compact-actions"><button type="button" onClick={()=>{setNotebookForm({id:item.id,title:item.title,body:item.body});window.scrollTo({top:0,behavior:'smooth'})}}>Editar</button><button type="button" className="admin-block" onClick={()=>deleteNotebookEntry(item.id)}>Excluir</button></div></article>):<div className="empty-state"><span>📓</span><h3>Seu caderno está esperando por você</h3><p>Comece escrevendo sua primeira página.</p></div>}</section></section></main>
   }
 
