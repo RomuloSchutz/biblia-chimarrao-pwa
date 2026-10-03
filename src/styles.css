@@ -986,3 +986,35 @@
   .visual-social-links .social-youtube{font-size:13px!important}
   .visual-social-links .social-email svg{width:17px!important;height:17px!important}
 }
+
+
+/* Card Meu Caderno aprovado — imagem final responsiva */
+.notes-notebook-entry>button.notebook-approved-card{
+  display:block!important;width:100%!important;min-height:0!important;padding:0!important;
+  border:1px solid rgba(202,151,66,.72)!important;border-radius:20px!important;
+  overflow:hidden!important;background:#00291d!important;box-shadow:0 10px 28px rgba(0,0,0,.22)!important;
+}
+.notes-notebook-entry>button.notebook-approved-card:before,
+.notes-notebook-entry>button.notebook-approved-card:after{display:none!important}
+.notebook-approved-card>img{
+  display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;
+  border:0!important;margin:0!important;padding:0!important;
+}
+@media(max-width:600px){
+  .notes-notebook-entry>button.notebook-approved-card{border-radius:18px!important}
+}
+
+/* Redes sociais — grade 2x2 segura no celular */
+@media(max-width:700px){
+  .visual-social-links{
+    display:grid!important;grid-template-columns:repeat(2,32px)!important;grid-auto-rows:32px!important;
+    gap:9px 11px!important;left:9px!important;top:8px!important;
+  }
+  .visual-social-links a{
+    width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;
+    border-radius:9px!important;box-sizing:border-box!important;
+  }
+  .visual-social-links .social-instagram,.visual-social-links .social-facebook{font-size:20px!important}
+  .visual-social-links .social-youtube{font-size:14px!important}
+  .visual-social-links .social-email svg{width:18px!important;height:18px!important}
+}
