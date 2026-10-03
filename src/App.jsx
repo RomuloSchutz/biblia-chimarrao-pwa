@@ -221,7 +221,7 @@ export default function App() {
     const endpoint=`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-epub-access`
     let response
     try{
-      response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_ANON_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({edition_id:access.edition_id})})
+      response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({edition_id:access.edition_id})})
     }catch(err){
       setBookAccessMessage('Não foi possível abrir o arquivo protegido: falha de conexão com o servidor.')
       return null
