@@ -1018,3 +1018,30 @@
   .visual-social-links .social-youtube{font-size:14px!important}
   .visual-social-links .social-email svg{width:18px!important;height:18px!important}
 }
+
+
+/* Correção final solicitada — redes sociais 2x2 mantendo o tamanho original aprovado no celular */
+@media(max-width:700px){
+  .visual-social-links{
+    display:grid!important;
+    grid-template-columns:25px 25px!important;
+    grid-template-rows:25px 25px!important;
+    width:54px!important;
+    gap:4px!important;
+    left:6px!important;
+    top:6px!important;
+    justify-content:start!important;
+  }
+  .visual-social-links a{
+    width:25px!important;
+    height:25px!important;
+    min-width:25px!important;
+    min-height:25px!important;
+    border-radius:7px!important;
+    padding:0!important;
+  }
+  .visual-social-links .social-instagram,
+  .visual-social-links .social-facebook{font-size:17px!important}
+  .visual-social-links .social-youtube{font-size:12px!important}
+  .visual-social-links .social-email svg{width:14px!important;height:14px!important}
+}
