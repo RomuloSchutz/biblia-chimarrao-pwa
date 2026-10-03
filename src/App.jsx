@@ -217,23 +217,14 @@ export default function App() {
     if(!access?.has_access||!access?.edition_id){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
     const {data:sessionData}=await supabase.auth.getSession()
     if(!sessionData?.session){setBookAccessMessage('Sua sessão expirou. Entre novamente na sua conta para acessar o livro.');return null}
-    const {data:verified,error:verifyError}=await supabase.rpc('get_my_epub_path',{target_edition_id:access.edition_id})
-    const verifiedPath=verified?.[0]
-    if(verifyError||!verifiedPath){setBookAccessMessage('Não foi possível autorizar este livro: '+(verifyError?.message||'acesso não confirmado.'));return null}
-    const {data,error}=await supabase.storage.from(verifiedPath.bucket_id).createSignedUrl(verifiedPath.object_path,300)
-    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(error?.message||'erro ao gerar acesso temporário.'));return null}
-    return data.signedUrl
+    const {data,error}=await supabase.functions.invoke('book-epub-access',{body:{edition_id:access.edition_id}})
+    if(error||!data?.signed_url){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(data?.error||error?.message||'erro ao gerar acesso temporário.'));return null}
+    return data.signed_url
   }
   async function openSecureBook(title){
-    setBookAccessMessage('')
-    const access=bookAccess[title]
-    if(!access?.has_access||!access?.bucket_id||!access?.object_path){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return}
-    const {data:verified,error:verifyError}=await supabase.rpc('get_my_epub_path',{target_edition_id:access.edition_id})
-    const verifiedPath=verified?.[0]
-    if(verifyError||!verifiedPath){setBookAccessMessage('Não foi possível autorizar este livro: '+(verifyError?.message||'acesso não confirmado.'));return}
-    const {data,error}=await supabase.storage.from(verifiedPath.bucket_id).createSignedUrl(verifiedPath.object_path,300)
-    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(error?.message||'erro ao gerar acesso temporário.'));return}
-    setReaderTitle(title);setReaderUrl(data.signedUrl);setScreen('epub-reader');window.scrollTo(0,0)
+    const url=await secureBookUrl(title)
+    if(!url)return
+    setReaderTitle(title);setReaderUrl(url);setScreen('epub-reader');window.scrollTo(0,0)
   }
   async function downloadSecureBook(title){
     const url=await secureBookUrl(title,true);if(!url)return
