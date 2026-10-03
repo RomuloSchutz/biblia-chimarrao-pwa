@@ -870,3 +870,13 @@
 .notes-notebook-entry>button>b{position:absolute;right:22px;bottom:18px;font-size:1.5rem;color:#d7ad67}
 .notebook-toolbar{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 8px}.notebook-toolbar button{min-width:38px;padding:7px 10px;border-radius:8px;font-weight:700}.notebook-format-hint{font-size:.78rem;opacity:.72;margin-top:0}
 @media(max-width:600px){.notes-notebook-entry>button{min-height:138px;padding:18px}.notes-notebook-entry>button:before{font-size:2.6rem;right:16px}.notes-notebook-entry>button strong{font-size:1.65rem}.notes-notebook-entry>button>div{max-width:70%}}
+
+/* Meu Caderno - melhor legibilidade do editor */
+.notebook-editor{padding:24px!important}
+.notebook-editor>h2{font-size:1.65rem;margin-bottom:18px}
+.notebook-editor label{font-weight:800;font-size:1rem}
+.notebook-editor input{min-height:46px;font-size:1rem;margin-top:7px}
+.notebook-editor textarea{min-height:300px;padding:16px;font-size:1.05rem;font-weight:500;line-height:1.7;margin-top:8px}
+.notebook-toolbar{margin-top:10px}
+.notebook-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:600px){.notebook-editor{padding:18px!important}.notebook-editor textarea{min-height:260px;font-size:1rem}}
