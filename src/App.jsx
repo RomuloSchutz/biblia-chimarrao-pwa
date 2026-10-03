@@ -217,8 +217,18 @@ export default function App() {
     if(!access?.has_access||!access?.edition_id){setBookAccessMessage('Este livro ainda não está liberado para sua conta.');return null}
     const {data:sessionData}=await supabase.auth.getSession()
     if(!sessionData?.session){setBookAccessMessage('Sua sessão expirou. Entre novamente na sua conta para acessar o livro.');return null}
-    const {data,error}=await supabase.functions.invoke('book-epub-access',{body:{edition_id:access.edition_id}})
-    if(error||!data?.signed_url){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(data?.error||error?.message||'erro ao gerar acesso temporário.'));return null}
+    const session=sessionData.session
+    const endpoint=`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-epub-access`
+    let response
+    try{
+      response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_ANON_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({edition_id:access.edition_id})})
+    }catch(err){
+      setBookAccessMessage('Não foi possível abrir o arquivo protegido: falha de conexão com o servidor.')
+      return null
+    }
+    let data={}
+    try{data=await response.json()}catch{}
+    if(!response.ok||!data?.signed_url){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(data?.error||('erro '+response.status+' ao gerar acesso temporário.')));return null}
     return data.signed_url
   }
   async function openSecureBook(title){
