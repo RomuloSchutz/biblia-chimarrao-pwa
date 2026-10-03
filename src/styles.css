@@ -961,3 +961,28 @@
 @media(max-width:700px){
   .visual-social-links .social-email svg{width:16px;height:16px}
 }
+
+
+/* Ajuste aprovado 03/10 — selo oficial no Meu Caderno e grade social 2x2 no celular */
+.notebook-card-visual{
+  position:absolute!important;top:0!important;right:0!important;bottom:0!important;width:39%!important;
+  display:grid!important;place-items:center!important;overflow:hidden!important;
+  background:#00291d!important;border-left:1px solid rgba(202,151,66,.32)!important;
+}
+.notebook-card-visual img{
+  display:block!important;width:88%!important;height:88%!important;object-fit:contain!important;
+  border-radius:50%!important;mix-blend-mode:multiply!important;
+}
+@media(max-width:600px){
+  .notes-notebook-entry>button:before{display:none!important}
+  .notebook-card-visual{width:37%!important}
+  .notebook-card-visual img{width:94%!important;height:94%!important}
+  .visual-social-links{
+    display:grid!important;grid-template-columns:repeat(2,30px)!important;grid-template-rows:repeat(2,30px)!important;
+    gap:7px 9px!important;left:8px!important;top:7px!important;
+  }
+  .visual-social-links a{width:30px!important;height:30px!important;border-radius:8px!important}
+  .visual-social-links .social-instagram,.visual-social-links .social-facebook{font-size:19px!important}
+  .visual-social-links .social-youtube{font-size:13px!important}
+  .visual-social-links .social-email svg{width:17px!important;height:17px!important}
+}
