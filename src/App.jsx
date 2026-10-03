@@ -231,10 +231,9 @@ export default function App() {
     const {data:verified,error:verifyError}=await supabase.rpc('get_my_epub_path',{target_edition_id:access.edition_id})
     const verifiedPath=verified?.[0]
     if(verifyError||!verifiedPath){setBookAccessMessage('Não foi possível autorizar este livro: '+(verifyError?.message||'acesso não confirmado.'));return}
-    const {data,error}=await supabase.storage.from(verifiedPath.bucket_id).download(verifiedPath.object_path)
-    if(error||!data){setBookAccessMessage('Não foi possível carregar o livro para leitura: '+(error?.message||'erro ao obter o EPUB.'));return}
-    const url=URL.createObjectURL(data)
-    setReaderTitle(title);setReaderUrl(url);setScreen('epub-reader');window.scrollTo(0,0)
+    const {data,error}=await supabase.storage.from(verifiedPath.bucket_id).createSignedUrl(verifiedPath.object_path,300)
+    if(error||!data?.signedUrl){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(error?.message||'erro ao gerar acesso temporário.'));return}
+    setReaderTitle(title);setReaderUrl(data.signedUrl);setScreen('epub-reader');window.scrollTo(0,0)
   }
   async function downloadSecureBook(title){
     const url=await secureBookUrl(title,true);if(!url)return
