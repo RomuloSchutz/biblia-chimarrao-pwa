@@ -1132,3 +1132,13 @@
 .notes-notebook-entry>button:before,.notes-notebook-entry>button:after{display:none!important}
 .notes-notebook-entry>button>img{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;border-radius:19px!important}
 @media(max-width:600px){.notes-notebook-entry{padding:0 24px!important;margin:18px auto!important}.notes-notebook-entry>button{border-radius:18px!important}.notes-notebook-entry>button>img{border-radius:17px!important}}
+
+/* Meu Caderno - alinhamento final sem moldura dupla */
+.notes-notebook-entry{max-width:none!important;width:100%!important;padding:0!important;margin:18px 0!important}
+.notes-notebook-entry>button{width:100%!important;border:0!important;border-radius:20px!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important}
+.notes-notebook-entry>button>img{width:100%!important;height:auto!important;display:block!important;object-fit:cover!important;border-radius:20px!important}
+@media(max-width:600px){
+.notes-notebook-entry{padding:0!important;margin:18px 0!important}
+.notes-notebook-entry>button{border:0!important;border-radius:18px!important}
+.notes-notebook-entry>button>img{border-radius:18px!important}
+}
