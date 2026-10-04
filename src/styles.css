@@ -1084,3 +1084,46 @@
   .visual-social-card .social-youtube{font-size:12px!important}
   .visual-social-card .social-email svg{width:14px!important;height:14px!important}
 }
+
+
+/* FINAL 03/10b — Redes Sociais: mesmos ícones pequenos, apenas 2x2 */
+@media (max-width:700px){
+  .visual-social-card .visual-social-links{
+    display:grid!important;
+    grid-template-columns:18px 18px!important;
+    grid-template-rows:18px 18px!important;
+    width:40px!important;
+    height:40px!important;
+    column-gap:4px!important;
+    row-gap:4px!important;
+    left:8px!important;
+    top:7px!important;
+    right:auto!important;
+    bottom:auto!important;
+    align-items:center!important;
+    justify-items:center!important;
+  }
+  .visual-social-card .visual-social-links a{
+    position:static!important;
+    width:18px!important;
+    height:18px!important;
+    min-width:18px!important;
+    min-height:18px!important;
+    max-width:18px!important;
+    max-height:18px!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:5px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  .visual-social-card .visual-social-links a:nth-child(1){grid-area:1/1!important}
+  .visual-social-card .visual-social-links a:nth-child(2){grid-area:1/2!important}
+  .visual-social-card .visual-social-links a:nth-child(3){grid-area:2/1!important}
+  .visual-social-card .visual-social-links a:nth-child(4){grid-area:2/2!important}
+  .visual-social-card .social-instagram,
+  .visual-social-card .social-facebook{font-size:13px!important}
+  .visual-social-card .social-youtube{font-size:9px!important}
+  .visual-social-card .social-email svg{width:10px!important;height:10px!important}
+}
