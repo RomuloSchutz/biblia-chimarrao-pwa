@@ -1125,3 +1125,10 @@
 .visual-card-grid .visual-social-card .social-youtube{font-size:13px!important}
 .visual-card-grid .visual-social-card .social-email .social-at{font-size:18px!important;line-height:1!important}
 }
+
+/* Meu Caderno - imagem final aprovada */
+.notes-notebook-entry{max-width:920px;margin:16px auto;padding:0 16px}
+.notes-notebook-entry>button{display:block!important;width:100%!important;min-height:0!important;padding:0!important;border:1px solid rgba(218,174,94,.7)!important;border-radius:20px!important;overflow:hidden!important;background:#06291f!important;box-shadow:none!important}
+.notes-notebook-entry>button:before,.notes-notebook-entry>button:after{display:none!important}
+.notes-notebook-entry>button>img{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important;border-radius:19px!important}
+@media(max-width:600px){.notes-notebook-entry{padding:0 24px!important;margin:18px auto!important}.notes-notebook-entry>button{border-radius:18px!important}.notes-notebook-entry>button>img{border-radius:17px!important}}
