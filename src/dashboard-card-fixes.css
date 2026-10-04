@@ -424,3 +424,37 @@
 .visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-facebook{left:37%!important;top:7%!important;}
 .visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-youtube{left:13%!important;top:40%!important;}
 .visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-email{left:37%!important;top:40%!important;}
+
+
+/* 04/10/2026 — novo conjunto Redes Sociais + mensagem, em largura total.
+   A arte contém os dois cards empilhados; somente o card superior recebe hotspots. */
+.visual-dashboard .visual-card-grid .visual-wide-pair{
+  grid-column:1 / -1!important;
+  position:relative!important;
+  width:100%!important;
+  aspect-ratio:768/1365!important;
+  background-size:100% 100%!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:hidden!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-social-hotspots{
+  position:absolute!important;
+  left:0!important;top:0!important;
+  width:100%!important;height:50%!important;
+  pointer-events:none!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-social-hotspots a{
+  position:absolute!important;
+  display:block!important;
+  height:9%!important;
+  pointer-events:auto!important;
+  border-radius:12px!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-instagram{left:6.5%!important;top:28.5%!important;width:27%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-facebook{left:35.5%!important;top:28.5%!important;width:27%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-youtube{left:6.5%!important;top:40%!important;width:27%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-whatsapp{left:35.5%!important;top:40%!important;width:27%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-pair .wide-email{left:6.5%!important;top:51.5%!important;width:56%!important;}
