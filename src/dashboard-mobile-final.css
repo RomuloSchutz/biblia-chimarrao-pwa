@@ -1,6 +1,11 @@
 /* Ajuste final móvel 04/10/2026 — somente os dois cards horizontais novos. */
 @media (max-width:700px){
-  .visual-dashboard .visual-card-grid .visual-wide-art{
+  /* Redes Sociais fica um pouco mais estreito; o card da mensagem permanece aprovado em 118px. */
+  .visual-dashboard .visual-card-grid .visual-wide-social{
+    height:105px!important;
+    border-radius:15px!important;
+  }
+  .visual-dashboard .visual-card-grid .visual-wide-message{
     height:118px!important;
     border-radius:15px!important;
   }
@@ -14,8 +19,8 @@
     position:absolute!important;
     left:48.2%!important;
     right:2.2%!important;
-    top:18%!important;
-    bottom:10%!important;
+    top:14%!important;
+    bottom:8%!important;
     height:auto!important;
     display:grid!important;
     grid-template-columns:repeat(5,minmax(0,1fr))!important;
@@ -37,11 +42,5 @@
     background:transparent!important;
     pointer-events:auto!important;
     touch-action:manipulation!important;
-  }
-  /* Amplia discretamente o Facebook sem invadir Instagram/YouTube. */
-  .visual-dashboard .visual-card-grid .visual-wide-social .wide-social-hotspots a:nth-child(2)::after{
-    content:"";
-    position:absolute;
-    inset:-6px -3px;
   }
 }
