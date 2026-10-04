@@ -1181,17 +1181,17 @@ export default function App() {
               ["Sobre o Autor","Conheça Romulo Schutz","/card-sobre-autor.jpg",()=>setScreen('author'),"♙"],
             ].map(([title,subtitle,image,action,symbol])=><button key={title} type="button" className={`visual-card individual-card${["Encontro de Hoje","Favoritos","Minhas Anotações","Meus Livros","Hora do Mate"].includes(title) ? " visual-frame-tune" : ""}`} style={{backgroundImage:`url("${image}")`}} onClick={user ? action : title === "Devocional" ? ()=>setScreen("devotional") : title === "Encontro de Hoje" ? ()=>openEncounter(1) : ()=>setScreen("guestDemo")} aria-disabled={!user}><span className="visual-card-copy"><span className="visual-card-symbol" aria-hidden="true">{symbol}</span><strong>{title}</strong><small>{subtitle}</small></span></button>)}
             <div className="visual-wide-art visual-wide-social" aria-label="Redes Sociais">
-              <div className="wide-social-title"><strong>Redes Sociais</strong><small>Acompanhe, siga e compartilhe</small></div>
+              <img src="/card-redes-horizontal.png" alt="Redes Sociais — acompanhe e compartilhe"/>
               <div className="wide-social-hotspots">
-                <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">Instagram</a>
-                <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">Facebook</a>
-                <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube">YouTube</a>
-                <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">WhatsApp</a>
-                <a href={SOCIAL_LINKS.email} aria-label="E-mail">E-mail</a>
+                <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"></a>
+                <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"></a>
+                <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"></a>
+                <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"></a>
+                <a href={SOCIAL_LINKS.email} aria-label="E-mail"></a>
               </div>
             </div>
             <div className="visual-wide-art visual-wide-message" aria-label="Todo dia é um novo encontro com Deus. Romulo Schutz">
-              <div><strong>Todo dia é um novo encontro com Deus.</strong><span>Romulo Schutz</span></div>
+              <img src="/card-mensagem-horizontal.png" alt="Todo dia é um novo encontro com Deus. Romulo Schutz"/>
             </div>
           </nav>
           <div className="visual-bottom">
