@@ -1068,3 +1068,18 @@
 .visual-card-grid .visual-quote-tile .quote-signature{
   color:#ffffff!important;
 }
+
+/* 03/10 - Devocional com contraste consistente em celular, tablet e computador */
+.stage2-encounter>.dash-message{
+  background:linear-gradient(145deg,#123b2e,#0b2f25)!important;
+  color:#f5e7c4!important;
+  border:1px solid #9f7b3d!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.16)!important;
+}
+.stage2-encounter>.dash-message strong{color:#f0c96f!important}
+.stage2-encounter>.dash-message p{color:#f7f0df!important}
+.stage2-encounter>.dash-message small{color:#dfc98e!important}
+.stage2-encounter>.dash-message textarea{
+  background:#08261e!important;color:#fff8e7!important;border:1px solid #8e713b!important;
+}
+.stage2-encounter>.dash-message textarea::placeholder{color:#cbbd9c!important;opacity:.8}
