@@ -776,7 +776,7 @@ export default function App() {
     const ptVoices = voices.filter(v => /^pt(-|_)/i.test(v.lang || ''))
     const narratorVoice = ptVoices[0] || voices[0] || null
     const bibleVoice = ptVoices.find(v => v.voiceURI !== narratorVoice?.voiceURI) || voices.find(v => v.voiceURI !== narratorVoice?.voiceURI) || narratorVoice
-    const segments = [
+    const rawSegments = [
       ['narrator', 'Dia ' + encounter.day_number + '. ' + (encounter.title || '')],
       ['narrator', 'Bom Dia, Deus. ' + (encounter.bom_dia_deus || '')],
       ['narrator', 'A Palavra. ' + (encounter.verse_reference || '') + '. ' + (encounter.bible_version || 'Almeida 1911') + '.'],
@@ -786,6 +786,26 @@ export default function App() {
       ['narrator', 'Conversa com Deus. ' + (encounter.conversa_com_deus || '')],
       ['narrator', 'Um Passo para Hoje. ' + (encounter.um_passo_para_hoje || '')]
     ].filter(([,text]) => String(text).trim())
+    // Blocos curtos tornam Pausar/Continuar confiável também em navegadores
+    // que não informam a posição exata (onboundary) da síntese de voz.
+    const segments = rawSegments.flatMap(([role,text]) => {
+      const parts = String(text).match(/[^.!?;:]+[.!?;:]?|[^.!?;:]+$/g) || [String(text)]
+      const chunks = []
+      for (const part of parts) {
+        const clean = part.trim()
+        if (!clean) continue
+        if (clean.length <= 150) chunks.push(clean)
+        else {
+          const words = clean.split(/\s+/); let chunk = ''
+          for (const word of words) {
+            if ((chunk + ' ' + word).trim().length > 130 && chunk) { chunks.push(chunk); chunk = word }
+            else chunk = (chunk + ' ' + word).trim()
+          }
+          if (chunk) chunks.push(chunk)
+        }
+      }
+      return chunks.map(chunk => [role,chunk])
+    })
     if (!segments.length) return
     encounterAudioRef.current = {segments,index:0,offset:0,narratorVoice,bibleVoice,mode:'playing',token:encounterAudioRef.current.token+1}
     setEncounterAudioState('playing')
