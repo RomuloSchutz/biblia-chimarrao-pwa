@@ -1165,3 +1165,29 @@ align-items:center!important;justify-content:center!important;border-radius:6px!
 .visual-card-grid .visual-social-card .social-youtube{font-size:10px!important}
 .visual-card-grid .visual-social-card .social-email .social-at{font-size:14px!important;line-height:1!important}
 }
+
+/* Meu Caderno - remover qualquer painel externo no tablet/desktop */
+.notes-notebook-entry{
+background:transparent!important;
+border:0!important;
+box-shadow:none!important;
+border-radius:0!important;
+}
+.notes-notebook-entry>button{
+display:block!important;
+min-height:0!important;
+padding:0!important;
+margin:0!important;
+background:transparent!important;
+border:0!important;
+box-shadow:none!important;
+}
+.notes-notebook-entry>button:before{display:none!important;content:none!important}
+.notes-notebook-entry>button>img{
+width:100%!important;
+height:auto!important;
+max-height:none!important;
+margin:0!important;
+padding:0!important;
+background:transparent!important;
+}
