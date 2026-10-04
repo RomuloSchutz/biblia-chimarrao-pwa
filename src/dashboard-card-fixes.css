@@ -308,3 +308,61 @@
 .author-book-clickable{cursor:pointer!important;transition:transform .18s ease,border-color .18s ease!important}
 .author-book-clickable:hover,.author-book-clickable:focus-visible{transform:translateY(-3px)!important;border-color:#d8ad58!important;outline:2px solid rgba(216,173,88,.35)!important;outline-offset:3px!important}
 .author-book-open{display:block!important;margin-top:14px!important;color:#d8ad58!important}
+
+
+/* Fechamento 04/10/2026 — Redes Sociais:
+   a arte final já contém os quatro ícones. Mantemos os links clicáveis,
+   mas removemos qualquer desenho HTML sobreposto à imagem. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links a{
+  opacity:0!important;
+  color:transparent!important;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links svg{
+  opacity:0!important;
+}
+
+/* Fechamento 04/10/2026 — Meu Caderno:
+   tamanho editorial padronizado no desktop/tablet, preservando largura total no celular. */
+.dashboard .notes-notebook-entry{
+  width:calc(100% - 32px)!important;
+  max-width:920px!important;
+  margin:18px auto!important;
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.dashboard .notes-notebook-entry>button{
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:20px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.dashboard .notes-notebook-entry>button>img{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  border-radius:20px!important;
+}
+@media(max-width:700px){
+  .dashboard .notes-notebook-entry{
+    width:100%!important;
+    max-width:none!important;
+    margin:18px 0!important;
+  }
+  .dashboard .notes-notebook-entry>button,
+  .dashboard .notes-notebook-entry>button>img{
+    border-radius:18px!important;
+  }
+}
