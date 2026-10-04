@@ -400,3 +400,27 @@
   .notes-list .note-card-actions .note-open,
   .notes-list .note-card-actions .note-remove{flex:1 1 auto!important;}
 }
+
+
+/* 04/10/2026 — hotspots independentes sobre a arte final de Redes Sociais.
+   A imagem já contém os ícones; estes links invisíveis apenas definem as áreas clicáveis. */
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  z-index:12!important;
+  pointer-events:none!important;
+}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .visual-social-links a{
+  position:absolute!important;
+  display:block!important;
+  width:18.5%!important;
+  height:31%!important;
+  margin:0!important;
+  padding:0!important;
+  pointer-events:auto!important;
+}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-instagram{left:13%!important;top:7%!important;}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-facebook{left:37%!important;top:7%!important;}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-youtube{left:13%!important;top:40%!important;}
+.visual-dashboard .visual-card-grid .individual-card.visual-social-card .social-email{left:37%!important;top:40%!important;}
