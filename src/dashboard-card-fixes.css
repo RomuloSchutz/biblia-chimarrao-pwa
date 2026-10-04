@@ -366,3 +366,37 @@
     border-radius:18px!important;
   }
 }
+
+
+/* 04/10/2026 — Minhas Anotações: ações de abrir e remover. */
+.notes-list .note-card-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  margin-top:12px!important;
+}
+.notes-list .note-card-actions .note-open,
+.notes-list .note-card-actions .note-remove{
+  margin-top:0!important;
+}
+.notes-list .note-card-actions .note-remove{
+  border:1px solid #b85b52!important;
+  background:transparent!important;
+  color:#f0b0aa!important;
+  border-radius:10px!important;
+  padding:9px 14px!important;
+  cursor:pointer!important;
+  font-weight:700!important;
+}
+.notes-list .note-card-actions .note-remove:hover,
+.notes-list .note-card-actions .note-remove:focus-visible{
+  background:rgba(184,91,82,.16)!important;
+  outline:2px solid rgba(240,176,170,.35)!important;
+  outline-offset:2px!important;
+}
+@media(max-width:700px){
+  .notes-list .note-card-actions{align-items:stretch!important;}
+  .notes-list .note-card-actions .note-open,
+  .notes-list .note-card-actions .note-remove{flex:1 1 auto!important;}
+}
