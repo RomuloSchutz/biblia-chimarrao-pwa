@@ -1045,3 +1045,42 @@
   .visual-social-links .social-youtube{font-size:12px!important}
   .visual-social-links .social-email svg{width:14px!important;height:14px!important}
 }
+
+/* FINAL 03/10 — Redes Sociais mobile 2x2, tamanho original */
+@media (max-width:700px){
+  .visual-social-card .visual-social-links{
+    display:grid!important;
+    grid-template-columns:25px 25px!important;
+    grid-template-rows:25px 25px!important;
+    width:54px!important;
+    height:54px!important;
+    gap:4px!important;
+    left:6px!important;
+    top:6px!important;
+    right:auto!important;
+    bottom:auto!important;
+    align-items:center!important;
+    justify-items:center!important;
+  }
+  .visual-social-card .visual-social-links a{
+    position:static!important;
+    width:25px!important;
+    height:25px!important;
+    min-width:25px!important;
+    min-height:25px!important;
+    margin:0!important;
+    padding:0!important;
+    border-radius:7px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  .visual-social-card .visual-social-links a:nth-child(1){grid-column:1!important;grid-row:1!important}
+  .visual-social-card .visual-social-links a:nth-child(2){grid-column:2!important;grid-row:1!important}
+  .visual-social-card .visual-social-links a:nth-child(3){grid-column:1!important;grid-row:2!important}
+  .visual-social-card .visual-social-links a:nth-child(4){grid-column:2!important;grid-row:2!important}
+  .visual-social-card .social-instagram,
+  .visual-social-card .social-facebook{font-size:17px!important}
+  .visual-social-card .social-youtube{font-size:12px!important}
+  .visual-social-card .social-email svg{width:14px!important;height:14px!important}
+}
