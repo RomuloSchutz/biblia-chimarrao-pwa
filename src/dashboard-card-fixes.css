@@ -458,3 +458,45 @@
 .visual-dashboard .visual-card-grid .visual-wide-pair .wide-youtube{left:6.5%!important;top:40%!important;width:27%!important;}
 .visual-dashboard .visual-card-grid .visual-wide-pair .wide-whatsapp{left:35.5%!important;top:40%!important;width:27%!important;}
 .visual-dashboard .visual-card-grid .visual-wide-pair .wide-email{left:6.5%!important;top:51.5%!important;width:56%!important;}
+
+
+/* 04/10/2026 — recorte dos dois cards aprovados a partir da arte enviada. */
+.visual-dashboard .visual-card-grid .visual-wide-art{
+  grid-column:1 / -1!important;
+  position:relative!important;
+  width:100%!important;
+  overflow:hidden!important;
+  border-radius:24px!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-art>img{
+  position:absolute!important;
+  left:-4.49%!important;
+  width:108.74%!important;
+  max-width:none!important;
+  height:auto!important;
+  pointer-events:none!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-social{aspect-ratio:824/509!important;}
+.visual-dashboard .visual-card-grid .visual-wide-social>img{top:-47.75%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-message{aspect-ratio:824/558!important;}
+.visual-dashboard .visual-card-grid .visual-wide-message>img{top:-168.1%!important;}
+.visual-dashboard .visual-card-grid .visual-wide-social .wide-social-hotspots{
+  position:absolute!important;
+  left:2.2%!important;
+  right:2.2%!important;
+  bottom:4.5%!important;
+  height:37%!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,1fr)!important;
+  gap:1.5%!important;
+  z-index:5!important;
+  pointer-events:none!important;
+}
+.visual-dashboard .visual-card-grid .visual-wide-social .wide-social-hotspots a{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:44px!important;
+  pointer-events:auto!important;
+  border-radius:14px!important;
+}
