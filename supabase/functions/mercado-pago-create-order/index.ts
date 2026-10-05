@@ -34,7 +34,6 @@ Deno.serve(async (req: Request) => {
   const mercadoPagoAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
   if (!mercadoPagoAccessToken) return json({ error: "mercado_pago_not_configured" }, 503);
 
-  // Autenticação do usuário permanece compatível com o aplicativo atual.
   const authorization = req.headers.get("Authorization") ?? "";
   const token = String(body?.access_token || (authorization.startsWith("Bearer ") ? authorization.slice(7) : ""));
   if (!token) return json({ error: "unauthorized", stage: "missing_user_token" }, 401);
@@ -94,9 +93,6 @@ Deno.serve(async (req: Request) => {
   }
 
   const amount = (product.amount_cents / 100).toFixed(2);
-
-  // Payload mínimo da Orders API do Checkout Pro. payer, items e config são opcionais
-  // na referência da API e ficam fora desta primeira criação para eliminar variáveis.
   const mpPayload = {
     type: "online",
     processing_mode: "manual",
@@ -151,7 +147,11 @@ Deno.serve(async (req: Request) => {
   }
 
   const { error: updateError } = await admin.from("orders")
-    .update({ provider_order_id: String(mp.id), updated_at: new Date().toISOString() })
+    .update({
+      provider_order_id: String(mp.id),
+      checkout_url: String(mp.checkout_url),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", order.id);
   if (updateError) return json({ error: "provider_order_persist_failed" }, 500);
 
