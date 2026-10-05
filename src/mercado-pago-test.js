@@ -37,8 +37,15 @@ async function testarMercadoPagoCristo() {
   try { data = raw ? JSON.parse(raw) : null } catch {}
 
   if (!response.ok) {
-    const detail = data?.error || data?.message || raw || `HTTP ${response.status}`
-    throw new Error(`Edge Function ${response.status}: ${detail}`)
+    const parts = [
+      `HTTP ${response.status}`,
+      data?.error ? `erro=${data.error}` : '',
+      data?.provider_status != null ? `provider_status=${data.provider_status}` : '',
+      data?.provider_error ? `provider_error=${typeof data.provider_error === 'string' ? data.provider_error : JSON.stringify(data.provider_error)}` : '',
+      data?.provider_details ? `provider_details=${typeof data.provider_details === 'string' ? data.provider_details : JSON.stringify(data.provider_details)}` : '',
+      !data && raw ? `resposta=${raw}` : ''
+    ].filter(Boolean)
+    throw new Error(parts.join(' | '))
   }
 
   return data
@@ -66,13 +73,15 @@ function instalarBotaoTeste() {
   status.id = 'mp-checkout-test-status'
   Object.assign(status.style, {
     display: 'none',
-    maxWidth: '330px',
+    maxWidth: '560px',
     padding: '10px 12px',
     borderRadius: '10px',
     background: '#111',
     color: '#fff',
     font: '14px system-ui, sans-serif',
-    boxShadow: '0 4px 18px rgba(0,0,0,.35)'
+    boxShadow: '0 4px 18px rgba(0,0,0,.35)',
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere'
   })
 
   const button = document.createElement('button')
@@ -111,7 +120,7 @@ function instalarBotaoTeste() {
       button.textContent = 'PEDIDO DE TESTE CRIADO'
     } catch (error) {
       console.error('Mercado Pago — erro no teste:', error)
-      status.textContent = `Falha no teste: ${error?.message || 'erro desconhecido'}. Tire uma foto desta mensagem e envie no chat.`
+      status.textContent = `Falha no teste:\n${error?.message || 'erro desconhecido'}\n\nTire uma foto desta mensagem e envie no chat.`
       button.disabled = false
       button.textContent = 'TENTAR TESTE NOVAMENTE'
     }
