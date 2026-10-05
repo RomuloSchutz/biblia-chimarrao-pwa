@@ -76,7 +76,9 @@ Deno.serve(async (req: Request) => {
   const amount = (Number(product.amount_cents) / 100).toFixed(2);
   const mpPayload: any = {
     type: "online", processing_mode: "manual", total_amount: amount, external_reference: order.id,
-    payer: { email: user.email },
+    // Sandbox do Mercado Pago: somente para os testes atuais. Antes da produção,
+    // substituir pela estratégia de e-mail real do comprador no ambiente produtivo.
+    payer: { email: "test@testuser.com" },
     items: [{ title: product.title, unit_price: amount, quantity: 1, unit_measure: "unit", total_amount: amount }],
   };
 
