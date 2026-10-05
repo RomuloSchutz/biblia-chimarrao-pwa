@@ -10,8 +10,9 @@ async function testarMercadoPagoCristo() {
   const session = sessionData?.session
   if (!session?.access_token) throw new Error('Faça login no aplicativo antes do teste')
 
-  // Chamada autenticada conforme o modelo atual do Supabase:
-  // JWT do usuário em Authorization e chave publishable em apikey.
+  // A Edge Function está com verify_jwt=false e autentica o usuário no próprio runtime.
+  // A publishable key identifica o cliente; o JWT do usuário segue no corpo apenas para
+  // a validação server-side da sessão, evitando a interceptação do Authorization no gateway.
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
   const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   if (!supabaseUrl) throw new Error('URL do Supabase não configurada')
@@ -20,11 +21,11 @@ async function testarMercadoPagoCristo() {
   const response = await fetch(`${supabaseUrl}/functions/v1/mercado-pago-create-order`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${session.access_token}`,
       'apikey': publishableKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
+      access_token: session.access_token,
       product_code: 'ebook_cristo_marco',
       accepted: true,
       terms_version: '04/10/2026'
