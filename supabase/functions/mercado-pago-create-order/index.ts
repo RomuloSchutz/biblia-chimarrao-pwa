@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -15,24 +15,29 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
+  let body: any = {};
+  try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const accessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
-  if (!accessToken) return json({ error: "mercado_pago_not_configured" }, 503);
+  const mercadoPagoAccessToken = Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN");
+  if (!mercadoPagoAccessToken) return json({ error: "mercado_pago_not_configured" }, 503);
 
-  const auth = req.headers.get("Authorization") ?? "";
-  if (!auth.startsWith("Bearer ")) return json({ error: "unauthorized", stage: "missing_bearer" }, 401);
-  const token = auth.slice(7);
+  // Compatibilidade com a função book-epub-access já estável no mesmo projeto:
+  // com verify_jwt=false, o JWT do usuário pode vir no corpo. Assim evitamos que
+  // a camada de gateway intercepte o Authorization antes do runtime da função.
+  const header = req.headers.get("Authorization") ?? "";
+  const token = String(body?.access_token || (header.startsWith("Bearer ") ? header.slice(7) : ""));
+  if (!token) return json({ error: "unauthorized", stage: "missing_user_token" }, 401);
+
   const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: auth } },
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: { user }, error: userError } = await userClient.auth.getUser(token);
   if (userError || !user) return json({ error: "unauthorized", stage: "get_user" }, 401);
 
-  let body: any = {};
-  try { body = await req.json(); } catch { return json({ error: "invalid_json" }, 400); }
   const productCode = String(body?.product_code ?? "").trim();
   if (!productCode) return json({ error: "product_code_required" }, 400);
   if (body?.accepted !== true) return json({ error: "purchase_terms_acceptance_required" }, 400);
@@ -94,7 +99,7 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
+        "Authorization": `Bearer ${mercadoPagoAccessToken}`,
         "X-Idempotency-Key": order.id,
       },
       body: JSON.stringify(mpPayload),
