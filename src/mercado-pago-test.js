@@ -7,17 +7,36 @@ async function testarMercadoPagoCristo() {
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
-  if (!sessionData?.session) throw new Error('Faça login no aplicativo antes do teste')
+  const session = sessionData?.session
+  if (!session?.access_token) throw new Error('Faça login no aplicativo antes do teste')
 
-  const { data, error } = await supabase.functions.invoke('mercado-pago-create-order', {
-    body: {
+  // A função usa autenticação própria e o gateway está com a verificação JWT legada desligada.
+  // Fazemos a chamada HTTP direta para não misturar a chave publishable no gateway da Edge Function.
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  if (!supabaseUrl) throw new Error('URL do Supabase não configurada')
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/mercado-pago-create-order`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
       product_code: 'ebook_cristo_marco',
       accepted: true,
       terms_version: '04/10/2026'
-    }
+    })
   })
 
-  if (error) throw error
+  const raw = await response.text()
+  let data = null
+  try { data = raw ? JSON.parse(raw) : null } catch {}
+
+  if (!response.ok) {
+    const detail = data?.error || data?.message || raw || `HTTP ${response.status}`
+    throw new Error(`Edge Function ${response.status}: ${detail}`)
+  }
+
   return data
 }
 
