@@ -10,15 +10,18 @@ async function testarMercadoPagoCristo() {
   const session = sessionData?.session
   if (!session?.access_token) throw new Error('Faça login no aplicativo antes do teste')
 
-  // A função usa autenticação própria e o gateway está com a verificação JWT legada desligada.
-  // Fazemos a chamada HTTP direta para não misturar a chave publishable no gateway da Edge Function.
+  // Chamada autenticada conforme o modelo atual do Supabase:
+  // JWT do usuário em Authorization e chave publishable em apikey.
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
   if (!supabaseUrl) throw new Error('URL do Supabase não configurada')
+  if (!publishableKey) throw new Error('Chave publishable do Supabase não configurada')
 
   const response = await fetch(`${supabaseUrl}/functions/v1/mercado-pago-create-order`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
+      'apikey': publishableKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
