@@ -1,4 +1,7 @@
+import { supabase, supabaseConfigured } from './lib/supabase.js'
+
 const CRISTO_TITLE = 'Cristo: O Marco Entre o Antes e o Depois'
+const PRODUCT_CODE = 'ebook_cristo_marco'
 
 function findCristoCard(button) {
   let element = button.parentElement
@@ -25,6 +28,67 @@ function closePreview() {
   document.getElementById('cristo-commercial-preview')?.remove()
 }
 
+async function createCristoOrder(continueButton, checkbox, status) {
+  if (!checkbox.checked || continueButton.dataset.submitting === 'true') return
+
+  continueButton.dataset.submitting = 'true'
+  continueButton.disabled = true
+  continueButton.textContent = 'Preparando pagamento…'
+  status.textContent = 'Aguarde. Não feche esta janela.'
+
+  if (!supabaseConfigured || !supabase) {
+    status.textContent = 'Não foi possível iniciar o pagamento. Atualize o aplicativo e tente novamente.'
+    continueButton.textContent = 'Pagamento indisponível'
+    return
+  }
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  const accessToken = sessionData?.session?.access_token
+  if (sessionError || !accessToken) {
+    status.textContent = 'Sua sessão expirou. Entre novamente na sua conta antes de comprar.'
+    continueButton.textContent = 'Sessão expirada'
+    return
+  }
+
+  const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`
+
+  try {
+    const response = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        access_token: accessToken,
+        product_code: PRODUCT_CODE,
+        accepted: true,
+      }),
+    })
+
+    let result = null
+    try { result = await response.json() } catch { result = null }
+
+    if (response.status !== 201 || !result?.order_id || !result?.checkout_url) {
+      console.error('Falha ao preparar checkout do livro Cristo', {
+        status: response.status,
+        error: result?.error ?? 'invalid_response',
+      })
+      status.textContent = 'Não foi possível preparar o pagamento. Nenhuma nova tentativa será feita automaticamente.'
+      continueButton.textContent = 'Não foi possível continuar'
+      return
+    }
+
+    status.textContent = 'Checkout preparado. Abrindo o Mercado Pago…'
+    continueButton.textContent = 'Abrindo pagamento…'
+    window.location.assign(result.checkout_url)
+  } catch (error) {
+    console.error('Falha de conexão ao preparar checkout do livro Cristo', error)
+    status.textContent = 'Houve uma falha de conexão. Para evitar pedido duplicado, nenhuma nova tentativa será feita automaticamente.'
+    continueButton.textContent = 'Verifique sua conexão'
+  }
+}
+
 function openPreview() {
   closePreview()
   const backdrop = document.createElement('div')
@@ -42,23 +106,23 @@ function openPreview() {
       <div class="cristo-commercial-info">
         <p>✓ Leitura no aplicativo após a confirmação do pagamento.</p>
         <p>✓ EPUB protegido para uso pessoal.</p>
-        <p>✓ Download liberado após o prazo legal aplicável, conforme a Política de Compra.</p>
+        <p>✓ Download do EPUB disponibilizado após 7 dias, conforme a Política de Compra Digital.</p>
       </div>
       <label class="cristo-commercial-consent"><input type="checkbox"/> Li e concordo com as condições da compra digital.</label>
       <button type="button" class="cristo-commercial-continue" disabled>Continuar para pagamento — R$ 19,90</button>
-      <small class="cristo-commercial-note">Prévia comercial: o pagamento ainda não está conectado nesta etapa.</small>
+      <small class="cristo-commercial-note" aria-live="polite">Uma Order será criada somente após seu clique em continuar.</small>
     </div>`
   document.body.appendChild(backdrop)
   const checkbox = backdrop.querySelector('input')
   const continueButton = backdrop.querySelector('.cristo-commercial-continue')
-  checkbox.addEventListener('change', () => { continueButton.disabled = !checkbox.checked })
+  const status = backdrop.querySelector('.cristo-commercial-note')
+  checkbox.addEventListener('change', () => {
+    if (continueButton.dataset.submitting === 'true') return
+    continueButton.disabled = !checkbox.checked
+  })
   backdrop.querySelector('.cristo-commercial-close').addEventListener('click', closePreview)
   backdrop.addEventListener('click', event => { if (event.target === backdrop) closePreview() })
-  continueButton.addEventListener('click', () => {
-    if (!checkbox.checked) return
-    continueButton.textContent = 'Pagamento ainda não conectado'
-    continueButton.disabled = true
-  })
+  continueButton.addEventListener('click', () => createCristoOrder(continueButton, checkbox, status))
 }
 
 document.addEventListener('click', event => {
