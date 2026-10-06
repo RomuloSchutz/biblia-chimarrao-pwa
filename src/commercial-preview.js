@@ -12,6 +12,50 @@ function findCristoCard(button) {
   return null
 }
 
+async function prepareCristoPurchasedCard() {
+  if (!supabaseConfigured || !supabase) return
+  const downloadButton = [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Baixar EPUB ↓' && findCristoCard(button))
+  if (!downloadButton || downloadButton.dataset.downloadChecked === 'true') return
+  downloadButton.dataset.downloadChecked = 'true'
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const session = sessionData?.session
+    if (!session) return
+    const { data: library, error: libraryError } = await supabase.rpc('my_book_library')
+    if (libraryError) return
+    const item = (library || []).find(entry => entry.title === CRISTO_TITLE && entry.has_access && entry.edition_id)
+    if (!item) return
+
+    const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-epub-access`
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ edition_id: item.edition_id, download: true }),
+    })
+    let result = null
+    try { result = await response.json() } catch { result = null }
+
+    if (response.status === 403 && result?.download_available_at) {
+      const date = new Date(result.download_available_at).toLocaleDateString('pt-BR', {
+        timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric'
+      })
+      downloadButton.disabled = true
+      downloadButton.classList.add('book-disabled', 'cristo-download-wait')
+      downloadButton.textContent = `EPUB disponível em ${date}`
+      const card = findCristoCard(downloadButton)
+      const note = card?.querySelector('.book-license-note')
+      if (note) note.textContent = 'A leitura no aplicativo já está liberada. O download do EPUB será habilitado automaticamente após o prazo de 7 dias.'
+    }
+  } catch (error) {
+    console.info('Não foi possível consultar agora a data de liberação do EPUB.', error)
+  }
+}
+
 function prepareCristoButton() {
   document.querySelectorAll('button').forEach(button => {
     const text = button.textContent.trim()
@@ -22,6 +66,7 @@ function prepareCristoButton() {
     button.classList.add('primary', 'cristo-buy-preview')
     button.textContent = 'Adquirir livro digital — R$ 19,90'
   })
+  prepareCristoPurchasedCard()
 }
 
 function closePreview() {
@@ -146,6 +191,7 @@ style.textContent = `
 .cristo-commercial-consent{display:flex;align-items:flex-start;gap:10px;margin:18px 0;line-height:1.4}.cristo-commercial-consent input{margin-top:3px;transform:scale(1.15)}
 .cristo-commercial-continue{width:100%;padding:14px;border:0;border-radius:12px;font-weight:800;cursor:pointer}.cristo-commercial-continue:disabled{cursor:not-allowed;opacity:.55}
 .cristo-commercial-note{display:block;margin-top:12px;text-align:center;line-height:1.4;opacity:.72}
+.cristo-download-wait{cursor:not-allowed!important;opacity:.78!important}
 @media (prefers-color-scheme:dark){html[data-appearance="dark"] .cristo-commercial-card{background:#211d18;color:#f7f0e5}.cristo-commercial-info{background:#30291f}}
 `
 document.head.appendChild(style)
