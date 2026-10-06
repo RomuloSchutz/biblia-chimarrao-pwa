@@ -5,6 +5,5 @@ import './styles.css'
 import './dashboard-card-fixes.css'
 import './dashboard-mobile-final.css'
 import './social-mobile-fix.js'
-import './mercado-pago-test.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />)
