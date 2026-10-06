@@ -1,15 +1,19 @@
 const CRISTO_TITLE = 'Cristo: O Marco Entre o Antes e o Depois'
 
-function isCristoArea(button) {
-  const card = button.closest('.book-card, .author-work-detail')
-  return Boolean(card && card.textContent.includes(CRISTO_TITLE))
+function findCristoCard(button) {
+  let element = button.parentElement
+  while (element && element !== document.body) {
+    if (element.textContent?.includes(CRISTO_TITLE)) return element
+    element = element.parentElement
+  }
+  return null
 }
 
 function prepareCristoButton() {
   document.querySelectorAll('button').forEach(button => {
-    if (!isCristoArea(button)) return
     const text = button.textContent.trim()
     if (text !== '🔒 Livro não adquirido' && text !== 'Adquirir livro digital — em breve') return
+    if (!findCristoCard(button)) return
     button.disabled = false
     button.classList.remove('book-disabled')
     button.classList.add('primary', 'cristo-buy-preview')
