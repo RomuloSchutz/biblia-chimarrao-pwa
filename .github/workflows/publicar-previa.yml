@@ -15,6 +15,12 @@ jobs:
           node-version: '22'
       - name: Instalar dependências
         run: npm install
+      - name: Aplicar preços dinâmicos somente na cópia efêmera da prévia
+        run: python3 scripts/apply-commercial-card-prices-lab.py
+      - name: Validar alteração comercial antes da compilação
+        run: |
+          grep -F "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx
+          test "$(grep -o "productCode:'" src/App.jsx | wc -l)" -eq 4
       - name: Compilar aplicativo com variáveis de prévia
         run: npm run build
         env:
