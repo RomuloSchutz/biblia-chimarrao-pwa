@@ -10,72 +10,53 @@ if branch != BRANCH:
 
 s = APP.read_text(encoding="utf-8")
 
-# Âncoras exatas da biblioteca real, confirmadas no App.jsx.
-start_marker = "if (screen === 'books' && user) {\n    const books = ["
-end_marker = "\n    ]\n    return <main className=\"dashboard\""
+# Trabalha exclusivamente dentro da tela real "Meus Livros".
+start_marker = "if (screen === 'books' && user) {"
+end_marker = "if (screen === 'authorBooks' && user) {"
 start = s.find(start_marker)
 if start < 0:
-    raise SystemExit("ABORTADO: início exato da biblioteca não encontrado")
+    raise SystemExit("ABORTADO: início da tela books não encontrado")
 end = s.find(end_marker, start)
 if end < 0:
-    raise SystemExit("ABORTADO: fim exato do array books não encontrado")
+    raise SystemExit("ABORTADO: fim estrutural da tela books não encontrado")
 if s.find(start_marker, start + 1) >= 0:
-    raise SystemExit("ABORTADO: mais de uma biblioteca correspondente foi encontrada")
+    raise SystemExit("ABORTADO: mais de uma tela books encontrada")
 
-books_start = start + start_marker.index("const books = [")
-books_end = end + len("\n    ]")
-books_block = s[books_start:books_end]
+screen_block = s[start:end]
 
-# Somente os quatro produtos digitais comercializáveis recebem productCode.
-replacements = [
-    (
-        "{title:'Chimarrão com Deus — 365 Encontros com Deus',sub:'Edição digital EPUB · Prévia 2027'",
-        "{title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027'",
-    ),
-    (
-        "{title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus'",
-        "{title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus'",
-    ),
-    (
-        "{title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado'",
-        "{title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:'A Esperança Inabalável em um Mundo Acelerado'",
-    ),
-    (
-        "{title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo'",
-        "{title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo'",
-    ),
+# Os quatro vínculos comerciais precisam existir exatamente uma vez nessa tela.
+expected_codes = [
+    "devocional_chimarrao_com_deus_2027",
+    "ebook_entre_os_tempos",
+    "ebook_entre_ja_ainda_nao",
+    "ebook_cristo_marco",
 ]
+for code in expected_codes:
+    if screen_block.count(f"productCode:'{code}'") != 1:
+        raise SystemExit(f"ABORTADO: productCode {code!r} não apareceu exatamente uma vez na tela books")
 
-# Proteções: cada objeto precisa existir exatamente uma vez dentro do array e
-# nenhum productCode pode estar previamente aplicado.
-for old, new in replacements:
-    count = books_block.count(old)
-    if count != 1:
-        raise SystemExit(f"ABORTADO: objeto comercial esperado apareceu {count} vezes dentro de books: {old}")
-    if new in books_block:
-        raise SystemExit("ABORTADO: um dos productCode já está aplicado; nenhuma escrita foi feita")
+# Alvo exato já existente no card de livro não adquirido.
+old = '<button className="book-disabled" disabled>🔒 Livro não adquirido</button>'
+new = '<button className="book-disabled" disabled>{book.productCode&&commercialCatalog[book.productCode]?`🔒 Livro não adquirido · ${formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)}`:\'🔒 Livro não adquirido\'}</button>'
 
-# Confirma que os dois itens não comerciais continuam sem productCode.
-non_commercial = [
-    "{title:'Chimarrão com Deus',sub:'365 Encontros com Deus'",
-    "{title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE'",
-]
-for marker in non_commercial:
-    if books_block.count(marker) != 1:
-        raise SystemExit(f"ABORTADO: item não comercial esperado não foi identificado de forma única: {marker}")
+count = screen_block.count(old)
+if count != 1:
+    raise SystemExit(f"ABORTADO: botão-alvo apareceu {count} vez(es) na tela books; esperado 1")
+if new in screen_block:
+    raise SystemExit("ABORTADO: preço dinâmico já está aplicado; nenhuma escrita foi feita")
 
-updated_block = books_block
-for old, new in replacements:
-    updated_block = updated_block.replace(old, new, 1)
+updated_block = screen_block.replace(old, new, 1)
 
+# Garantias finais: somente a apresentação do botão muda; productCodes permanecem 4.
 if updated_block.count("productCode:") != 4:
-    raise SystemExit("ABORTADO: validação final não encontrou exatamente quatro productCode")
+    raise SystemExit("ABORTADO: validação final dos quatro productCode falhou")
+if updated_block.count("formatCommercialPrice(commercialCatalog[book.productCode].amountCents") != 1:
+    raise SystemExit("ABORTADO: expressão de preço dinâmico não ficou única")
 
-# Nesta etapa NÃO altera botão, preço, checkout ou layout.
-updated = s[:books_start] + updated_block + s[books_end:]
+updated = s[:start] + updated_block + s[end:]
 APP.write_text(updated, encoding="utf-8")
 
-print("OK: quatro productCode inseridos somente no array books da biblioteca.")
-print("OK: devocional interno e Entre a Cidade e o Silêncio permaneceram sem productCode.")
-print("Nenhum preço, botão, checkout ou layout foi alterado.")
-print("Nenhum commit do App.jsx foi criado por este script.")
+print("OK: preço dinâmico ligado somente ao botão dos livros não adquiridos em Meus Livros.")
+print("OK: os quatro cards usam productCode + catálogo Supabase; nenhum preço foi fixado no App.jsx.")
+print("OK: nenhum checkout, entitlement, leitura, download ou layout foi alterado.")
+print("AINDA NÃO HOUVE COMMIT DO APP.JSX.")
