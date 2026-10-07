@@ -13,8 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
       - name: Instalar dependências
-        run: npm install
+        run: npm ci
       - name: Aplicar preços e carência somente na cópia efêmera da prévia
         run: |
           python3 scripts/apply-commercial-card-prices-lab.py
@@ -37,18 +38,13 @@ jobs:
         run: |
           test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-      - name: Criar prévia do laboratório (nunca implantar produção)
-        id: preview
+      - name: Publicar versão consolidada no alias isolado do laboratório
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          npx wrangler preview --name lab-commercial-prices-2026-10-07 2>&1 | tee preview-output.txt
-          echo "### Resultado da prévia consolidada" >> "$GITHUB_STEP_SUMMARY"
-          if grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY"; then
-            echo "Prévia isolada: preços dinâmicos + carência de download. Não publica produção." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "A ferramenta não informou endereço de prévia. Verifique o log da etapa." | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+          npx wrangler versions upload --preview-alias lab-commercial-prices-2026-10-07 2>&1 | tee preview-output.txt
+          echo "### Prévia comercial consolidada" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preços dinâmicos + carência de download publicados no mesmo build." >> "$GITHUB_STEP_SUMMARY"
+          grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
