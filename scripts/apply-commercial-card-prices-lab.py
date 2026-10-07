@@ -12,7 +12,8 @@ s = APP.read_text(encoding="utf-8")
 
 # Trabalha exclusivamente dentro da tela real "Meus Livros".
 start_marker = "if (screen === 'books' && user) {"
-end_marker = "if (screen === 'authorBooks' && user) {"
+# No App.jsx atual, authorBooks aparece antes de books. A próxima tela depois de books é notebook.
+end_marker = "if(screen==='notebook'&&user){"
 start = s.find(start_marker)
 if start < 0:
     raise SystemExit("ABORTADO: início da tela books não encontrado")
@@ -59,4 +60,4 @@ APP.write_text(updated, encoding="utf-8")
 print("OK: preço dinâmico ligado somente ao botão dos livros não adquiridos em Meus Livros.")
 print("OK: os quatro cards usam productCode + catálogo Supabase; nenhum preço foi fixado no App.jsx.")
 print("OK: nenhum checkout, entitlement, leitura, download ou layout foi alterado.")
-print("AINDA NÃO HOUVE COMMIT DO APP.JSX.")
+print("ALTERAÇÃO SOMENTE NA CÓPIA EFÊMERA DO ACTION; App.jsx do repositório permanece intacto.")
