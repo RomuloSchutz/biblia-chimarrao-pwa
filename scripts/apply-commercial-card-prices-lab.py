@@ -9,63 +9,93 @@ if branch != BRANCH:
     raise SystemExit(f"ABORTADO: branch atual {branch!r}; esperado {BRANCH!r}")
 
 s = APP.read_text(encoding="utf-8")
-
-required = [
-    "import { fetchCommercialCatalog, formatCommercialPrice } from './lib/commercial-catalog-api.js'",
-    "const [commercialCatalog,setCommercialCatalog]=useState({})",
-]
-for marker in required:
-    if marker not in s:
-        raise SystemExit(f"ABORTADO: integração-base ausente: {marker}")
-
-# Trabalha exclusivamente no array `books` da tela da biblioteca.
-# O limite final é o `const bookTitles` que vem logo depois desse array.
 start_marker = "const books=["
-end_marker = ";const bookTitles="
 start = s.find(start_marker)
 if start < 0:
     raise SystemExit("ABORTADO: início do array books não encontrado")
-end = s.find(end_marker, start)
-if end < 0:
-    raise SystemExit("ABORTADO: fim do array books não encontrado")
-if s.find(start_marker, start + len(start_marker), end) >= 0:
-    raise SystemExit("ABORTADO: outro array books apareceu dentro do intervalo esperado")
 
-prefix = s[:start]
-books_block = s[start:end]
-suffix = s[end:]
+array_start = start + len("const books=")
+if s[array_start] != "[":
+    raise SystemExit("ABORTADO: colchete inicial do array books não encontrado")
 
-book_replacements = {
-    "{title:'Chimarrão com Deus — 365 Encontros com Deus',sub:": "{title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:",
-    "{title:'Entre os Tempos',sub:": "{title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:",
-    "{title:'Entre o Já e o Ainda Não',sub:": "{title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:",
-    "{title:'Cristo: O Marco Entre o Antes e o Depois',sub:": "{title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:",
-}
+# Localizador estrutural: conta colchetes e ignora colchetes dentro de strings,
+# template literals e comentários. Este script é SOMENTE diagnóstico: não grava App.jsx.
+depth = 0
+i = array_start
+quote = None
+escaped = False
+line_comment = False
+block_comment = False
+array_end = None
 
-for old, new in book_replacements.items():
-    count = books_block.count(old)
-    if count != 1:
-        raise SystemExit(f"ABORTADO: dentro do array books, marcador apareceu {count} vezes: {old}")
-    if new in books_block:
-        raise SystemExit(f"ABORTADO: productCode já presente no array books para: {old}")
+while i < len(s):
+    ch = s[i]
+    nxt = s[i + 1] if i + 1 < len(s) else ""
 
-for old, new in book_replacements.items():
-    books_block = books_block.replace(old, new, 1)
+    if line_comment:
+        if ch == "\n":
+            line_comment = False
+        i += 1
+        continue
 
-s = prefix + books_block + suffix
+    if block_comment:
+        if ch == "*" and nxt == "/":
+            block_comment = False
+            i += 2
+        else:
+            i += 1
+        continue
 
-old_block = "<div className=\"book-actions\"><button className=\"book-disabled\" disabled>🔒 Livro não adquirido</button><small className=\"book-license-note\">Após a compra ou liberação pelo administrador, a leitura e o download serão habilitados nesta conta.</small></div>"
-new_block = "<div className=\"book-actions\"><button className=\"book-disabled\" disabled>🔒 Livro não adquirido{book.productCode&&commercialCatalog[book.productCode]?.amountCents!=null?` · ${formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)}`:''}</button><small className=\"book-license-note\">Após a compra ou liberação pelo administrador, a leitura e o download serão habilitados nesta conta.</small></div>"
+    if quote:
+        if escaped:
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == quote:
+            quote = None
+        i += 1
+        continue
 
-if s.count(old_block) != 1:
-    raise SystemExit(f"ABORTADO: bloco do card não adquirido apareceu {s.count(old_block)} vezes")
-if new_block in s:
-    raise SystemExit("ABORTADO: preço dinâmico já parece estar integrado ao card")
+    if ch == "/" and nxt == "/":
+        line_comment = True
+        i += 2
+        continue
+    if ch == "/" and nxt == "*":
+        block_comment = True
+        i += 2
+        continue
+    if ch in ("'", '"', "`"):
+        quote = ch
+        i += 1
+        continue
 
-s = s.replace(old_block, new_block, 1)
-APP.write_text(s, encoding="utf-8")
+    if ch == "[":
+        depth += 1
+    elif ch == "]":
+        depth -= 1
+        if depth == 0:
+            array_end = i + 1
+            break
+        if depth < 0:
+            raise SystemExit("ABORTADO: estrutura de colchetes inválida")
+    i += 1
 
-print("OK: alteração restrita ao array books da biblioteca.")
-print("OK: quatro productCode inseridos e preço dinâmico ligado ao card não adquirido.")
-print("Nenhum preço foi fixado no App.jsx.")
-print("Nenhum commit foi criado por este script.")
+if array_end is None:
+    raise SystemExit("ABORTADO: fechamento estrutural do array books não encontrado")
+
+books_block = s[start:array_end]
+required_titles = [
+    "Chimarrão com Deus — 365 Encontros com Deus",
+    "Entre os Tempos",
+    "Entre o Já e o Ainda Não",
+    "Cristo: O Marco Entre o Antes e o Depois",
+]
+
+print("OK: array books localizado estruturalmente.")
+print(f"INÍCIO: caractere {start}")
+print(f"FIM: caractere {array_end}")
+print(f"TAMANHO DO BLOCO: {len(books_block)} caracteres")
+for title in required_titles:
+    print(f"{title}: {books_block.count(title)} ocorrência(s) dentro do array")
+print("MODO DIAGNÓSTICO: src/App.jsx NÃO foi alterado.")
+print("Nenhum commit do App.jsx foi criado.")
