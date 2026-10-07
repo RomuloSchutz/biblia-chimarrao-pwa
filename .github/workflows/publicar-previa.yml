@@ -15,12 +15,16 @@ jobs:
           node-version: '22'
       - name: Instalar dependências
         run: npm install
-      - name: Aplicar preços dinâmicos somente na cópia efêmera da prévia
-        run: python3 scripts/apply-commercial-card-prices-lab.py
-      - name: Validar alteração comercial antes da compilação
+      - name: Aplicar preços e carência somente na cópia efêmera da prévia
+        run: |
+          python3 scripts/apply-commercial-card-prices-lab.py
+          python3 scripts/apply-download-wait-lab.py
+      - name: Validar preços e proteção de download antes da compilação
         run: |
           grep -F "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx
           test "$(grep -o "productCode:'" src/App.jsx | wc -l)" -eq 4
+          grep -F "edition_id:access.edition_id,download" src/App.jsx
+          grep -F "download_available_at" src/App.jsx
       - name: Compilar aplicativo com variáveis de prévia
         run: npm run build
         env:
@@ -33,8 +37,6 @@ jobs:
         run: |
           test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-          test -n "https://srabzgokulsiujusbqxl.supabase.co" || { echo "Falta VITE_SUPABASE_URL"; exit 1; }
-          test -n "sb_publishable_TjLHUAq038yLQ2hqqaVZjg__GM4w2Q4" || { echo "Falta VITE_SUPABASE_PUBLISHABLE_KEY"; exit 1; }
       - name: Criar prévia do laboratório (nunca implantar produção)
         id: preview
         env:
@@ -43,9 +45,9 @@ jobs:
         run: |
           set -o pipefail
           npx wrangler preview --name lab-commercial-prices-2026-10-07 2>&1 | tee preview-output.txt
-          echo "### Resultado da prévia do laboratório comercial" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Resultado da prévia consolidada" >> "$GITHUB_STEP_SUMMARY"
           if grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY"; then
-            echo "Prévia isolada criada. Este endereço não é a produção." >> "$GITHUB_STEP_SUMMARY"
+            echo "Prévia isolada: preços dinâmicos + carência de download. Não publica produção." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "A ferramenta não informou endereço de prévia. Verifique o log da etapa." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 1
