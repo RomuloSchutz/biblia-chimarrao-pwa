@@ -9,93 +9,73 @@ if branch != BRANCH:
     raise SystemExit(f"ABORTADO: branch atual {branch!r}; esperado {BRANCH!r}")
 
 s = APP.read_text(encoding="utf-8")
-start_marker = "const books=["
+
+# Âncoras exatas da biblioteca real, confirmadas no App.jsx.
+start_marker = "if (screen === 'books' && user) {\n    const books = ["
+end_marker = "\n    ]\n    return <main className=\"dashboard\""
 start = s.find(start_marker)
 if start < 0:
-    raise SystemExit("ABORTADO: início do array books não encontrado")
+    raise SystemExit("ABORTADO: início exato da biblioteca não encontrado")
+end = s.find(end_marker, start)
+if end < 0:
+    raise SystemExit("ABORTADO: fim exato do array books não encontrado")
+if s.find(start_marker, start + 1) >= 0:
+    raise SystemExit("ABORTADO: mais de uma biblioteca correspondente foi encontrada")
 
-array_start = start + len("const books=")
-if s[array_start] != "[":
-    raise SystemExit("ABORTADO: colchete inicial do array books não encontrado")
+books_start = start + start_marker.index("const books = [")
+books_end = end + len("\n    ]")
+books_block = s[books_start:books_end]
 
-# Localizador estrutural: conta colchetes e ignora colchetes dentro de strings,
-# template literals e comentários. Este script é SOMENTE diagnóstico: não grava App.jsx.
-depth = 0
-i = array_start
-quote = None
-escaped = False
-line_comment = False
-block_comment = False
-array_end = None
-
-while i < len(s):
-    ch = s[i]
-    nxt = s[i + 1] if i + 1 < len(s) else ""
-
-    if line_comment:
-        if ch == "\n":
-            line_comment = False
-        i += 1
-        continue
-
-    if block_comment:
-        if ch == "*" and nxt == "/":
-            block_comment = False
-            i += 2
-        else:
-            i += 1
-        continue
-
-    if quote:
-        if escaped:
-            escaped = False
-        elif ch == "\\":
-            escaped = True
-        elif ch == quote:
-            quote = None
-        i += 1
-        continue
-
-    if ch == "/" and nxt == "/":
-        line_comment = True
-        i += 2
-        continue
-    if ch == "/" and nxt == "*":
-        block_comment = True
-        i += 2
-        continue
-    if ch in ("'", '"', "`"):
-        quote = ch
-        i += 1
-        continue
-
-    if ch == "[":
-        depth += 1
-    elif ch == "]":
-        depth -= 1
-        if depth == 0:
-            array_end = i + 1
-            break
-        if depth < 0:
-            raise SystemExit("ABORTADO: estrutura de colchetes inválida")
-    i += 1
-
-if array_end is None:
-    raise SystemExit("ABORTADO: fechamento estrutural do array books não encontrado")
-
-books_block = s[start:array_end]
-required_titles = [
-    "Chimarrão com Deus — 365 Encontros com Deus",
-    "Entre os Tempos",
-    "Entre o Já e o Ainda Não",
-    "Cristo: O Marco Entre o Antes e o Depois",
+# Somente os quatro produtos digitais comercializáveis recebem productCode.
+replacements = [
+    (
+        "{title:'Chimarrão com Deus — 365 Encontros com Deus',sub:'Edição digital EPUB · Prévia 2027'",
+        "{title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027'",
+    ),
+    (
+        "{title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus'",
+        "{title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus'",
+    ),
+    (
+        "{title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado'",
+        "{title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:'A Esperança Inabalável em um Mundo Acelerado'",
+    ),
+    (
+        "{title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo'",
+        "{title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo'",
+    ),
 ]
 
-print("OK: array books localizado estruturalmente.")
-print(f"INÍCIO: caractere {start}")
-print(f"FIM: caractere {array_end}")
-print(f"TAMANHO DO BLOCO: {len(books_block)} caracteres")
-for title in required_titles:
-    print(f"{title}: {books_block.count(title)} ocorrência(s) dentro do array")
-print("MODO DIAGNÓSTICO: src/App.jsx NÃO foi alterado.")
-print("Nenhum commit do App.jsx foi criado.")
+# Proteções: cada objeto precisa existir exatamente uma vez dentro do array e
+# nenhum productCode pode estar previamente aplicado.
+for old, new in replacements:
+    count = books_block.count(old)
+    if count != 1:
+        raise SystemExit(f"ABORTADO: objeto comercial esperado apareceu {count} vezes dentro de books: {old}")
+    if new in books_block:
+        raise SystemExit("ABORTADO: um dos productCode já está aplicado; nenhuma escrita foi feita")
+
+# Confirma que os dois itens não comerciais continuam sem productCode.
+non_commercial = [
+    "{title:'Chimarrão com Deus',sub:'365 Encontros com Deus'",
+    "{title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE'",
+]
+for marker in non_commercial:
+    if books_block.count(marker) != 1:
+        raise SystemExit(f"ABORTADO: item não comercial esperado não foi identificado de forma única: {marker}")
+
+updated_block = books_block
+for old, new in replacements:
+    updated_block = updated_block.replace(old, new, 1)
+
+if updated_block.count("productCode:") != 4:
+    raise SystemExit("ABORTADO: validação final não encontrou exatamente quatro productCode")
+
+# Nesta etapa NÃO altera botão, preço, checkout ou layout.
+updated = s[:books_start] + updated_block + s[books_end:]
+APP.write_text(updated, encoding="utf-8")
+
+print("OK: quatro productCode inseridos somente no array books da biblioteca.")
+print("OK: devocional interno e Entre a Cidade e o Silêncio permaneceram sem productCode.")
+print("Nenhum preço, botão, checkout ou layout foi alterado.")
+print("Nenhum commit do App.jsx foi criado por este script.")
