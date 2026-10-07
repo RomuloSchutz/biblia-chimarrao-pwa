@@ -4,27 +4,44 @@ on:
   push:
     branches: [lab-commercial-prices-2026-10-07]
 permissions:
-  contents: read
+  contents: write
 jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: lab-commercial-prices-2026-10-07
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Instalar dependências
         run: npm install
-      - name: Aplicar preços e carência somente na cópia efêmera da prévia
+      - name: Gravar preços e carência no código do laboratório
         run: |
-          python3 scripts/apply-commercial-card-prices-lab.py
-          python3 scripts/apply-download-wait-lab.py
-      - name: Validar preços e proteção de download antes da compilação
+          if ! grep -Fq "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx; then
+            python3 scripts/apply-commercial-card-prices-lab.py
+          fi
+          if ! grep -Fq "edition_id:access.edition_id,download" src/App.jsx; then
+            python3 scripts/apply-download-wait-lab.py
+          fi
+      - name: Validar código comercial consolidado
         run: |
           grep -F "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx
           test "$(grep -o "productCode:'" src/App.jsx | wc -l)" -eq 4
           grep -F "edition_id:access.edition_id,download" src/App.jsx
           grep -F "download_available_at" src/App.jsx
+      - name: Persistir App.jsx corrigido na branch de laboratório
+        run: |
+          if ! git diff --quiet -- src/App.jsx; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add src/App.jsx
+            git commit -m "Aplicar preços e carência de download no código do laboratório"
+            git push origin HEAD:lab-commercial-prices-2026-10-07
+          else
+            echo "App.jsx já contém as correções comerciais."
+          fi
       - name: Compilar aplicativo com variáveis de prévia
         run: npm run build
         env:
@@ -45,5 +62,5 @@ jobs:
           set -o pipefail
           npx wrangler versions upload --preview-alias lab-commercial-prices-2026-10-07 2>&1 | tee preview-output.txt
           echo "### Prévia comercial consolidada" >> "$GITHUB_STEP_SUMMARY"
-          echo "Preços dinâmicos + carência de download publicados no mesmo build." >> "$GITHUB_STEP_SUMMARY"
+          echo "App.jsx persistido + preços dinâmicos + carência de download no mesmo build." >> "$GITHUB_STEP_SUMMARY"
           grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
