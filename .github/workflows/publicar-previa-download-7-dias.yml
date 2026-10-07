@@ -1,0 +1,31 @@
+name: Testar prévia com carência de download
+on:
+  push:
+    branches: [lab-commercial-prices-2026-10-07]
+  workflow_dispatch:
+jobs:
+  preview-download:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Aplicar preços e carência somente na cópia efêmera
+        run: |
+          python scripts/apply-commercial-card-prices-lab.py
+          python scripts/apply-download-wait-lab.py
+          grep -q "download_available_at" src/App.jsx
+          grep -q "edition_id:access.edition_id,download" src/App.jsx
+      - name: Compilar
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build
+      - name: Publicar prévia isolada
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler versions upload --preview-alias lab-commercial-prices-2026-10-07
