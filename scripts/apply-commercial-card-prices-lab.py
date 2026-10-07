@@ -12,8 +12,8 @@ s = APP.read_text(encoding="utf-8")
 
 # Trabalha exclusivamente dentro da tela real "Meus Livros".
 start_marker = "if (screen === 'books' && user) {"
-# No App.jsx atual, authorBooks aparece antes de books. A próxima tela depois de books é notebook.
-end_marker = "if(screen==='notebook'&&user){"
+# A próxima tela no App.jsx atual é notebook; usa a indentação real do arquivo.
+end_marker = "  if(screen==='notebook'&&user){"
 start = s.find(start_marker)
 if start < 0:
     raise SystemExit("ABORTADO: início da tela books não encontrado")
