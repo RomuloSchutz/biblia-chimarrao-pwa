@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [ajustes-abertura-previa-20260928]
+    branches: [lab-commercial-prices-2026-10-07]
 jobs:
   build:
     runs-on: ubuntu-latest
