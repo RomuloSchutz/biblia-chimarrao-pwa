@@ -1,8 +1,8 @@
-name: Publicar prévia isolada
+name: Publicar prévia compra anual 2027
 on:
   workflow_dispatch:
   push:
-    branches: [lab-commercial-prices-2026-10-07]
+    branches: [lab-politica-compra-anual-2026-10-07]
 permissions:
   contents: write
 jobs:
@@ -11,42 +11,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: lab-commercial-prices-2026-10-07
+          ref: lab-politica-compra-anual-2026-10-07
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Instalar dependências
         run: npm install
-      - name: Gravar proteções e checkout no código do laboratório
+      - name: Aplicar fluxo anual 2027 no laboratório
         run: |
-          if ! grep -Fq "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx; then
-            python3 scripts/apply-commercial-card-prices-lab.py
-          fi
-          if ! grep -Fq "edition_id:access.edition_id,download" src/App.jsx; then
-            python3 scripts/apply-download-wait-lab.py
-          fi
-          if ! grep -Fq "async function purchaseCommercialBook(book)" src/App.jsx; then
-            python3 scripts/apply-mercado-pago-checkout-lab.py
-          fi
-      - name: Validar código comercial consolidado
+          python3 scripts/apply-annual-purchase-flow-lab.py
+      - name: Validar integração anual e proteções comerciais
         run: |
-          grep -F "formatCommercialPrice(commercialCatalog[book.productCode].amountCents" src/App.jsx
-          test "$(grep -o "productCode:'" src/App.jsx | wc -l)" -eq 4
-          grep -F "edition_id:access.edition_id,download" src/App.jsx
-          grep -F "download_available_at" src/App.jsx
-          grep -F "mercado-pago-create-order" src/App.jsx
-          grep -F "purchaseCommercialBook(book)" src/App.jsx
+          grep -F "import AnnualPurchasePanel" src/App.jsx
+          grep -F "screen === 'annualPurchase'" src/App.jsx
+          grep -F "devocional_chimarrao_com_deus_2027" src/App.jsx
           grep -F "accepted:true" src/App.jsx
-      - name: Persistir App.jsx corrigido na branch de laboratório
+          grep -F "mercado-pago-create-order" src/App.jsx
+          if grep -Fq "Experimentar 3 encontros" src/App.jsx; then echo "Fluxo gratuito antigo ainda presente"; exit 1; fi
+      - name: Persistir integração no laboratório
         run: |
           if ! git diff --quiet -- src/App.jsx; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src/App.jsx
-            git commit -m "Ativar checkout Mercado Pago no código do laboratório"
-            git push origin HEAD:lab-commercial-prices-2026-10-07
-          else
-            echo "App.jsx já contém as correções comerciais."
+            git commit -m "Integrar compra anual 2027 no laboratório"
+            git push origin HEAD:lab-politica-compra-anual-2026-10-07
           fi
       - name: Compilar aplicativo com variáveis de prévia
         run: npm run build
@@ -60,13 +49,12 @@ jobs:
         run: |
           test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-      - name: Publicar versão consolidada no alias isolado do laboratório
+      - name: Publicar prévia isolada da compra anual
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          npx wrangler versions upload --preview-alias lab-commercial-prices-2026-10-07 2>&1 | tee preview-output.txt
-          echo "### Prévia comercial consolidada" >> "$GITHUB_STEP_SUMMARY"
-          echo "App.jsx persistido + preços + carência de download + checkout Mercado Pago." >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler versions upload --preview-alias lab-politica-compra-anual-2026-10-07 2>&1 | tee preview-output.txt
+          echo "### Prévia compra anual 2027" >> "$GITHUB_STEP_SUMMARY"
           grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
