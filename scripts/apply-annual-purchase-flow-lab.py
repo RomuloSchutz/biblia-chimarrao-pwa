@@ -6,7 +6,9 @@ text = path.read_text(encoding='utf-8')
 if "import AnnualPurchasePanel" not in text:
     text = text.replace("import EpubReader from './EpubReader.jsx'", "import EpubReader from './EpubReader.jsx'\nimport AnnualPurchasePanel from './AnnualPurchasePanel.jsx'")
 
-text = text.replace("  const [acceptedTerms,setAcceptedTerms]=useState(false)", "  const [acceptedTerms,setAcceptedTerms]=useState(false)\n  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)\n  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')")
+# Insere os estados da compra anual somente se ainda não existirem.
+if "const [annualPurchaseBusy,setAnnualPurchaseBusy]" not in text:
+    text = text.replace("  const [acceptedTerms,setAcceptedTerms]=useState(false)", "  const [acceptedTerms,setAcceptedTerms]=useState(false)\n  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)\n  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')")
 
 old = """  async function openEncounter(dayNumber = 1) {\n    if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }"""
 new = """  async function openEncounter(dayNumber = 1) {\n    if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira o acesso premium para começar sua caminhada.'); return }"""
@@ -15,7 +17,6 @@ text = text.replace(old, new)
 text = text.replace("<small>O cadastro é gratuito nesta etapa. Nenhuma cobrança será realizada agora.</small>", "<small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small>")
 text = text.replace("<small>A criação da conta não gera cobrança. Depois de confirmar seu cadastro, você poderá revisar e adquirir separadamente a edição anual Bíblia + Chimarrão 2027.</small>", "<small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small>")
 
-text = text.replace("setUser(data.user)\n          setScreen('dashboard')", "setUser(data.user)\n          setScreen('dashboard')", 1)
 text = text.replace("setUser(data.user)\n          setScreen('annualPurchase')", "setUser(data.user)\n          setScreen('dashboard')", 1)
 
 text = text.replace("<p>Conheça a proposta do devocional e crie sua conta para acessar os recursos disponíveis.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar minha conta</button>", "<p>Conheça a proposta do aplicativo. Os encontros completos são liberados com a aquisição do acesso premium da Edição 2027.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar minha conta</button>")
