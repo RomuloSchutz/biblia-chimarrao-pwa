@@ -174,7 +174,7 @@ export default function App() {
 
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search)
-    const payment=params.get('payment')
+    const payment=params.get('payment_return')
     if(!['success','pending','failure'].includes(payment))return
     setPaymentReturn(payment)
     setScreen('paymentReturn')
