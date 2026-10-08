@@ -25,6 +25,7 @@ export default function App() {
   const [acceptedTerms,setAcceptedTerms]=useState(false)
   const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
   const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
+  const [paymentReturn,setPaymentReturn]=useState(null)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -163,6 +164,16 @@ export default function App() {
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search)
+    const payment=params.get('payment')
+    if(!['success','pending','failure'].includes(payment))return
+    setPaymentReturn(payment)
+    setScreen('paymentReturn')
+    window.history.replaceState({},document.title,window.location.pathname)
+  },[])
 
   useEffect(()=>{
     if(!user||!supabase){setIsAdmin(false);return}
@@ -1293,6 +1304,12 @@ export default function App() {
   }
 
   if(screen === 'annualPurchase' && user) return <AnnualPurchasePanel product={commercialCatalog['app_biblia_chimarrao']} busy={annualPurchaseBusy} message={annualPurchaseMessage} onBack={()=>setScreen('dashboard')} onContinue={purchaseAnnualEdition}/>
+
+  if(screen === 'paymentReturn') {
+    const approved=paymentReturn==='success'
+    const pending=paymentReturn==='pending'
+    return <main className="dashboard payment-return-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Retorno do pagamento · Edição 2027</small></div></header><section className="admin-shell"><div className="admin-hero payment-return-card"><p className="eyebrow">{approved?'PAGAMENTO RECEBIDO':pending?'CONFIRMAÇÃO EM ANDAMENTO':'PAGAMENTO NÃO CONCLUÍDO'}</p><h1>{approved?'Obrigado! Estamos confirmando seu acesso.':pending?'Seu pagamento está sendo confirmado.':'O pagamento não foi concluído.'}</h1><p>{approved?'A confirmação segura é feita pelo nosso sistema. Se o Mercado Pago já confirmou a transação, sua Edição 2027 estará disponível na conta.':pending?'Não é necessário pagar novamente. Aguarde a confirmação do Mercado Pago e volte para sua conta.':'Nenhum acesso é liberado por esta tela. Você pode voltar ao aplicativo e tentar novamente quando desejar.'}</p>{user?<><button type="button" onClick={async()=>{await loadBookAccess();setPaymentReturn(null);setScreen('dashboard');window.scrollTo(0,0)}}>{approved?'Entrar no Bíblia + Chimarrão':'Voltar ao aplicativo'}</button>{approved&&<button type="button" className="logout" onClick={async()=>{setPaymentReturn(null);await openEncounter(1)}}>Entrar no Devocional →</button>}</>:<><p><strong>Entre na mesma conta usada na compra para verificar sua liberação.</strong></p><button type="button" onClick={()=>setScreen('login')}>Entrar na minha conta</button></>}</div></section></main>
+  }
 
   if (screen === 'login' || screen === 'signup') {
     const creating = screen === 'signup'
