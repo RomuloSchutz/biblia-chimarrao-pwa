@@ -25,8 +25,6 @@ export default function App() {
   const [acceptedTerms,setAcceptedTerms]=useState(false)
   const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
   const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
-  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
-  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
