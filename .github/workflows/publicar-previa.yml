@@ -1,8 +1,8 @@
-name: Publicar prévia compra anual 2027
+name: Publicar prévia biblioteca e pré-lançamento
 on:
   workflow_dispatch:
   push:
-    branches: [lab-politica-compra-anual-2026-10-07]
+    branches: [lab-corrigir-biblioteca-prelancamento-2026-10-08]
 permissions:
   contents: write
 jobs:
@@ -11,34 +11,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: lab-politica-compra-anual-2026-10-07
+          ref: lab-corrigir-biblioteca-prelancamento-2026-10-08
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Instalar dependências
         run: npm install
-      - name: Aplicar fluxo anual 2027 no laboratório
+      - name: Preservar fluxo anual e corrigir biblioteca
         run: |
           python3 scripts/apply-annual-purchase-flow-lab.py
           python3 scripts/fix-payment-return-param-lab.py
-      - name: Validar integração anual e proteções comerciais
+          python3 scripts/fix-library-prelaunch-lab.py
+      - name: Validar biblioteca e proteções comerciais
         run: |
           grep -F "import AnnualPurchasePanel" src/App.jsx
           grep -F "screen === 'annualPurchase'" src/App.jsx
-          grep -F "devocional_chimarrao_com_deus_2027" src/App.jsx
-          grep -F "accepted:true" src/App.jsx
-          grep -F "mercado-pago-create-order" src/App.jsx
+          grep -F "ebook_entre_os_tempos" src/App.jsx
+          grep -F "ebook_entre_ja_ainda_nao" src/App.jsx
+          grep -F "ebook_cristo_marco" src/App.jsx
+          grep -F "Entre os Sistemas — Volume 1" src/App.jsx
+          grep -F "PRÉ-LANÇAMENTO · EM BREVE" src/App.jsx
           grep -F "params.get('payment_return')" src/App.jsx
           if grep -Fq "params.get('payment')" src/App.jsx; then echo "Parâmetro antigo de retorno ainda presente"; exit 1; fi
-          if grep -Fq "Experimentar 3 encontros" src/App.jsx; then echo "Fluxo gratuito antigo ainda presente"; exit 1; fi
-      - name: Persistir integração no laboratório
+      - name: Persistir correção no laboratório
         run: |
           if ! git diff --quiet -- src/App.jsx; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src/App.jsx
-            git commit -m "Integrar compra anual 2027 no laboratório"
-            git push origin HEAD:lab-politica-compra-anual-2026-10-07
+            git commit -m "Corrigir biblioteca e pré-lançamento no laboratório"
+            git push origin HEAD:lab-corrigir-biblioteca-prelancamento-2026-10-08
           fi
       - name: Compilar aplicativo com variáveis de prévia
         run: npm run build
@@ -52,12 +54,12 @@ jobs:
         run: |
           test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-      - name: Publicar prévia isolada da compra anual
+      - name: Publicar prévia isolada da biblioteca
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          npx wrangler versions upload --preview-alias lab-politica-compra-anual-2026-10-07 2>&1 | tee preview-output.txt
-          echo "### Prévia compra anual 2027" >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler versions upload --preview-alias lab-corrigir-biblioteca-prelancamento-2026-10-08 2>&1 | tee preview-output.txt
+          echo "### Prévia biblioteca e pré-lançamento" >> "$GITHUB_STEP_SUMMARY"
           grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
