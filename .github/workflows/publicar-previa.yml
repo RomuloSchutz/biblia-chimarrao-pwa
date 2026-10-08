@@ -20,6 +20,7 @@ jobs:
       - name: Aplicar fluxo anual 2027 no laboratório
         run: |
           python3 scripts/apply-annual-purchase-flow-lab.py
+          python3 scripts/fix-payment-return-param-lab.py
       - name: Validar integração anual e proteções comerciais
         run: |
           grep -F "import AnnualPurchasePanel" src/App.jsx
@@ -27,6 +28,8 @@ jobs:
           grep -F "devocional_chimarrao_com_deus_2027" src/App.jsx
           grep -F "accepted:true" src/App.jsx
           grep -F "mercado-pago-create-order" src/App.jsx
+          grep -F "params.get('payment_return')" src/App.jsx
+          if grep -Fq "params.get('payment')" src/App.jsx; then echo "Parâmetro antigo de retorno ainda presente"; exit 1; fi
           if grep -Fq "Experimentar 3 encontros" src/App.jsx; then echo "Fluxo gratuito antigo ainda presente"; exit 1; fi
       - name: Persistir integração no laboratório
         run: |
