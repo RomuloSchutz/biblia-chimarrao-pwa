@@ -25,6 +25,8 @@ export default function App() {
   const [acceptedTerms,setAcceptedTerms]=useState(false)
   const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
   const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
+  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
+  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -496,7 +498,7 @@ export default function App() {
         if (error) throw error
         if (data.session) {
           setUser(data.user)
-          setScreen('annualPurchase')
+          setScreen('dashboard')
         } else {
           setMessage('Conta criada. Confira seu e-mail para confirmar o cadastro.')
         }
@@ -1275,20 +1277,20 @@ export default function App() {
  }
 
   async function purchaseAnnualEdition(){
-    const product=commercialCatalog['devocional_chimarrao_com_deus_2027']
+    const product=commercialCatalog['app_biblia_chimarrao']
     if(!user||!supabase||!product?.isActive){setAnnualPurchaseMessage('A edição 2027 ainda não está disponível para compra.');return}
     setAnnualPurchaseBusy(true);setAnnualPurchaseMessage('Preparando checkout seguro do Mercado Pago...')
     const {data:sessionData}=await supabase.auth.getSession();const session=sessionData?.session
     if(!session){setAnnualPurchaseBusy(false);setAnnualPurchaseMessage('Sua sessão expirou. Entre novamente para continuar.');return}
     try{
-      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'devocional_chimarrao_com_deus_2027',accepted:true})})
+      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true})})
       let data={};try{data=await response.json()}catch{}
       if(!response.ok||!data?.checkout_url){setAnnualPurchaseMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');setAnnualPurchaseBusy(false);return}
       window.location.assign(data.checkout_url)
     }catch{setAnnualPurchaseMessage('Não foi possível conectar ao checkout do Mercado Pago.');setAnnualPurchaseBusy(false)}
   }
 
-  if(screen === 'annualPurchase' && user) return <AnnualPurchasePanel product={commercialCatalog['devocional_chimarrao_com_deus_2027']} busy={annualPurchaseBusy} message={annualPurchaseMessage} onBack={()=>setScreen('dashboard')} onContinue={purchaseAnnualEdition}/>
+  if(screen === 'annualPurchase' && user) return <AnnualPurchasePanel product={commercialCatalog['app_biblia_chimarrao']} busy={annualPurchaseBusy} message={annualPurchaseMessage} onBack={()=>setScreen('dashboard')} onContinue={purchaseAnnualEdition}/>
 
   if (screen === 'login' || screen === 'signup') {
     const creating = screen === 'signup'
@@ -1302,7 +1304,7 @@ export default function App() {
           {creating && <label>Nome<input value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" required /></label>}
           <label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></label>
           <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="6" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
-          {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>A criação da conta não gera cobrança. Depois de confirmar seu cadastro, você poderá revisar e adquirir separadamente a edição anual Bíblia + Chimarrão 2027.</small></div>}
+          {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small></div>}
           <button type="submit" disabled={loading}>{loading ? 'Aguarde...' : creating ? 'Criar minha conta' : 'Entrar'}</button>
         </form>
         {message && <p className="form-message" role="status">{message}</p>}
@@ -1312,7 +1314,7 @@ export default function App() {
 
   if (screen === 'landing') return <main className="premium-opening guest-landing"><div className="premium-opening-frame landing-cover-frame"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/><div className="premium-opening-actions guest-landing-actions landing-overlay-actions"><button className="guest-round-action" onClick={()=>setScreen(user ? 'dashboard' : 'guestDemo')}><span className="guest-round-icon" aria-hidden="true">✦</span><span className="guest-round-label">{user ? 'Entrar no aplicativo' : 'Conhecer o aplicativo'}</span></button>{!isStandalone&&<button className="guest-round-action install-round-action" onClick={installApp}><span className="guest-round-icon" aria-hidden="true">↓</span><span className="guest-round-label">Instalar aplicativo</span></button>}{installMessage&&<span className="install-message" role="status">{installMessage}</span>}{!user && <><button className="guest-round-action" onClick={()=>setScreen('signup')}><span className="guest-round-icon" aria-hidden="true">＋</span><span className="guest-round-label">Criar minha conta</span></button><button className="guest-round-action" onClick={()=>setScreen('login')}><span className="guest-round-icon" aria-hidden="true">↳</span><span className="guest-round-label">Já tenho uma conta</span></button></>}</div></div></main>
 
-  if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-boas-vindas-oficial.webp" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Conheça a proposta do devocional. Os encontros completos são liberados com a aquisição da edição anual 2027.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar conta e adquirir 2027</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
+  if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-boas-vindas-oficial.webp" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Conheça a proposta do aplicativo. Os encontros completos são liberados com a aquisição do acesso premium da Edição 2027.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
 
   if (['terms','privacy','purchasePolicy','digitalLicense'].includes(screen)) {
     const legalBack=()=>setScreen(user?'dashboard':'signup')
