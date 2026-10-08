@@ -8,10 +8,13 @@ if "import AnnualPurchasePanel" not in text:
 
 busy_line = "  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)"
 message_line = "  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')"
+return_line = "  const [paymentReturn,setPaymentReturn]=useState(null)"
 while text.count(busy_line) > 1:
     text = text.replace(busy_line + "\n" + message_line + "\n" + busy_line + "\n" + message_line, busy_line + "\n" + message_line, 1)
 if busy_line not in text:
     text = text.replace("  const [acceptedTerms,setAcceptedTerms]=useState(false)", "  const [acceptedTerms,setAcceptedTerms]=useState(false)\n" + busy_line + "\n" + message_line)
+if return_line not in text:
+    text = text.replace(message_line, message_line + "\n" + return_line, 1)
 
 old = """  async function openEncounter(dayNumber = 1) {\n    if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }"""
 new = """  async function openEncounter(dayNumber = 1) {\n    if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira o acesso premium para começar sua caminhada.'); return }"""
@@ -35,6 +38,12 @@ old_restricted = """  if (screen === 'accessRestricted' && user) return <main cl
 new_restricted = """  if (screen === 'accessRestricted' && user) {\n    const annualProduct=commercialCatalog['app_biblia_chimarrao']\n    const annualPrice=annualProduct?formatCommercialPrice(annualProduct):'R$ 34,90'\n    return <main className=\"dashboard\"><header className=\"dash-header\"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Edição 2027</small></div><button className=\"logout\" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className=\"admin-shell\"><div className=\"admin-hero\"><p className=\"eyebrow\">ACESSO PREMIUM 2027</p><h1>Bíblia + Chimarrão — Edição 2027</h1><p>Tenha acesso aos 365 encontros de 2027, Minha Caminhada, favoritos, anotações e aos recursos premium da edição.</p><h2>{annualPrice} <small>· pagamento único para a Edição 2027</small></h2>{message&&message!=='Seu acesso ainda não está liberado.'&&<p>{message}</p>}<button type=\"button\" onClick={()=>{setAnnualPurchaseMessage('');setScreen('annualPurchase');window.scrollTo(0,0)}} disabled={!annualProduct?.isActive}>Adquirir Edição 2027 — {annualPrice}</button><p><small>Pagamento processado com segurança pelo Mercado Pago.</small></p><hr/><h3>Já recebeu seu acesso pela sua empresa?</h3><p>Se sua empresa adquiriu uma licença para você, o administrador pode liberar sua conta sem pagamento individual.</p><button type=\"button\" className=\"logout\" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>\n  }"""
 text = text.replace(old_restricted, new_restricted)
 
+# Detecta o retorno do Mercado Pago sem conceder acesso pelo navegador.
+return_effect = """\n  useEffect(()=>{\n    const params=new URLSearchParams(window.location.search)\n    const payment=params.get('payment')\n    if(!['success','pending','failure'].includes(payment))return\n    setPaymentReturn(payment)\n    setScreen('paymentReturn')\n    window.history.replaceState({},document.title,window.location.pathname)\n  },[])\n"""
+if "setScreen('paymentReturn')" not in text:
+    marker = "  useEffect(()=>{\n    if(!user||!supabase){setIsAdmin(false);return}"
+    text = text.replace(marker, return_effect + "\n" + marker, 1)
+
 anchor = "  if (screen === 'login' || screen === 'signup') {"
 if "screen === 'annualPurchase'" not in text:
     annual = """  async function purchaseAnnualEdition(){\n    const product=commercialCatalog['app_biblia_chimarrao']\n    if(!user||!supabase||!product?.isActive){setAnnualPurchaseMessage('O acesso premium da Edição 2027 ainda não está disponível para compra.');return}\n    setAnnualPurchaseBusy(true);setAnnualPurchaseMessage('Preparando checkout seguro do Mercado Pago...')\n    const {data:sessionData}=await supabase.auth.getSession();const session=sessionData?.session\n    if(!session){setAnnualPurchaseBusy(false);setAnnualPurchaseMessage('Sua sessão expirou. Entre novamente para continuar.');return}\n    try{\n      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true,return_base_url:window.location.origin})})\n      let data={};try{data=await response.json()}catch{}\n      if(!response.ok||!data?.checkout_url){setAnnualPurchaseMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');setAnnualPurchaseBusy(false);return}\n      window.location.assign(data.checkout_url)\n    }catch{setAnnualPurchaseMessage('Não foi possível conectar ao checkout do Mercado Pago.');setAnnualPurchaseBusy(false)}\n  }\n\n  if(screen === 'annualPurchase' && user) return <AnnualPurchasePanel product={commercialCatalog['app_biblia_chimarrao']} busy={annualPurchaseBusy} message={annualPurchaseMessage} onBack={()=>setScreen('dashboard')} onContinue={purchaseAnnualEdition}/>\n\n"""
@@ -42,5 +51,10 @@ if "screen === 'annualPurchase'" not in text:
 else:
     text = text.replace("body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true})", "body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true,return_base_url:window.location.origin})")
 
+# Tela de retorno: informa o estado, mas nunca libera acesso por parâmetro de URL.
+if "screen === 'paymentReturn'" not in text:
+    payment_panel = """  if(screen === 'paymentReturn') {\n    const approved=paymentReturn==='success'\n    const pending=paymentReturn==='pending'\n    return <main className=\"dashboard payment-return-page\"><header className=\"dash-header\"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Retorno do pagamento · Edição 2027</small></div></header><section className=\"admin-shell\"><div className=\"admin-hero payment-return-card\"><p className=\"eyebrow\">{approved?'PAGAMENTO RECEBIDO':pending?'CONFIRMAÇÃO EM ANDAMENTO':'PAGAMENTO NÃO CONCLUÍDO'}</p><h1>{approved?'Obrigado! Estamos confirmando seu acesso.':pending?'Seu pagamento está sendo confirmado.':'O pagamento não foi concluído.'}</h1><p>{approved?'A confirmação segura é feita pelo nosso sistema. Se o Mercado Pago já confirmou a transação, sua Edição 2027 estará disponível na conta.':pending?'Não é necessário pagar novamente. Aguarde a confirmação do Mercado Pago e volte para sua conta.':'Nenhum acesso é liberado por esta tela. Você pode voltar ao aplicativo e tentar novamente quando desejar.'}</p>{user?<><button type=\"button\" onClick={async()=>{await loadBookAccess();setPaymentReturn(null);setScreen('dashboard');window.scrollTo(0,0)}}>{approved?'Entrar no Bíblia + Chimarrão':'Voltar ao aplicativo'}</button>{approved&&<button type=\"button\" className=\"logout\" onClick={async()=>{setPaymentReturn(null);await openEncounter(1)}}>Entrar no Devocional →</button>}</>:<><p><strong>Entre na mesma conta usada na compra para verificar sua liberação.</strong></p><button type=\"button\" onClick={()=>setScreen('login')}>Entrar na minha conta</button></>}</div></section></main>\n  }\n\n"""
+    text = text.replace(anchor, payment_panel + anchor, 1)
+
 path.write_text(text, encoding='utf-8')
-print('Fluxo anual 2027 aplicado ao laboratório com retorno seguro do Mercado Pago.')
+print('Bloco 1 aplicado: retorno seguro e tela pós-pagamento da Edição 2027.')
