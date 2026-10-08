@@ -41,6 +41,11 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [recoveryEmail,setRecoveryEmail]=useState('')
+  const [recoveryPassword,setRecoveryPassword]=useState('')
+  const [recoveryConfirm,setRecoveryConfirm]=useState('')
+  const [recoveryMessage,setRecoveryMessage]=useState('')
+  const [recoveryBusy,setRecoveryBusy]=useState(false)
   const [user, setUser] = useState(null)
   const [appearance,setAppearance]=useState(()=>localStorage.getItem('bc-appearance')||'system')
   const [currentPassword,setCurrentPassword]=useState('')
@@ -159,8 +164,9 @@ export default function App() {
         // A capa oficial permanece como primeira tela, inclusive para leitores autenticados.
       }
     })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if(event==='PASSWORD_RECOVERY'){setRecoveryMessage('');setRecoveryPassword('');setRecoveryConfirm('');setScreen('resetPassword')}
     })
     return () => listener.subscription.unsubscribe()
   }, [])
@@ -1289,6 +1295,30 @@ export default function App() {
 </main>
  }
 
+
+  async function requestPasswordRecovery(event){
+    event.preventDefault()
+    const target=(recoveryEmail||email).trim()
+    if(!target||!supabase){setRecoveryMessage('Informe o e-mail da sua conta.');return}
+    setRecoveryBusy(true);setRecoveryMessage('Enviando link seguro...')
+    const redirectTo=window.location.origin+'/?password_recovery=1'
+    const {error}=await supabase.auth.resetPasswordForEmail(target,{redirectTo})
+    setRecoveryBusy(false)
+    if(error){setRecoveryMessage('Não foi possível enviar o link agora. Confira o e-mail e tente novamente.');return}
+    setRecoveryMessage('Se esse e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Confira também a pasta de spam.')
+  }
+
+  async function finishPasswordRecovery(event){
+    event.preventDefault()
+    if(recoveryPassword.length<8){setRecoveryMessage('A nova senha precisa ter pelo menos 8 caracteres.');return}
+    if(recoveryPassword!==recoveryConfirm){setRecoveryMessage('As duas senhas não são iguais.');return}
+    setRecoveryBusy(true);setRecoveryMessage('Salvando sua nova senha...')
+    const {error}=await supabase.auth.updateUser({password:recoveryPassword})
+    setRecoveryBusy(false)
+    if(error){setRecoveryMessage('Não foi possível alterar a senha. O link pode ter expirado; solicite uma nova recuperação.');return}
+    setRecoveryPassword('');setRecoveryConfirm('');setRecoveryMessage('✓ Senha alterada com sucesso. Você já pode continuar no aplicativo.')
+  }
+
   async function purchaseAnnualEdition(){
     const product=commercialCatalog['app_biblia_chimarrao']
     if(!user||!supabase||!product?.isActive){setAnnualPurchaseMessage('A edição 2027 ainda não está disponível para compra.');return}
@@ -1311,6 +1341,10 @@ export default function App() {
     return <main className="dashboard payment-return-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Retorno do pagamento · Edição 2027</small></div></header><section className="admin-shell"><div className="admin-hero payment-return-card"><p className="eyebrow">{approved?'PAGAMENTO RECEBIDO':pending?'CONFIRMAÇÃO EM ANDAMENTO':'PAGAMENTO NÃO CONCLUÍDO'}</p><h1>{approved?'Obrigado! Estamos confirmando seu acesso.':pending?'Seu pagamento está sendo confirmado.':'O pagamento não foi concluído.'}</h1><p>{approved?'A confirmação segura é feita pelo nosso sistema. Se o Mercado Pago já confirmou a transação, sua Edição 2027 estará disponível na conta.':pending?'Não é necessário pagar novamente. Aguarde a confirmação do Mercado Pago e volte para sua conta.':'Nenhum acesso é liberado por esta tela. Você pode voltar ao aplicativo e tentar novamente quando desejar.'}</p>{user?<><button type="button" onClick={async()=>{await loadBookAccess();setPaymentReturn(null);setScreen('dashboard');window.scrollTo(0,0)}}>{approved?'Entrar no Bíblia + Chimarrão':'Voltar ao aplicativo'}</button>{approved&&<button type="button" className="logout" onClick={async()=>{setPaymentReturn(null);await openEncounter(1)}}>Entrar no Devocional →</button>}</>:<><p><strong>Entre na mesma conta usada na compra para verificar sua liberação.</strong></p><button type="button" onClick={()=>setScreen('login')}>Entrar na minha conta</button></>}</div></section></main>
   }
 
+  if(screen==='forgotPassword') return <main className="app"><section className="auth-card"><button className="back-button" onClick={()=>{setRecoveryMessage('');setScreen('login')}}>← Voltar</button><p className="eyebrow">BÍBLIA + CHIMARRÃO</p><h2>Recuperar minha senha</h2><p className="auth-intro">Informe o e-mail da sua conta. Enviaremos um link seguro para você criar uma nova senha.</p><form className="auth-form" onSubmit={requestPasswordRecovery}><label>E-mail<input type="email" value={recoveryEmail} onChange={e=>setRecoveryEmail(e.target.value)} autoComplete="email" required/></label><button type="submit" disabled={recoveryBusy}>{recoveryBusy?'Enviando...':'Enviar link de recuperação'}</button></form>{recoveryMessage&&<p className="form-message" role="status">{recoveryMessage}</p>}</section></main>
+
+  if(screen==='resetPassword') return <main className="app"><section className="auth-card"><p className="eyebrow">BÍBLIA + CHIMARRÃO</p><h2>Criar nova senha</h2><p className="auth-intro">Digite uma nova senha para sua conta.</p><form className="auth-form" onSubmit={finishPasswordRecovery}><label>Nova senha<input type="password" minLength="8" autoComplete="new-password" value={recoveryPassword} onChange={e=>setRecoveryPassword(e.target.value)} required/></label><label>Confirmar nova senha<input type="password" minLength="8" autoComplete="new-password" value={recoveryConfirm} onChange={e=>setRecoveryConfirm(e.target.value)} required/></label><button type="submit" disabled={recoveryBusy}>{recoveryBusy?'Salvando...':'Salvar nova senha'}</button></form>{recoveryMessage&&<p className="form-message" role="status">{recoveryMessage}</p>}{recoveryMessage.startsWith('✓')&&<button type="button" onClick={()=>setScreen(user?'dashboard':'login')}>Continuar no aplicativo →</button>}</section></main>
+
   if (screen === 'login' || screen === 'signup') {
     const creating = screen === 'signup'
     return (
@@ -1325,6 +1359,7 @@ export default function App() {
           <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="6" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
           {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small></div>}
           <button type="submit" disabled={loading}>{loading ? 'Aguarde...' : creating ? 'Criar minha conta' : 'Entrar'}</button>
+          {!creating && <button type="button" className="legal-link" onClick={()=>{setRecoveryEmail(email);setRecoveryMessage('');setScreen('forgotPassword')}}>Esqueci minha senha</button>}
         </form>
         {message && <p className="form-message" role="status">{message}</p>}
       </section></main>
