@@ -60,6 +60,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          npx wrangler versions upload --preview-alias lab-corrigir-biblioteca-prelancamento-2026-10-08 2>&1 | tee preview-output.txt
+          npx wrangler versions upload --preview-alias lab-biblioteca-0810 2>&1 | tee preview-output.txt
           echo "### Prévia biblioteca e pré-lançamento" >> "$GITHUB_STEP_SUMMARY"
           grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
