@@ -1186,7 +1186,11 @@ export default function App() {
     </main>
   }
 
-  if (screen === 'accessRestricted' && user) return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Controle de acesso</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ÁREA DO LEITOR</p><h1>Acesso restrito</h1><p>{message || 'Seu acesso ao conteúdo protegido ainda não está liberado.'}</p><button type="button" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+  if (screen === 'accessRestricted' && user) {
+    const annualProduct=commercialCatalog['app_biblia_chimarrao']
+    const annualPrice=annualProduct?formatCommercialPrice(annualProduct):'R$ 34,90'
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Edição 2027</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ACESSO PREMIUM 2027</p><h1>Bíblia + Chimarrão — Edição 2027</h1><p>Tenha acesso aos 365 encontros de 2027, Minha Caminhada, favoritos, anotações e aos recursos premium da edição.</p><h2>{annualPrice} <small>· pagamento único para a Edição 2027</small></h2>{message&&message!=='Seu acesso ainda não está liberado.'&&<p>{message}</p>}<button type="button" onClick={()=>{setAnnualPurchaseMessage('');setScreen('annualPurchase');window.scrollTo(0,0)}} disabled={!annualProduct?.isActive}>Adquirir Edição 2027 — {annualPrice}</button><p><small>Pagamento processado com segurança pelo Mercado Pago.</small></p><hr/><h3>Já recebeu seu acesso pela sua empresa?</h3><p>Se sua empresa adquiriu uma licença para você, o administrador pode liberar sua conta sem pagamento individual.</p><button type="button" className="logout" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+  }
 
   if (screen === 'dashboard') {
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
