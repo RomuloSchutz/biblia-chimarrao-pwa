@@ -6,9 +6,13 @@ text = path.read_text(encoding='utf-8')
 if "import AnnualPurchasePanel" not in text:
     text = text.replace("import EpubReader from './EpubReader.jsx'", "import EpubReader from './EpubReader.jsx'\nimport AnnualPurchasePanel from './AnnualPurchasePanel.jsx'")
 
-# Insere os estados da compra anual somente se ainda não existirem.
-if "const [annualPurchaseBusy,setAnnualPurchaseBusy]" not in text:
-    text = text.replace("  const [acceptedTerms,setAcceptedTerms]=useState(false)", "  const [acceptedTerms,setAcceptedTerms]=useState(false)\n  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)\n  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')")
+busy_line = "  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)"
+message_line = "  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')"
+# Normaliza execuções anteriores: mantém exatamente uma declaração de cada estado.
+while text.count(busy_line) > 1:
+    text = text.replace(busy_line + "\n" + message_line + "\n" + busy_line + "\n" + message_line, busy_line + "\n" + message_line, 1)
+if busy_line not in text:
+    text = text.replace("  const [acceptedTerms,setAcceptedTerms]=useState(false)", "  const [acceptedTerms,setAcceptedTerms]=useState(false)\n" + busy_line + "\n" + message_line)
 
 old = """  async function openEncounter(dayNumber = 1) {\n    if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }"""
 new = """  async function openEncounter(dayNumber = 1) {\n    if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira o acesso premium para começar sua caminhada.'); return }"""
@@ -16,21 +20,16 @@ text = text.replace(old, new)
 
 text = text.replace("<small>O cadastro é gratuito nesta etapa. Nenhuma cobrança será realizada agora.</small>", "<small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small>")
 text = text.replace("<small>A criação da conta não gera cobrança. Depois de confirmar seu cadastro, você poderá revisar e adquirir separadamente a edição anual Bíblia + Chimarrão 2027.</small>", "<small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small>")
-
 text = text.replace("setUser(data.user)\n          setScreen('annualPurchase')", "setUser(data.user)\n          setScreen('dashboard')", 1)
-
 text = text.replace("<p>Conheça a proposta do devocional e crie sua conta para acessar os recursos disponíveis.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar minha conta</button>", "<p>Conheça a proposta do aplicativo. Os encontros completos são liberados com a aquisição do acesso premium da Edição 2027.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar minha conta</button>")
 text = text.replace("<p>Conheça a proposta do devocional. Os encontros completos são liberados com a aquisição da edição anual 2027.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar conta e adquirir 2027</button>", "<p>Conheça a proposta do aplicativo. Os encontros completos são liberados com a aquisição do acesso premium da Edição 2027.</p><div className=\"guest-demo-actions\"><button onClick={()=>setScreen('signup')}>Criar minha conta</button>")
-
 text = text.replace("{!user && <section className=\"guest-demo-hint guest-demo-start\"><h2>Experimente antes de criar sua conta</h2><p>Conheça os doze meses e leia gratuitamente os três primeiros encontros de janeiro.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro →</button></section>}", "{!user && <section className=\"guest-demo-hint guest-demo-start\"><h2>Conheça a edição 2027</h2><p>Veja os doze meses, os temas e a estrutura da caminhada. Os encontros completos são conteúdo do acesso premium anual.</p><button onClick={()=>setScreen('signup')}>Criar minha conta →</button></section>}")
 text = text.replace("{!user && <section className=\"guest-demo-hint guest-demo-start\"><h2>Gostou da apresentação?</h2><p>Leia o primeiro encontro e conheça o conteúdo do devocional antes de se cadastrar.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro gratuitamente →</button></section>}", "{!user && <section className=\"guest-demo-hint guest-demo-start\"><h2>Gostou da apresentação?</h2><p>Crie sua conta gratuitamente para conhecer o aplicativo. O acesso premium da Edição 2027 pode ser adquirido depois.</p><button onClick={()=>setScreen('signup')}>Criar minha conta →</button></section>}")
-
 text = text.replace("onClick={() => user || day.day_number<=3 ? openEncounter(day.day_number) : setScreen('guestInfo')}", "onClick={() => user ? openEncounter(day.day_number) : setScreen('signup')}")
 text = text.replace("{!user && day.day_number>3 ? \"🔒\" : \"›\"}", "{!user ? \"🔒\" : \"›\"}")
-
 text = text.replace("<p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen(\"devotional\")}>Experimentar 3 encontros</button>", "<p>Explore os recursos, os meses e os temas da edição 2027. Os encontros completos são liberados pelo acesso premium anual.</p><button onClick={()=>setScreen(\"guestDemo\")}>Conhecer a edição 2027</button>")
 
-# Corrige o produto comercial: acesso premium do aplicativo (R$ 34,90), não o e-book/devocional digital (R$ 24,90).
+# A compra anual usa o acesso premium do aplicativo (R$ 34,90); o devocional digital de R$ 24,90 permanece separado.
 text = text.replace("commercialCatalog['devocional_chimarrao_com_deus_2027']", "commercialCatalog['app_biblia_chimarrao']")
 text = text.replace("product_code:'devocional_chimarrao_com_deus_2027'", "product_code:'app_biblia_chimarrao'")
 
