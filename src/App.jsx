@@ -298,7 +298,7 @@ export default function App() {
       const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},
-        body:JSON.stringify({product_code:book.productCode,accepted:true})
+        body:JSON.stringify({product_code:book.productCode,accepted:true,policy_version:'08/10/2026',license_version:'08/10/2026'})
       })
       let data={}
       try{data=await response.json()}catch{}
@@ -538,16 +538,31 @@ export default function App() {
 
   async function requirePaidAccess(action) {
     if (!user || !supabase) { setScreen('login'); setMessage('Entre na sua conta para continuar.'); return false }
-    const { data, error } = await supabase.rpc('get_my_app_access')
-    const access = Array.isArray(data) ? data[0] : data
-    if (error || !access?.allowed) {
-      setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
-      setScreen('accessRestricted')
-      window.scrollTo({top:0,behavior:'smooth'})
-      return false
+
+    // Regra principal: o premium é adquirido por edição anual. Em 2027, somente
+    // um direito ativo da Edição 2027 (ou administração) libera o conteúdo.
+    const annualResult = await supabase.rpc('get_my_annual_access',{target_year:2027})
+    const annualAccess = Array.isArray(annualResult.data) ? annualResult.data[0] : annualResult.data
+    if (!annualResult.error && annualAccess?.allowed === true) {
+      if (typeof action === 'function') action()
+      return true
     }
-    if (typeof action === 'function') action()
-    return true
+
+    // Compatibilidade temporária: acessos globais concedidos antes da migração
+    // continuam válidos enquanto o painel administrativo é convertido por edição.
+    const legacyResult = await supabase.rpc('get_my_app_access')
+    const legacyAccess = Array.isArray(legacyResult.data) ? legacyResult.data[0] : legacyResult.data
+    if (!legacyResult.error && legacyAccess?.allowed === true) {
+      if (typeof action === 'function') action()
+      return true
+    }
+
+    setMessage(legacyAccess?.status === 'blocked'
+      ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.'
+      : 'A Edição 2027 ainda não está liberada para esta conta.')
+    setScreen('accessRestricted')
+    window.scrollTo({top:0,behavior:'smooth'})
+    return false
   }
 
   async function openNotes() {
