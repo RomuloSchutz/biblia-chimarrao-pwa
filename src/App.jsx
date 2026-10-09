@@ -4,7 +4,9 @@ function ApoiePixQR(){return <svg className="apoie-qr" viewBox="0 0 57 57" role=
 const SOCIAL_LINKS = { facebook:"https://www.facebook.com/romuloschutz", instagram:"https://www.instagram.com/romuloschutz/", youtube:"https://www.youtube.com/@romuloschutz", whatsapp:"https://wa.me/5549999004892", email:"mailto:biblia.chimarrao@gmail.com" } // WhatsApp centralizado aqui para facilitar futura troca do número.
 import { useEffect, useRef, useState } from 'react'
 import { supabase, supabaseConfigured } from './lib/supabase.js'
+import { fetchCommercialCatalog, formatCommercialPrice } from './lib/commercial-catalog-api.js'
 import EpubReader from './EpubReader.jsx'
+import AnnualPurchasePanel from './AnnualPurchasePanel.jsx'
 
 const menuItems = [
   ['📖','Chimarrão com Deus','365 Encontros com Deus'],
@@ -21,6 +23,9 @@ const menuItems = [
 export default function App() {
   const [screen, setScreen] = useState('landing')
   const [acceptedTerms,setAcceptedTerms]=useState(false)
+  const [annualPurchaseBusy,setAnnualPurchaseBusy]=useState(false)
+  const [annualPurchaseMessage,setAnnualPurchaseMessage]=useState('')
+  const [paymentReturn,setPaymentReturn]=useState(null)
   const [favoritePreview, setFavoritePreview] = useState(false)
   const [savedPreview, setSavedPreview] = useState(false)
   const [pensarNote, setPensarNote] = useState('')
@@ -36,6 +41,11 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [recoveryEmail,setRecoveryEmail]=useState('')
+  const [recoveryPassword,setRecoveryPassword]=useState('')
+  const [recoveryConfirm,setRecoveryConfirm]=useState('')
+  const [recoveryMessage,setRecoveryMessage]=useState('')
+  const [recoveryBusy,setRecoveryBusy]=useState(false)
   const [user, setUser] = useState(null)
   const [appearance,setAppearance]=useState(()=>localStorage.getItem('bc-appearance')||'system')
   const [currentPassword,setCurrentPassword]=useState('')
@@ -67,6 +77,22 @@ export default function App() {
   const [bookAccess,setBookAccess]=useState({})
   const [bookAccessLoading,setBookAccessLoading]=useState(false)
   const [bookAccessMessage,setBookAccessMessage]=useState('')
+  const [commercialCatalog,setCommercialCatalog]=useState({})
+  useEffect(()=>{
+    let active=true
+    let retryTimer=null
+    const loadCatalog=async(attempt=0)=>{
+      const {products,error}=await fetchCommercialCatalog()
+      if(!active)return
+      if(!error && products?.length){
+        setCommercialCatalog(Object.fromEntries(products.map(product=>[product.code,product])))
+        return
+      }
+      if(attempt<3)retryTimer=setTimeout(()=>loadCatalog(attempt+1),1200*(attempt+1))
+    }
+    loadCatalog()
+    return ()=>{active=false;if(retryTimer)clearTimeout(retryTimer)}
+  },[])
   const [reminderTime, setReminderTime] = useState('08:00')
   const [weeklySchedule, setWeeklySchedule] = useState(null)
   const WEEKDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
@@ -144,11 +170,22 @@ export default function App() {
         // A capa oficial permanece como primeira tela, inclusive para leitores autenticados.
       }
     })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if(event==='PASSWORD_RECOVERY'){setRecoveryMessage('');setRecoveryPassword('');setRecoveryConfirm('');setScreen('resetPassword')}
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search)
+    const payment=params.get('payment_return')
+    if(!['success','pending','failure'].includes(payment))return
+    setPaymentReturn(payment)
+    setScreen('paymentReturn')
+    window.history.replaceState({},document.title,window.location.pathname)
+  },[])
 
   useEffect(()=>{
     if(!user||!supabase){setIsAdmin(false);return}
@@ -228,14 +265,14 @@ export default function App() {
     const endpoint=`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/book-epub-access`
     let response
     try{
-      response=await fetch(endpoint,{method:'POST',headers:isAdmin?{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify(isAdmin?{edition_id:access.edition_id,access_token:session.access_token}:{edition_id:access.edition_id})})
+      response=await fetch(endpoint,{method:'POST',headers:isAdmin?{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify(isAdmin?{edition_id:access.edition_id,access_token:session.access_token,download}:{edition_id:access.edition_id,download})})
     }catch(err){
       setBookAccessMessage('Não foi possível abrir o arquivo protegido: falha de conexão com o servidor.')
       return null
     }
     let data={}
     try{data=await response.json()}catch{}
-    if(!response.ok||!data?.signed_url){setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(data?.error||('erro '+response.status+' ao gerar acesso temporário.')));return null}
+    if(!response.ok||!data?.signed_url){if(download&&response.status===403&&data?.download_available_at){const when=new Date(data.download_available_at);setBookAccessMessage('Download protegido: disponível a partir de '+when.toLocaleDateString('pt-BR')+' às '+when.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'. A leitura no aplicativo continua liberada.');return null}setBookAccessMessage('Não foi possível abrir o arquivo protegido: '+(data?.error||('erro '+response.status+' ao gerar acesso temporário.')));return null}
     return data.signed_url
   }
   async function openSecureBook(title){
@@ -246,6 +283,28 @@ export default function App() {
   async function downloadSecureBook(title){
     const url=await secureBookUrl(title,true);if(!url)return
     window.open(url,'_blank','noopener,noreferrer')
+  }
+
+  async function purchaseCommercialBook(book){
+    const product=book?.productCode?commercialCatalog[book.productCode]:null
+    if(!user||!supabase||!product?.isActive)return
+    const accepted=window.confirm('Compra digital: a leitura no aplicativo será liberada após a confirmação do pagamento. O download do EPUB ficará disponível após 7 dias. Ao continuar, você confirma que leu e aceita a Política de Compra Digital e a Licença Digital. Deseja ir para o Mercado Pago?')
+    if(!accepted)return
+    setBookAccessMessage('Preparando checkout seguro do Mercado Pago...')
+    const {data:sessionData}=await supabase.auth.getSession()
+    const session=sessionData?.session
+    if(!session){setBookAccessMessage('Sua sessão expirou. Entre novamente para comprar.');return}
+    try{
+      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},
+        body:JSON.stringify({product_code:book.productCode,accepted:true})
+      })
+      let data={}
+      try{data=await response.json()}catch{}
+      if(!response.ok||!data?.checkout_url){setBookAccessMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');return}
+      window.location.assign(data.checkout_url)
+    }catch{setBookAccessMessage('Não foi possível conectar ao checkout do Mercado Pago.')}
   }
 
   useEffect(() => {
@@ -644,7 +703,7 @@ export default function App() {
   }
 
   async function openEncounter(dayNumber = 1) {
-    if (!user && (dayNumber < 1 || dayNumber > 3)) { setScreen('signup'); setMessage('Crie sua conta para continuar além da prévia gratuita.'); return }
+    if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira a edição para começar sua caminhada.'); return }
     if (!supabase) { setMessage('Prévia indisponível: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY nas variáveis de compilação do Cloudflare.'); setScreen('devotional'); return }
     if (user) {
       const { data: accessData, error: accessError } = await supabase.rpc('get_my_app_access')
@@ -870,12 +929,18 @@ export default function App() {
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',meta:'História · Calendário · Fé',image:'/Cristo_O_Marco_Entre_O_Antes_E_O_Depois_CAPA_EBOOK.png',status:'LIVRO PUBLICADO',text:'Uma investigação histórica e reflexiva sobre como sociedades organizaram o tempo e como Cristo se tornou referência para a contagem da era cristã, distinguindo documentação histórica, interpretação e leitura teológica.'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',meta:'Trilogia em desenvolvimento',image:'/image (1).png',status:'EM DESENVOLVIMENTO',text:'Uma narrativa sobre cidade, escolhas, relações, fé e consequências. Três movimentos de uma mesma história: NASCE, CRESCE e VIVE.'},
-      {title:'Entre os Sistemas I',sub:'Religioso, Filosófico, Político e Econômico: Cristo, o Libertador',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Uma reflexão sobre sistemas que moldam a sociedade e a experiência humana, examinados à luz da centralidade e da liberdade encontradas em Cristo.'},
+      {title:'Entre os Sistemas — Volume 1',sub:'Cristo, o Libertador',meta:'Religioso · Filosófico · Político · Econômico',image:'/entre-sistemas-v1-cover.png?v=20261009',status:'PRÉ-LANÇAMENTO',text:'Uma reflexão sobre sistemas que moldam a sociedade e a experiência humana, examinados à luz da centralidade e da liberdade encontradas em Cristo.'},
       {title:'Entre os Sistemas II',sub:'Fé e Doutrina: Suficiência de Cristo',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Continuação do projeto Entre os Sistemas, voltada à fé, à doutrina cristã e à suficiência de Cristo como fundamento da vida e da reflexão.'},
       {title:'Entre a Honra e a Gratidão',sub:'Fidelidade, Lealdade, Obediência e Amor',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Uma reflexão sobre honra e gratidão a partir da fidelidade, da lealdade, da obediência e do amor, relacionando esses valores à fé e às relações humanas.'}
     ]
     const work=works.find(x=>x.title===selectedAuthorBook)||{title:selectedAuthorBook,sub:'',meta:'',image:'/capa-app-oficial.png',status:'OBRA',text:''}
     const editorial={
+      'Entre os Sistemas — Volume 1':{
+        section:'Quando os sistemas se tornam prisões',
+        image:'/entre-sistemas-por-tras-da-obra.png?v=20261009',
+        cover:'A capa de Entre os Sistemas — Volume 1: Cristo, o Libertador reúne símbolos dos grandes sistemas que atravessam a história humana. As ruínas e construções representam civilizações e estruturas de poder; os livros apontam para a religião, a filosofia, a política e a economia; as moedas, a coroa e as correntes simbolizam riqueza, autoridade e também os sistemas que podem aprisionar o ser humano. No centro, porém, está a cruz iluminada: Cristo não aparece como mais um sistema entre tantos outros, mas como aquele que rompe as correntes e oferece uma liberdade que nenhum sistema humano consegue produzir.',
+        special:'Religião, filosofia, política e economia fazem parte da construção das sociedades e podem contribuir para organizar a vida humana. O perigo surge quando aquilo que deveria servir ao homem passa a dominá-lo. Crenças podem transformar-se em controle; ideias, em ideologias; poder, em opressão; riqueza, em medida do valor humano. Entre os Sistemas convida o leitor a reconhecer essas estruturas, compreender sua influência e perguntar onde está depositando sua liberdade. O centro da obra é o contraste: sistemas humanos prometem segurança, ordem e sentido, mas nenhum deles pode ocupar o lugar de Cristo. A verdadeira libertação começa quando as correntes — inclusive as que aprendemos a chamar de normais — são reconhecidas e confrontadas.'
+      },
       'Cristo: O Marco Entre o Antes e o Depois':{
         section:'Da contagem do tempo à mudança de referência',
         image:'/cristo-o-marco-imagem-editorial.png',
@@ -927,7 +992,7 @@ export default function App() {
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',meta:'História · Calendário · Fé',image:'/Cristo_O_Marco_Entre_O_Antes_E_O_Depois_CAPA_EBOOK.png',status:'LIVRO PUBLICADO',text:'Uma investigação histórica e reflexiva sobre como sociedades organizaram o tempo e como Cristo se tornou referência para a contagem da era cristã, distinguindo documentação histórica, interpretação e leitura teológica.'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',meta:'Trilogia em desenvolvimento',image:'/image (1).png',status:'EM DESENVOLVIMENTO',text:'Uma narrativa sobre cidade, escolhas, relações, fé e consequências. Três movimentos de uma mesma história: NASCE, CRESCE e VIVE.'},
-      {title:'Entre os Sistemas I',sub:'Religioso, Filosófico, Político e Econômico: Cristo, o Libertador',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Uma reflexão sobre sistemas que moldam a sociedade e a experiência humana, examinados à luz da centralidade e da liberdade encontradas em Cristo.'},
+      {title:'Entre os Sistemas — Volume 1',sub:'Cristo, o Libertador',meta:'Religioso · Filosófico · Político · Econômico',image:'/entre-sistemas-v1-cover.png?v=20261009',status:'PRÉ-LANÇAMENTO',text:'Uma reflexão sobre sistemas que moldam a sociedade e a experiência humana, examinados à luz da centralidade e da liberdade encontradas em Cristo.'},
       {title:'Entre os Sistemas II',sub:'Fé e Doutrina: Suficiência de Cristo',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Continuação do projeto Entre os Sistemas, voltada à fé, à doutrina cristã e à suficiência de Cristo como fundamento da vida e da reflexão.'},
       {title:'Entre a Honra e a Gratidão',sub:'Fidelidade, Lealdade, Obediência e Amor',meta:'Projeto literário em desenvolvimento',image:'/capa-app-oficial.png',status:'EM DESENVOLVIMENTO',text:'Uma reflexão sobre honra e gratidão a partir da fidelidade, da lealdade, da obediência e do amor, relacionando esses valores à fé e às relações humanas.'}
     ]
@@ -941,13 +1006,14 @@ export default function App() {
   if (screen === 'books' && user) {
     const books = [
       {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
-      {title:'Chimarrão com Deus — 365 Encontros com Deus',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
-      {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',image:'/1000769251.jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
-      {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Corpo · Alma · Espírito',cover:'ja',image:'/1000670931(1).jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
-      {title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',kind:'História · Calendário · Fé',cover:'cristo',image:'/Cristo_O_Marco_Entre_O_Antes_E_O_Depois_CAPA_EBOOK.png',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
+      {title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
+      {title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',image:'/1000769251.jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
+      {title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Corpo · Alma · Espírito',cover:'ja',image:'/1000670931(1).jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
+      {title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',kind:'História · Calendário · Fé',cover:'cristo',image:'/Cristo_O_Marco_Entre_O_Antes_E_O_Depois_CAPA_EBOOK.png',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
+      {title:'Entre os Sistemas — Volume 1',sub:'Cristo, o Libertador',kind:'Religioso · Filosófico · Político · Econômico',cover:'sistemas',image:'/entre-sistemas-v1-cover.png?v=20261009',status:'PRÉ-LANÇAMENTO · EM BREVE',group:'projetos',action:'Em breve'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',kind:'Trilogia em desenvolvimento',cover:'cidade',image:'/image (1).png',status:'Em breve',group:'projetos',action:'Projeto em desenvolvimento'}
     ]
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os EPUBs ficam protegidos por conta. Livros adquiridos ou liberados pelo administrador podem ser lidos no aplicativo e baixados para uso pessoal.</p>{bookAccessMessage&&<p className="encounter-save-status">{bookAccessMessage}</p>}</div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title} role="button" tabIndex={0} onClick={()=>book.open?book.open():openAuthorBookContent(book.title)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();book.open?book.open():openAuthorBookContent(book.title)}}}><div className={'book-cover '+book.cover}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={e=>{e.stopPropagation();book.open()}}>{book.action} →</button>:(book.group==='publicados'||book.action==='Ler EPUB')?(bookAccessLoading?<button className="book-disabled" disabled>Verificando acesso...</button>:bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>Ler no aplicativo →</button><button className="book-download" onClick={e=>{e.stopPropagation();downloadSecureBook(book.title)}}>Baixar EPUB ↓</button><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<div className="book-actions"><button className="book-disabled" disabled>🔒 Livro não adquirido</button><small className="book-license-note">Após a compra ou liberação pelo administrador, a leitura e o download serão habilitados nesta conta.</small></div>):<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os EPUBs ficam protegidos por conta. Livros adquiridos ou liberados pelo administrador podem ser lidos no aplicativo e baixados para uso pessoal.</p>{bookAccessMessage&&<p className="encounter-save-status">{bookAccessMessage}</p>}</div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title} role="button" tabIndex={0} onClick={()=>book.open?book.open():openAuthorBookContent(book.title)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();book.open?book.open():openAuthorBookContent(book.title)}}}><div className={'book-cover '+book.cover}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={e=>{e.stopPropagation();book.open()}}>{book.action} →</button>:(book.group==='publicados'||book.action==='Ler EPUB')?(bookAccessLoading?<button className="book-disabled" disabled>Verificando acesso...</button>:bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>Ler no aplicativo →</button><button className="book-download" onClick={e=>{e.stopPropagation();downloadSecureBook(book.title)}}>Baixar EPUB ↓</button><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<div className="book-actions">{book.productCode&&commercialCatalog[book.productCode]?.isActive?<button className="primary" onClick={e=>{e.stopPropagation();purchaseCommercialBook(book)}}>Comprar · {formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)} →</button>:<button className="book-disabled" disabled>{book.productCode&&commercialCatalog[book.productCode]?`🔒 Livro não adquirido · ${formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)}`:'🔒 Livro não adquirido'}</button>}<small className="book-license-note">Após a confirmação do pagamento, a leitura será liberada nesta conta. O download do EPUB fica protegido por 7 dias.</small></div>):<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}</main>
   }
 
   if(screen==='notebook'&&user){
@@ -971,12 +1037,12 @@ export default function App() {
   }
 
   if (screen === 'devotional') {
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header>{message && !user && <div className="guest-demo-error" role="alert">{message}</div>}<section className="welcome devotional-intro"><p className="eyebrow">CHIMARRÃO COM DEUS · 365 ENCONTROS COM DEUS</p><h2>Escolha um mês</h2><p>Uma caminhada de 365 encontros, um dia de cada vez.</p></section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Experimente antes de criar sua conta</h2><p>Conheça os doze meses e leia gratuitamente os três primeiros encontros de janeiro.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro →</button></section>}<section className="months-grid">{months.map(([number,name,theme]) => <button key={number} className="month-card month-card-illustrated" onClick={() => openMonth(number)}><img className="month-cover-image" src={`/devocional/mes_${String(number).padStart(2, '0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy" /><span className="month-cover-caption"><span className="month-number">{String(number).padStart(2,'0')}</span><strong>{name}</strong><small>{theme}</small></span></button>)}</section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Gostou da apresentação?</h2><p>Leia o primeiro encontro e conheça o conteúdo do devocional antes de se cadastrar.</p><button onClick={()=>openEncounter(1)}>Ler o primeiro encontro gratuitamente →</button></section>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · 365 Encontros com Deus</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header>{message && !user && <div className="guest-demo-error" role="alert">{message}</div>}<section className="welcome devotional-intro"><p className="eyebrow">CHIMARRÃO COM DEUS · 365 ENCONTROS COM DEUS</p><h2>Escolha um mês</h2><p>Uma caminhada de 365 encontros, um dia de cada vez.</p></section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Conheça a edição 2027</h2><p>Veja os doze meses, os temas e a estrutura da caminhada. Os encontros completos são conteúdo da edição anual adquirida.</p><button onClick={()=>setScreen('signup')}>Criar conta e adquirir 2027 →</button></section>}<section className="months-grid">{months.map(([number,name,theme]) => <button key={number} className="month-card month-card-illustrated" onClick={() => openMonth(number)}><img className="month-cover-image" src={`/devocional/mes_${String(number).padStart(2, '0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy" /><span className="month-cover-caption"><span className="month-number">{String(number).padStart(2,'0')}</span><strong>{name}</strong><small>{theme}</small></span></button>)}</section>{!user && <section className="guest-demo-hint guest-demo-start"><h2>Gostou da apresentação?</h2><p>Crie sua conta para revisar a edição 2027, o valor e as condições antes de qualquer pagamento.</p><button onClick={()=>setScreen('signup')}>Quero adquirir a edição 2027 →</button></section>}</main>
   }
 
   if (screen === 'month') {
     const info = months.find(m => m[0] === selectedMonth)
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Devocional 2027</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('devotional')}>← Meses</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome devotional-intro"><img className="month-intro-image" src={`/devocional/mes_${String(selectedMonth).padStart(2, '0')}.jpg`} alt={`Ilustração de ${info?.[1] || 'mês'}`} /><p className="eyebrow">MÊS {selectedMonth}</p><h2>{info?.[1]}</h2><p>{info?.[2]}</p></section>{devotionalLoading ? <p className="encounter-save-status">Carregando...</p> : <section className="days-grid">{monthDays.map(day => <button key={day.day_number} className="day-card" onClick={() => user || day.day_number<=3 ? openEncounter(day.day_number) : setScreen('guestInfo')}><span className="day-number">{day.day_of_month}</span><span className="day-copy"><small>Dia {day.day_number}</small><strong>{day.title}</strong></span><span className="day-arrow">{!user && day.day_number>3 ? "🔒" : "›"}</span></button>)}</section>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Devocional 2027</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen('devotional')}>← Meses</button><button className="logout" onClick={() => setScreen('dashboard')}>⌂ Início</button></div></header><section className="welcome devotional-intro"><img className="month-intro-image" src={`/devocional/mes_${String(selectedMonth).padStart(2, '0')}.jpg`} alt={`Ilustração de ${info?.[1] || 'mês'}`} /><p className="eyebrow">MÊS {selectedMonth}</p><h2>{info?.[1]}</h2><p>{info?.[2]}</p></section>{devotionalLoading ? <p className="encounter-save-status">Carregando...</p> : <section className="days-grid">{monthDays.map(day => <button key={day.day_number} className="day-card" onClick={() => user ? openEncounter(day.day_number) : setScreen('signup')}><span className="day-number">{day.day_of_month}</span><span className="day-copy"><small>Dia {day.day_number}</small><strong>{day.title}</strong></span><span className="day-arrow">{!user ? "🔒" : "›"}</span></button>)}</section>}</main>
   }
 
   if (screen === 'encounter') {
@@ -1150,7 +1216,11 @@ export default function App() {
     </main>
   }
 
-  if (screen === 'accessRestricted' && user) return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Controle de acesso</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ÁREA DO LEITOR</p><h1>Acesso restrito</h1><p>{message || 'Seu acesso ao conteúdo protegido ainda não está liberado.'}</p><button type="button" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+  if (screen === 'accessRestricted' && user) {
+    const annualProduct=commercialCatalog['app_biblia_chimarrao']
+    const annualPrice=annualProduct?formatCommercialPrice(annualProduct):'R$ 34,90'
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Edição 2027</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header><section className="admin-shell"><div className="admin-hero"><p className="eyebrow">ACESSO PREMIUM 2027</p><h1>Bíblia + Chimarrão — Edição 2027</h1><p>Tenha acesso aos 365 encontros de 2027, Minha Caminhada, favoritos, anotações e aos recursos premium da edição.</p><h2>{annualPrice} <small>· pagamento único para a Edição 2027</small></h2>{message&&message!=='Seu acesso ainda não está liberado.'&&<p>{message}</p>}<button type="button" onClick={()=>{setAnnualPurchaseMessage('');setScreen('annualPurchase');window.scrollTo(0,0)}} disabled={!annualProduct?.isActive}>Adquirir Edição 2027 — {annualPrice}</button><p><small>Pagamento processado com segurança pelo Mercado Pago.</small></p><hr/><h3>Já recebeu seu acesso pela sua empresa?</h3><p>Se sua empresa adquiriu uma licença para você, o administrador pode liberar sua conta sem pagamento individual.</p><button type="button" className="logout" onClick={()=>setScreen('dashboard')}>Voltar ao menu</button></div></section></main>
+  }
 
   if (screen === 'dashboard') {
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || 'Leitor') : 'Visitante'
@@ -1167,7 +1237,7 @@ export default function App() {
             <div className="visual-quick">{(()=>{const unreadCount=publishedAuthorContent.filter(item=>!readAuthorContentIds.includes(item.id)).length;return <button className={unreadCount?'has-new-author-content':''} onClick={()=>user?setScreen('news'):setScreen("guestDemo")} aria-label={unreadCount?`Notificações — ${unreadCount} novidade(s) não lida(s)`:'Notificações'}><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg>{unreadCount>0&&<b className="visual-notification-badge">{unreadCount>9?'9+':unreadCount}</b>}</span><small>{unreadCount?'Novidades':'Notificações'}</small></button>})()}<button onClick={()=>{setMessage('');setScreen(user?'support':'guestInfo')}} aria-label="Apoie"><span className="visual-quick-ring"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></span><small>Apoie</small></button></div>
           </div>
           <div className="visual-greeting"><span className="reader-avatar">{user?.user_metadata?.avatar_data_url?<img src={user.user_metadata.avatar_data_url} alt="Foto do leitor"/>:<span>{name.charAt(0).toUpperCase()}</span>}</span><div><strong>Olá, {name}!</strong><span>{user ? "Que bom ter você aqui!" : "Conheça o Bíblia + Chimarrão antes de criar sua conta."}</span></div><em>Uma palavra.<br/>Uma pausa.<br/>Um encontro.</em></div>
-          {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos e experimente gratuitamente os três primeiros encontros. Para registrar sua caminhada, crie uma conta.</p><button onClick={()=>setScreen("devotional")}>Experimentar 3 encontros</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
+          {!user && <div className="guest-preview-note"><strong>Conheça seu espaço de leitura</strong><p>Explore os recursos, os meses e os temas da edição 2027. Os encontros completos são liberados após a aquisição anual.</p><button onClick={()=>setScreen("guestDemo")}>Conhecer a edição 2027</button><button onClick={()=>setScreen("signup")}>Criar minha conta</button><button className="guest-login" onClick={()=>setScreen("login")}>Já tenho uma conta</button></div>}<nav className="visual-card-grid" aria-label="Recursos do aplicativo">
             {[
               ["Devocional","365 encontros com Deus","/card-devocional.jpg",()=>requirePaidAccess(()=>setScreen('devotional')),"▣"],
               ["Encontro de Hoje","Seu encontro de hoje","/card-encontro.jpg",()=>requirePaidAccess(()=>setScreen('todayHome')),"☀"],
@@ -1238,6 +1308,56 @@ export default function App() {
 </main>
  }
 
+
+  async function requestPasswordRecovery(event){
+    event.preventDefault()
+    const target=(recoveryEmail||email).trim()
+    if(!target||!supabase){setRecoveryMessage('Informe o e-mail da sua conta.');return}
+    setRecoveryBusy(true);setRecoveryMessage('Enviando link seguro...')
+    const redirectTo=window.location.origin+'/?password_recovery=1'
+    const {error}=await supabase.auth.resetPasswordForEmail(target,{redirectTo})
+    setRecoveryBusy(false)
+    if(error){setRecoveryMessage('Não foi possível enviar o link agora. Confira o e-mail e tente novamente.');return}
+    setRecoveryMessage('Se esse e-mail estiver cadastrado, você receberá um link para criar uma nova senha. Confira também a pasta de spam.')
+  }
+
+  async function finishPasswordRecovery(event){
+    event.preventDefault()
+    if(recoveryPassword.length<8){setRecoveryMessage('A nova senha precisa ter pelo menos 8 caracteres.');return}
+    if(recoveryPassword!==recoveryConfirm){setRecoveryMessage('As duas senhas não são iguais.');return}
+    setRecoveryBusy(true);setRecoveryMessage('Salvando sua nova senha...')
+    const {error}=await supabase.auth.updateUser({password:recoveryPassword})
+    setRecoveryBusy(false)
+    if(error){setRecoveryMessage('Não foi possível alterar a senha. O link pode ter expirado; solicite uma nova recuperação.');return}
+    setRecoveryPassword('');setRecoveryConfirm('');setRecoveryMessage('✓ Senha alterada com sucesso. Você já pode continuar no aplicativo.')
+  }
+
+  async function purchaseAnnualEdition(){
+    const product=commercialCatalog['app_biblia_chimarrao']
+    if(!user||!supabase||!product?.isActive){setAnnualPurchaseMessage('A edição 2027 ainda não está disponível para compra.');return}
+    setAnnualPurchaseBusy(true);setAnnualPurchaseMessage('Preparando checkout seguro do Mercado Pago...')
+    const {data:sessionData}=await supabase.auth.getSession();const session=sessionData?.session
+    if(!session){setAnnualPurchaseBusy(false);setAnnualPurchaseMessage('Sua sessão expirou. Entre novamente para continuar.');return}
+    try{
+      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true,return_base_url:window.location.origin})})
+      let data={};try{data=await response.json()}catch{}
+      if(!response.ok||!data?.checkout_url){setAnnualPurchaseMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');setAnnualPurchaseBusy(false);return}
+      window.location.assign(data.checkout_url)
+    }catch{setAnnualPurchaseMessage('Não foi possível conectar ao checkout do Mercado Pago.');setAnnualPurchaseBusy(false)}
+  }
+
+  if(screen === 'annualPurchase' && user) return <AnnualPurchasePanel product={commercialCatalog['app_biblia_chimarrao']} busy={annualPurchaseBusy} message={annualPurchaseMessage} onBack={()=>setScreen('dashboard')} onContinue={purchaseAnnualEdition}/>
+
+  if(screen === 'paymentReturn') {
+    const approved=paymentReturn==='success'
+    const pending=paymentReturn==='pending'
+    return <main className="dashboard payment-return-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Retorno do pagamento · Edição 2027</small></div></header><section className="admin-shell"><div className="admin-hero payment-return-card"><p className="eyebrow">{approved?'PAGAMENTO RECEBIDO':pending?'CONFIRMAÇÃO EM ANDAMENTO':'PAGAMENTO NÃO CONCLUÍDO'}</p><h1>{approved?'Obrigado! Estamos confirmando seu acesso.':pending?'Seu pagamento está sendo confirmado.':'O pagamento não foi concluído.'}</h1><p>{approved?'A confirmação segura é feita pelo nosso sistema. Se o Mercado Pago já confirmou a transação, sua Edição 2027 estará disponível na conta.':pending?'Não é necessário pagar novamente. Aguarde a confirmação do Mercado Pago e volte para sua conta.':'Nenhum acesso é liberado por esta tela. Você pode voltar ao aplicativo e tentar novamente quando desejar.'}</p>{user?<><button type="button" onClick={async()=>{await loadBookAccess();setPaymentReturn(null);setScreen('dashboard');window.scrollTo(0,0)}}>{approved?'Entrar no Bíblia + Chimarrão':'Voltar ao aplicativo'}</button>{approved&&<button type="button" className="logout" onClick={async()=>{setPaymentReturn(null);await openEncounter(1)}}>Entrar no Devocional →</button>}</>:<><p><strong>Entre na mesma conta usada na compra para verificar sua liberação.</strong></p><button type="button" onClick={()=>setScreen('login')}>Entrar na minha conta</button></>}</div></section></main>
+  }
+
+  if(screen==='forgotPassword') return <main className="app"><section className="auth-card"><button className="back-button" onClick={()=>{setRecoveryMessage('');setScreen('login')}}>← Voltar</button><p className="eyebrow">BÍBLIA + CHIMARRÃO</p><h2>Recuperar minha senha</h2><p className="auth-intro">Informe o e-mail da sua conta. Enviaremos um link seguro para você criar uma nova senha.</p><form className="auth-form" onSubmit={requestPasswordRecovery}><label>E-mail<input type="email" value={recoveryEmail} onChange={e=>setRecoveryEmail(e.target.value)} autoComplete="email" required/></label><button type="submit" disabled={recoveryBusy}>{recoveryBusy?'Enviando...':'Enviar link de recuperação'}</button></form>{recoveryMessage&&<p className="form-message" role="status">{recoveryMessage}</p>}</section></main>
+
+  if(screen==='resetPassword') return <main className="app"><section className="auth-card"><p className="eyebrow">BÍBLIA + CHIMARRÃO</p><h2>Criar nova senha</h2><p className="auth-intro">Digite uma nova senha para sua conta.</p><form className="auth-form" onSubmit={finishPasswordRecovery}><label>Nova senha<input type="password" minLength="8" autoComplete="new-password" value={recoveryPassword} onChange={e=>setRecoveryPassword(e.target.value)} required/></label><label>Confirmar nova senha<input type="password" minLength="8" autoComplete="new-password" value={recoveryConfirm} onChange={e=>setRecoveryConfirm(e.target.value)} required/></label><button type="submit" disabled={recoveryBusy}>{recoveryBusy?'Salvando...':'Salvar nova senha'}</button></form>{recoveryMessage&&<p className="form-message" role="status">{recoveryMessage}</p>}{recoveryMessage.startsWith('✓')&&<button type="button" onClick={()=>setScreen(user?'dashboard':'login')}>Continuar no aplicativo →</button>}</section></main>
+
   if (screen === 'login' || screen === 'signup') {
     const creating = screen === 'signup'
     return (
@@ -1250,8 +1370,9 @@ export default function App() {
           {creating && <label>Nome<input value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" required /></label>}
           <label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></label>
           <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="6" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
-          {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>O cadastro é gratuito nesta etapa. Nenhuma cobrança será realizada agora.</small></div>}
+          {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small></div>}
           <button type="submit" disabled={loading}>{loading ? 'Aguarde...' : creating ? 'Criar minha conta' : 'Entrar'}</button>
+          {!creating && <button type="button" className="legal-link" onClick={()=>{setRecoveryEmail(email);setRecoveryMessage('');setScreen('forgotPassword')}}>Esqueci minha senha</button>}
         </form>
         {message && <p className="form-message" role="status">{message}</p>}
       </section></main>
@@ -1260,7 +1381,7 @@ export default function App() {
 
   if (screen === 'landing') return <main className="premium-opening guest-landing"><div className="premium-opening-frame landing-cover-frame"><img src="/capa-app-oficial.png" alt="Capa oficial Bíblia + Chimarrão"/><div className="premium-opening-actions guest-landing-actions landing-overlay-actions"><button className="guest-round-action" onClick={()=>setScreen(user ? 'dashboard' : 'guestDemo')}><span className="guest-round-icon" aria-hidden="true">✦</span><span className="guest-round-label">{user ? 'Entrar no aplicativo' : 'Conhecer o aplicativo'}</span></button>{!isStandalone&&<button className="guest-round-action install-round-action" onClick={installApp}><span className="guest-round-icon" aria-hidden="true">↓</span><span className="guest-round-label">Instalar aplicativo</span></button>}{installMessage&&<span className="install-message" role="status">{installMessage}</span>}{!user && <><button className="guest-round-action" onClick={()=>setScreen('signup')}><span className="guest-round-icon" aria-hidden="true">＋</span><span className="guest-round-label">Criar minha conta</span></button><button className="guest-round-action" onClick={()=>setScreen('login')}><span className="guest-round-icon" aria-hidden="true">↳</span><span className="guest-round-label">Já tenho uma conta</span></button></>}</div></div></main>
 
-  if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-boas-vindas-oficial.webp" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Conheça a proposta do devocional e crie sua conta para acessar os recursos disponíveis.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
+  if (!user && screen === 'guestDemo') return <main className="dashboard guest-demo-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Apresentação do aplicativo</small></div><button className="logout" onClick={()=>setScreen('landing')}>← Voltar</button></header><section className="guest-demo-intro"><p className="eyebrow">CONHEÇA O APLICATIVO</p><h1>Uma palavra. Uma pausa. Um encontro.</h1><p>O Bíblia + Chimarrão reúne o devocional Chimarrão com Deus, seus registros de leitura, reflexões, lembretes e uma biblioteca de obras do autor.</p></section><section className="guest-about-author"><img src="/autor-boas-vindas-oficial.webp" alt="Foto do autor Romulo Schutz"/><div><h2>Romulo Schutz</h2><p>Escritor de Otacílio Costa, Santa Catarina. Suas obras aproximam história, filosofia, teologia e esperança cristã.</p><p>Este aplicativo nasceu para oferecer um momento diário de leitura, reflexão e oração.</p></div></section><section className="guest-demo-format"><h2>O que você encontrará?</h2><div className="guest-feature-list">{[['Devocional','365 encontros organizados em doze meses.'],['Minha Caminhada','Acompanhe sua jornada de leitura.'],['Favoritos e Anotações','Guarde reflexões e registros pessoais.'],['Hora do Mate','Organize seu lembrete diário.'],['Livros do Romulo','Conheça as obras do autor.'],['Ideias e Reflexões','Textos para inspirar sua caminhada.']].map(([title,desc])=><article key={title}><strong>{title}</strong><p>{desc}</p></article>)}</div><h2>Os doze meses</h2><div className="guest-demo-months">{months.map(([number,name,theme])=><article key={number} className="guest-demo-month"><img src={`/devocional/mes_${String(number).padStart(2,'0')}.jpg`} alt={`Ilustração de ${name}`} loading="lazy"/><div><strong>{name}</strong><small>{theme}</small></div></article>)}</div><h2>Como é cada encontro?</h2><ol>{['Bom Dia, Deus','A Palavra','Mate da Reflexão','Para Pensar','Conversa com Deus','Um Passo para Hoje'].map(item=><li key={item}>{item}</li>)}</ol><p>Conheça a proposta do aplicativo. Os encontros completos são liberados com a aquisição do acesso premium da Edição 2027.</p><div className="guest-demo-actions"><button onClick={()=>setScreen('signup')}>Criar minha conta</button><button onClick={()=>setScreen('login')}>Já tenho uma conta</button></div></section></main>
 
   if (['terms','privacy','purchasePolicy','digitalLicense'].includes(screen)) {
     const legalBack=()=>setScreen(user?'dashboard':'signup')
