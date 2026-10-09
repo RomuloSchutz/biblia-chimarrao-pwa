@@ -31,6 +31,8 @@ jobs:
           grep -F "ebook_cristo_marco" src/App.jsx
           grep -F "Entre os Sistemas — Volume 1" src/App.jsx
           grep -F "PRÉ-LANÇAMENTO · EM BREVE" src/App.jsx
+          grep -F "entre-sistemas-v1-cover.png?v=20261009" src/App.jsx
+          grep -F "loadCatalog(attempt+1)" src/App.jsx
           grep -F "params.get('payment_return')" src/App.jsx
           if grep -Fq "params.get('payment')" src/App.jsx; then echo "Parâmetro antigo de retorno ainda presente"; exit 1; fi
       - name: Persistir correção no laboratório
@@ -39,7 +41,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add src/App.jsx
-            git commit -m "Corrigir biblioteca e pré-lançamento no laboratório"
+            git commit -m "Estabilizar biblioteca e catálogo no laboratório"
             git push origin HEAD:lab-corrigir-biblioteca-prelancamento-2026-10-08
           fi
       - name: Compilar aplicativo com variáveis de prévia
@@ -60,6 +62,6 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          npx wrangler versions upload --preview-alias lab-biblioteca-0810 2>&1 | tee preview-output.txt
-          echo "### Prévia biblioteca e pré-lançamento" >> "$GITHUB_STEP_SUMMARY"
+          npx wrangler versions upload --preview-alias lab-biblioteca-v2 2>&1 | tee preview-output.txt
+          echo "### Prévia biblioteca e pré-lançamento v2" >> "$GITHUB_STEP_SUMMARY"
           grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
