@@ -1,0 +1,44 @@
+name: Publicar prévia Bloco 3 PWA
+on:
+  workflow_dispatch:
+  push:
+    branches: [lab-bloco3-pwa-hora-do-mate-2026-10-09]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências
+        run: npm install
+      - name: Validar Bloco 3
+        run: |
+          grep -F "navigator.serviceWorker.register('/sw.js'" src/main.jsx
+          grep -F "vibrate: [220, 120, 220]" public/sw.js
+          grep -F "renotify: true" public/sw.js
+          grep -F "Service-Worker-Allowed: /" public/_headers
+      - name: Compilar aplicativo com variáveis de prévia
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://srabzgokulsiujusbqxl.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_TjLHUAq038yLQ2hqqaVZjg__GM4w2Q4
+      - name: Verificar credenciais antes de publicar
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_TOKEN" || { echo "Falta CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CF_ACCOUNT" || { echo "Falta CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+      - name: Publicar prévia isolada do Bloco 3
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          npx wrangler versions upload --preview-alias lab-bloco3-pwa 2>&1 | tee preview-output.txt
+          echo "### Prévia Bloco 3 — PWA e Hora do Mate" >> "$GITHUB_STEP_SUMMARY"
+          grep -Eo 'https://[^[:space:]\"]+' preview-output.txt | grep -E 'workers.dev|cloudflare' | sort -u | tee -a "$GITHUB_STEP_SUMMARY" || true
