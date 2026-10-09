@@ -721,14 +721,8 @@ export default function App() {
     if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira a edição para começar sua caminhada.'); return }
     if (!supabase) { setMessage('Prévia indisponível: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY nas variáveis de compilação do Cloudflare.'); setScreen('devotional'); return }
     if (user) {
-      const { data: accessData, error: accessError } = await supabase.rpc('get_my_app_access')
-      const access = Array.isArray(accessData) ? accessData[0] : accessData
-      if (accessError || !access?.allowed) {
-        setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
-        setScreen('accessRestricted')
-        window.scrollTo({top:0,behavior:'smooth'})
-        return
-      }
+      const allowed = await requirePaidAccess()
+      if (!allowed) return
     }
     setEncounterLoading(true)
     setEncounterStatus('')
