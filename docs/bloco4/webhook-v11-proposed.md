@@ -1,81 +1,49 @@
-# Bloco 4 — Webhook Mercado Pago v11 PROPOSTO
+# Bloco 4 — Webhook anual: estado v11 e correção v12
 
-> LAB / NÃO PUBLICADO. Esta especificação registra a alteração exata planejada para `mercado-pago-orders-webhook` antes de autorização de deploy.
+## Estado confirmado em 09/10/2026
 
-## Estado atual v10
+A função compartilhada `mercado-pago-orders-webhook` está ACTIVE na versão 11. A versão 11 preserva validação HMAC, consulta autoritativa da ordem no Mercado Pago, validação de `external_reference`, produto, valor, moeda e a regra de que redirect não libera acesso.
 
-A função v10 valida HMAC, consulta a ordem no Mercado Pago, confere pedido local, produto, valor/moeda e trata estados do pagamento. Para `app_access`, porém, ainda grava `app_access` global. Em `refunded`, altera apenas o pedido e devolve `access_review_required`.
+O modelo anual correto já existe em produção em `app_annual_editions` e `user_annual_editions`. A compra anual 2027 deve conceder somente a Edição 2027; e-books/devocional continuam em `user_editions`.
 
-## Alteração proposta v11
+## Defeito identificado na v11
 
-### Pagamento anual confirmado
+A concessão anual usa atualmente:
 
-Quando:
-- `product_code = app_biblia_chimarrao`;
-- `product_type = app_access`;
-- pagamento no provedor = `processed/accredited`;
-- valor pago = valor do pedido;
+`upsert(..., { onConflict: "user_id,annual_edition_id" })`
 
-então:
-1. marcar pedido como `paid` como já ocorre;
-2. localizar `app_annual_editions.year = 2027` ativa;
-3. inserir/upsert direito anual do usuário para 2027 com:
-   - `source = purchase`;
-   - `order_reference = order.id`;
-   - `granted_at = paidAt`;
-4. NÃO conceder novo `app_access` global;
-5. operação repetida deve ser idempotente.
+A tabela de produção não possui uma constraint UNIQUE simples exatamente nesse par. O desenho final usa um `id` próprio e preserva múltiplas origens independentes (purchase/admin/corporate/promotion/legacy), com unicidade de compra vinculada ao `order_reference`.
 
-### EPUB/devocional
+Consequência: uma nova compra anual confirmada pode chegar ao estado `paid` no pedido e falhar na criação do direito anual com `annual_entitlement_grant_failed`.
 
-Sem mudança de modelo:
-- `ebook`/`devotional` com `edition_id` continuam concedendo `user_editions`.
+O comprador 2027 já migrado permanece protegido pelo backfill realizado anteriormente. Nenhum direito existente deve ser removido para corrigir este ponto.
 
-### Refund anual
+## Correção v12 — algoritmo fechado
 
-Quando a ordem anual for confirmada como `refunded`:
-1. marcar pedido `refunded`;
-2. localizar somente o direito anual com `source = purchase` e `order_reference = order.id`;
-3. marcar essa concessão como revogada;
-4. não remover concessões `admin`, `corporate`, `promotion` ou `legacy`;
-5. não alterar `user_editions` de livros/devocionais.
+Para `product_type = app_access` e `product.code = app_biblia_chimarrao`:
 
-### Refund de EPUB/devocional
+1. localizar a edição anual ativa de 2027;
+2. procurar primeiro `user_annual_editions` por `source = purchase` e `order_reference = order.id`;
+3. se já existir, validar que `user_id` e `annual_edition_id` correspondem exatamente ao pedido e à edição 2027;
+4. se existir ativo, tratar como idempotente e não criar outro direito;
+5. se existir revogado e o provedor voltar a informar pagamento acreditado para o mesmo pedido, reativar somente esse registro exato;
+6. se não existir, fazer `insert` com `user_id`, `annual_edition_id`, `source = purchase`, `order_reference = order.id`, `granted_at = paidAt`, `revoked_at = null`;
+7. se ocorrer conflito de corrida no insert, reler pelo `order_reference` e aceitar somente se usuário e edição forem exatamente os esperados; caso contrário, falhar fechado;
+8. refund continua revogando somente `source = purchase` + `order_reference = order.id`;
+9. grants admin/corporate/promotion/legacy nunca são removidos pelo refund de uma compra pessoal;
+10. e-books/devocional permanecem inalterados em `user_editions`.
 
-A v11 não deve inventar regra jurídica/comercial nova. A revogação automática de livros será tratada separadamente conforme política comercial aplicável e comportamento de download. Até decisão explícita, manter revisão controlada.
+## Segurança preservada
 
-## Guardas obrigatórias
+- HMAC do Mercado Pago permanece obrigatório.
+- A ordem é consultada no Mercado Pago antes da reconciliação.
+- Valor/moeda/produto continuam validados contra pedido e catálogo.
+- Redirect continua incapaz de liberar acesso.
+- Nenhuma nova escrita em `app_access` global.
+- Nenhuma compra real adicional é necessária para preparar a correção.
 
-- assinatura HMAC permanece obrigatória;
-- consulta autoritativa ao Mercado Pago permanece obrigatória;
-- redirect do navegador nunca concede acesso;
-- validar `external_reference`;
-- validar provider_order_id quando já registrado;
-- validar valor total, valor pago e moeda;
-- validar catálogo/produto;
-- erro de concessão anual deve retornar erro de reconciliação e não fingir sucesso;
-- logs não devem expor token/chave/PII desnecessária.
+## Gate de produção
 
-## Compatibilidade
+A v12 só deve ser publicada após autorização explícita para a função compartilhada. Frase de autorização definida:
 
-- `app_access` existente não será apagado pela v11;
-- comprador anual já migrado permanece com 2027;
-- frontend pode continuar temporariamente com fallback legado;
-- novas compras anuais passam a nascer no modelo correto por edição.
-
-## Testes pós-deploy sem nova compra real
-
-1. GET de saúde da função.
-2. Confirmar versão ativa nova.
-3. Consultar contagens: comprador pago existente continua com 2027.
-4. Confirmar `app_access` legado intacto.
-5. Confirmar biblioteca EPUB intacta.
-6. Não reenviar artificialmente evento pago ao Mercado Pago nem fabricar assinatura HMAC.
-
-## Rollback
-
-A versão v10 atual deve permanecer documentada para restauração caso a v11 apresente falha operacional. Como as novas tabelas são aditivas e `app_access` antigo permanece, o rollback do webhook não exige apagar dados.
-
-## Gate
-
-Deploy da v11 no Supabase compartilhado exige autorização explícita separada. Nenhum deploy é realizado por este documento.
+`APROVADO CORRIGIR WEBHOOK ANUAL V12`
