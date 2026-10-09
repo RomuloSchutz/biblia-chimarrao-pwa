@@ -109,6 +109,9 @@ export default function App() {
   const [adminBookUser,setAdminBookUser]=useState(null)
   const [adminBookEntitlements,setAdminBookEntitlements]=useState([])
   const [adminBookLoading,setAdminBookLoading]=useState(false)
+  const [adminAnnualUser,setAdminAnnualUser]=useState(null)
+  const [adminAnnualEntitlements,setAdminAnnualEntitlements]=useState([])
+  const [adminAnnualLoading,setAdminAnnualLoading]=useState(false)
   const [adminAuthorItems,setAdminAuthorItems]=useState([])
   const [publishedAuthorContent,setPublishedAuthorContent]=useState([])
   const [authorContentLoading,setAuthorContentLoading]=useState(false)
@@ -298,7 +301,7 @@ export default function App() {
       const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},
-        body:JSON.stringify({product_code:book.productCode,accepted:true})
+        body:JSON.stringify({product_code:book.productCode,accepted:true,policy_version:'08/10/2026',license_version:'08/10/2026'})
       })
       let data={}
       try{data=await response.json()}catch{}
@@ -538,16 +541,31 @@ export default function App() {
 
   async function requirePaidAccess(action) {
     if (!user || !supabase) { setScreen('login'); setMessage('Entre na sua conta para continuar.'); return false }
-    const { data, error } = await supabase.rpc('get_my_app_access')
-    const access = Array.isArray(data) ? data[0] : data
-    if (error || !access?.allowed) {
-      setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
-      setScreen('accessRestricted')
-      window.scrollTo({top:0,behavior:'smooth'})
-      return false
+
+    // Regra principal: o premium é adquirido por edição anual. Em 2027, somente
+    // um direito ativo da Edição 2027 (ou administração) libera o conteúdo.
+    const annualResult = await supabase.rpc('get_my_annual_access',{target_year:2027})
+    const annualAccess = Array.isArray(annualResult.data) ? annualResult.data[0] : annualResult.data
+    if (!annualResult.error && annualAccess?.allowed === true) {
+      if (typeof action === 'function') action()
+      return true
     }
-    if (typeof action === 'function') action()
-    return true
+
+    // Compatibilidade temporária: acessos globais concedidos antes da migração
+    // continuam válidos enquanto o painel administrativo é convertido por edição.
+    const legacyResult = await supabase.rpc('get_my_app_access')
+    const legacyAccess = Array.isArray(legacyResult.data) ? legacyResult.data[0] : legacyResult.data
+    if (!legacyResult.error && legacyAccess?.allowed === true) {
+      if (typeof action === 'function') action()
+      return true
+    }
+
+    setMessage(legacyAccess?.status === 'blocked'
+      ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.'
+      : 'A Edição 2027 ainda não está liberada para esta conta.')
+    setScreen('accessRestricted')
+    window.scrollTo({top:0,behavior:'smooth'})
+    return false
   }
 
   async function openNotes() {
@@ -706,14 +724,8 @@ export default function App() {
     if (!user) { setScreen('guestDemo'); setMessage('Os encontros completos fazem parte da edição anual 2027. Crie sua conta e adquira a edição para começar sua caminhada.'); return }
     if (!supabase) { setMessage('Prévia indisponível: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY nas variáveis de compilação do Cloudflare.'); setScreen('devotional'); return }
     if (user) {
-      const { data: accessData, error: accessError } = await supabase.rpc('get_my_app_access')
-      const access = Array.isArray(accessData) ? accessData[0] : accessData
-      if (accessError || !access?.allowed) {
-        setMessage(access?.status === 'blocked' ? 'Seu acesso está bloqueado. Fale com a administração para regularizar.' : access?.access_until && new Date(access.access_until) <= new Date() ? 'Seu acesso venceu. Renove para continuar.' : 'Seu acesso ainda não está liberado.')
-        setScreen('accessRestricted')
-        window.scrollTo({top:0,behavior:'smooth'})
-        return
-      }
+      const allowed = await requirePaidAccess()
+      if (!allowed) return
     }
     setEncounterLoading(true)
     setEncounterStatus('')
@@ -1156,13 +1168,34 @@ export default function App() {
     setAdminAuthorMessage(next?'✓ Publicado para os leitores.':'✓ Retirado da publicação. O conteúdo continua salvo como rascunho.')
   }
 
-  async function changeAdminAccess(item,status){
+  async function openAdminAnnualAccess(item){
     if(!isAdmin||!supabase||item.is_admin)return
-    setAdminMessage('Atualizando acesso...')
-    const {error}=await supabase.rpc('admin_set_user_access',{target_user_id:item.user_id,new_status:status,new_access_until:null,admin_notes:'Alteração manual pelo painel administrativo'})
-    if(error){setAdminMessage('Erro ao atualizar: '+error.message);return}
-    setAdminUsers(list=>list.map(u=>u.user_id===item.user_id?{...u,status,source:'manual',access_until:null}:u))
-    setAdminMessage(status==='active'?'✓ Acesso liberado.':'✓ Acesso bloqueado.')
+    setAdminAnnualUser(item);setAdminAnnualLoading(true);setAdminMessage('')
+    const {data,error}=await supabase.rpc('admin_list_annual_entitlements',{target_user_id:item.user_id})
+    if(error){setAdminMessage('Erro ao carregar a Edição 2027: '+error.message);setAdminAnnualEntitlements([])}
+    else setAdminAnnualEntitlements(data||[])
+    setAdminAnnualLoading(false)
+  }
+
+  async function grantAdminAnnualAccess(source){
+    if(!adminAnnualUser||!isAdmin||!supabase)return
+    const labels={admin:'Administração',corporate:'Corporativo',promotion:'Promoção'}
+    setAdminMessage('Liberando Edição 2027 · '+(labels[source]||source)+'...')
+    const {error}=await supabase.rpc('admin_grant_annual_edition',{target_user_id:adminAnnualUser.user_id,target_year:2027,grant_source:source})
+    if(error){setAdminMessage('Erro ao liberar Edição 2027: '+error.message);return}
+    await openAdminAnnualAccess(adminAnnualUser)
+    setAdminMessage('✓ Edição 2027 liberada por '+(labels[source]||source)+'.')
+  }
+
+  async function revokeAdminAnnualEntitlement(entitlement){
+    if(!adminAnnualUser||!isAdmin||!supabase||!entitlement?.entitlement_id||entitlement.source==='purchase')return
+    const labels={corporate:'Corporativo',admin:'Administração',promotion:'Promoção',legacy:'Legado'}
+    if(!window.confirm('Remover somente a concessão '+(labels[entitlement.source]||entitlement.source)+' da Edição 2027?'))return
+    setAdminMessage('Removendo concessão da Edição 2027...')
+    const {error}=await supabase.rpc('admin_revoke_annual_entitlement',{target_entitlement_id:entitlement.entitlement_id})
+    if(error){setAdminMessage('Erro ao remover concessão: '+error.message);return}
+    await openAdminAnnualAccess(adminAnnualUser)
+    setAdminMessage('✓ Concessão removida. Compras pessoais e outros acessos foram preservados.')
   }
 
   if(screen==='adminAuthor'&&user&&isAdmin){
@@ -1206,11 +1239,12 @@ export default function App() {
     return <main className="dashboard admin-page">
       <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
       <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Leitores</h1><p>Clientes, edições adquiridas e controle de acesso.</p></div>
-        <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.status==='active').length}</strong><span>Ativos</span></div><div><strong>{adminUsers.filter(u=>u.status==='blocked').length}</strong><span>Bloqueados</span></div></div>
+        <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.is_admin).length}</strong><span>Administradores</span></div><div><strong>2027</strong><span>Acesso por edição</span></div></div>
         <button type="button" className="support-copy" onClick={openAuthorArea}>✍ Área do Autor — publicar e editar conteúdos</button>
         <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
         {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
-        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className={'admin-status '+item.status}>{item.is_admin?'Administrador':item.status==='active'?'Ativo':item.status==='blocked'?'Bloqueado':item.status==='cancelled'?'Cancelado':'Pendente'}</span></div><div className="admin-editions"><strong>Edições:</strong> {item.editions?.length?item.editions.sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>changeAdminAccess(item,'active')} disabled={item.status==='active'}>✓ Liberar</button><button type="button" onClick={()=>openAdminBooks(item)}>📚 Livros</button><button type="button" className="admin-block" onClick={()=>changeAdminAccess(item,'blocked')} disabled={item.status==='blocked'}>Bloquear</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
+        {adminLoading?<p>Carregando usuários...</p>:<div className="admin-user-list">{filteredAdminUsers.map(item=><article className="admin-user-card admin-user-compact" key={item.user_id}><div className="admin-user-head"><div><strong>{item.full_name||'Leitor'}</strong><small>{item.email}</small></div><span className="admin-status">{item.is_admin?'Administrador':'Leitor'}</span></div><div className="admin-editions"><strong>Biblioteca editorial:</strong> {item.editions?.length?[...item.editions].sort((a,b)=>a-b).map(year=><span key={year}>{year}</span>):<em>Nenhuma edição editorial</em>}</div>{!item.is_admin&&<div className="admin-actions compact-actions"><button type="button" onClick={()=>openAdminAnnualAccess(item)}>🎟 Edição 2027</button><button type="button" onClick={()=>openAdminBooks(item)}>📚 Livros</button><button type="button" className="admin-notify" title="Avisar atualização" aria-label={'Avisar atualização para '+(item.full_name||item.email)} onClick={()=>setAdminMessage('Aviso de atualização: módulo de envio será conectado às notificações/e-mail.')}>↻ Atualizar</button></div>}</article>)}</div>}
+        {adminAnnualUser&&<section className="admin-book-access"><div className="admin-book-access-head"><div><p className="eyebrow">ACESSO ANUAL</p><h2>{adminAnnualUser.full_name||adminAnnualUser.email}</h2><p>Bíblia + Chimarrão — Edição 2027. Cada origem de acesso é independente; remover uma concessão não remove as demais.</p></div><button type="button" onClick={()=>{setAdminAnnualUser(null);setAdminAnnualEntitlements([])}}>Fechar</button></div>{adminAnnualLoading?<p>Carregando acessos...</p>:<><div className="admin-book-list">{adminAnnualEntitlements.filter(item=>!item.revoked_at&&Number(item.year)===2027).length?adminAnnualEntitlements.filter(item=>!item.revoked_at&&Number(item.year)===2027).map(entitlement=><article key={entitlement.entitlement_id}><div><strong>Edição {entitlement.year}</strong><span>✓ {{purchase:'Compra',corporate:'Corporativo',admin:'Administração',promotion:'Promoção',legacy:'Legado'}[entitlement.source]||entitlement.source}</span>{entitlement.source==='purchase'&&<small>Compra pessoal protegida. Reembolso é tratado pelo fluxo da compra.</small>}</div>{entitlement.source!=='purchase'&&<button type="button" className="admin-block" onClick={()=>revokeAdminAnnualEntitlement(entitlement)}>Remover esta concessão</button>}</article>):<p>Nenhum acesso ativo para a Edição 2027.</p>}</div><div className="admin-actions compact-actions"><button type="button" onClick={()=>grantAdminAnnualAccess('admin')}>＋ Administração</button><button type="button" onClick={()=>grantAdminAnnualAccess('corporate')}>＋ Corporativo</button><button type="button" onClick={()=>grantAdminAnnualAccess('promotion')}>＋ Promoção</button></div></>}</section>}
         {adminBookUser&&<section className="admin-book-access"><div className="admin-book-access-head"><div><p className="eyebrow">BIBLIOTECA DO LEITOR</p><h2>{adminBookUser.full_name||adminBookUser.email}</h2><p>Libere ou remova cada obra individualmente. Esta é a mesma permissão que futuramente será concedida automaticamente pelo Mercado Pago.</p></div><button type="button" onClick={()=>{setAdminBookUser(null);setAdminBookEntitlements([])}}>Fechar</button></div>{adminBookLoading?<p>Carregando livros...</p>:<div className="admin-book-list">{adminBookEntitlements.map(book=><article key={book.edition_id}><div><strong>{book.title}</strong>{book.subtitle&&<small>{book.subtitle}</small>}<span>{book.has_access?'✓ Liberado'+(book.source?' · '+book.source:''):'Não adquirido'}</span></div><button type="button" className={book.has_access?'admin-block':''} onClick={()=>changeBookEntitlement(book,!book.has_access)}>{book.has_access?'Remover acesso':'Liberar livro'}</button></article>)}</div>}</section>}
       </section>
     </main>
@@ -1332,14 +1366,14 @@ export default function App() {
     setRecoveryPassword('');setRecoveryConfirm('');setRecoveryMessage('✓ Senha alterada com sucesso. Você já pode continuar no aplicativo.')
   }
 
-  async function purchaseAnnualEdition(){
+  async function purchaseAnnualEdition({accepted=false,policyVersion='',licenseVersion=''}={}){
     const product=commercialCatalog['app_biblia_chimarrao']
     if(!user||!supabase||!product?.isActive){setAnnualPurchaseMessage('A edição 2027 ainda não está disponível para compra.');return}
     setAnnualPurchaseBusy(true);setAnnualPurchaseMessage('Preparando checkout seguro do Mercado Pago...')
     const {data:sessionData}=await supabase.auth.getSession();const session=sessionData?.session
     if(!session){setAnnualPurchaseBusy(false);setAnnualPurchaseMessage('Sua sessão expirou. Entre novamente para continuar.');return}
     try{
-      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:true,return_base_url:window.location.origin})})
+      const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({product_code:'app_biblia_chimarrao',accepted:accepted===true,policy_version:policyVersion,license_version:licenseVersion,return_base_url:window.location.origin})})
       let data={};try{data=await response.json()}catch{}
       if(!response.ok||!data?.checkout_url){setAnnualPurchaseMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');setAnnualPurchaseBusy(false);return}
       window.location.assign(data.checkout_url)
@@ -1369,7 +1403,7 @@ export default function App() {
         <form className="auth-form" onSubmit={handleSubmit}>
           {creating && <label>Nome<input value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" required /></label>}
           <label>E-mail<input type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required /></label>
-          <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="6" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
+          <label>Senha<div className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete={creating ? 'new-password' : 'current-password'} minLength="8" required /><button type="button" className="eye-button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}>{showPassword ? '🙈' : '👁'}</button></div></label>
           {creating && <div className="signup-consent"><label><input type="checkbox" checked={acceptedTerms} onChange={e=>setAcceptedTerms(e.target.checked)} required/> Li e concordo com os <button type="button" className="legal-link" onClick={()=>setScreen('terms')}>Termos de Uso</button> e a <button type="button" className="legal-link" onClick={()=>setScreen('privacy')}>Política de Privacidade</button>.</label><small>A criação da conta não gera cobrança. Você poderá conhecer o aplicativo e adquirir separadamente o acesso premium Bíblia + Chimarrão — Edição 2027.</small></div>}
           <button type="submit" disabled={loading}>{loading ? 'Aguarde...' : creating ? 'Criar minha conta' : 'Entrar'}</button>
           {!creating && <button type="button" className="legal-link" onClick={()=>{setRecoveryEmail(email);setRecoveryMessage('');setScreen('forgotPassword')}}>Esqueci minha senha</button>}
