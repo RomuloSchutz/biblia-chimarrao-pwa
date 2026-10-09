@@ -935,6 +935,12 @@ export default function App() {
     ]
     const work=works.find(x=>x.title===selectedAuthorBook)||{title:selectedAuthorBook,sub:'',meta:'',image:'/capa-app-oficial.png',status:'OBRA',text:''}
     const editorial={
+      'Entre os Sistemas — Volume 1':{
+        section:'Quando os sistemas se tornam prisões',
+        image:'/entre-sistemas-por-tras-da-obra.png?v=20261009',
+        cover:'A capa de Entre os Sistemas — Volume 1: Cristo, o Libertador reúne símbolos dos grandes sistemas que atravessam a história humana. As ruínas e construções representam civilizações e estruturas de poder; os livros apontam para a religião, a filosofia, a política e a economia; as moedas, a coroa e as correntes simbolizam riqueza, autoridade e também os sistemas que podem aprisionar o ser humano. No centro, porém, está a cruz iluminada: Cristo não aparece como mais um sistema entre tantos outros, mas como aquele que rompe as correntes e oferece uma liberdade que nenhum sistema humano consegue produzir.',
+        special:'Religião, filosofia, política e economia fazem parte da construção das sociedades e podem contribuir para organizar a vida humana. O perigo surge quando aquilo que deveria servir ao homem passa a dominá-lo. Crenças podem transformar-se em controle; ideias, em ideologias; poder, em opressão; riqueza, em medida do valor humano. Entre os Sistemas convida o leitor a reconhecer essas estruturas, compreender sua influência e perguntar onde está depositando sua liberdade. O centro da obra é o contraste: sistemas humanos prometem segurança, ordem e sentido, mas nenhum deles pode ocupar o lugar de Cristo. A verdadeira libertação começa quando as correntes — inclusive as que aprendemos a chamar de normais — são reconhecidas e confrontadas.'
+      },
       'Cristo: O Marco Entre o Antes e o Depois':{
         section:'Da contagem do tempo à mudança de referência',
         image:'/cristo-o-marco-imagem-editorial.png',
