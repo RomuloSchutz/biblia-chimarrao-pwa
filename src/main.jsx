@@ -1,13 +1,17 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import InstitutionalAdminRoute from './InstitutionalAdminRoute.jsx'
 import './styles.css'
 import './dashboard-card-fixes.css'
 import './dashboard-mobile-final.css'
 import './social-mobile-fix.js'
 import './signup-hardening.js'
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+const params=new URLSearchParams(window.location.search)
+const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
+
+ReactDOM.createRoot(document.getElementById('root')).render(institutionalRoute?<InstitutionalAdminRoute/>:<App />)
 
 // Mantém o service worker do PWA ativo para notificações e atualizações.
 // A atualização é verificada sem apagar dados locais, compras, favoritos ou anotações.
