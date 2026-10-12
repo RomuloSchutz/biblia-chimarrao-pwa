@@ -23,11 +23,6 @@ export const COMMERCIAL_BOOKS = Object.freeze({
     priceCents: 2490,
     priceLabel: 'R$ 24,90',
   }),
-  'Entre os Sistemas 2': Object.freeze({
-    productCode: 'ebook_entre_os_sistemas_2',
-    priceCents: 3990,
-    priceLabel: 'R$ 39,90',
-  }),
 })
 
 export function getCommercialBook(title) {
