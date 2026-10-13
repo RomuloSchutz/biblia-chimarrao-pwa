@@ -16,11 +16,17 @@ Deno.serve(async(req)=>{
   const id=String(body.edition_id||"");
   const download=body.download===true;
   if(!id)return out({error:"Edição não informada"},400);
-  const lib=await uc.rpc("my_book_library");
-  const item=(lib.data||[]).find((x:any)=>x.edition_id===id&&x.has_access&&x.is_ready);
-  if(!item?.bucket_id||!item?.object_path)return out({error:"Livro não liberado"},403);
   const sc=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-  if(download){
+  const lib=await uc.rpc("my_book_library");
+  let item=(lib.data||[]).find((x:any)=>x.edition_id===id&&x.has_access&&x.is_ready);
+  const admin=await uc.rpc("is_app_admin");
+  const isAdmin=admin.data===true;
+  if(!item&&isAdmin){
+    const asset=await sc.from("edition_epub_assets").select("bucket_id,object_path,is_ready").eq("edition_id",id).eq("is_ready",true).maybeSingle();
+    if(!asset.error&&asset.data)item=asset.data;
+  }
+  if(!item?.bucket_id||!item?.object_path)return out({error:isAdmin?"EPUB ainda não configurado para esta obra":"Livro não liberado"},403);
+  if(download&&!isAdmin){
     const {data:orders,error:oe}=await sc.from("orders").select("id,status,paid_at,download_available_at,product_code").eq("user_id",u.data.user.id).eq("edition_id",id).eq("status","paid").order("paid_at",{ascending:false}).limit(1);
     if(oe)return out({error:"Não foi possível validar a compra"},500);
     const order=orders?.[0];
