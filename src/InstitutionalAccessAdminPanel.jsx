@@ -15,6 +15,8 @@ import {
 
 const KIND_LABELS={empresa:'Empresa',prefeitura:'Prefeitura',igreja:'Igreja',livraria:'Livraria',associacao:'Associação',outro:'Outro'}
 const SOURCE_LABELS={manual:'Manual',pix:'Pix',transferencia:'Transferência',boleto:'Boleto',empenho:'Empenho',mercado_pago:'Mercado Pago',cortesia:'Cortesia',outro:'Outro'}
+const EMPTY_ORG={name:'',kind:'empresa',contact_name:'',contact_email:'',contact_phone:'',notes:''}
+const EMPTY_PURCHASE={quantity:'',annual_edition_id:'',source:'manual',reference:'',amount_cents:''}
 
 export default function InstitutionalAccessAdminPanel({supabase}){
   const [accounts,setAccounts]=useState([])
@@ -27,7 +29,8 @@ export default function InstitutionalAccessAdminPanel({supabase}){
   const [activations,setActivations]=useState([])
   const [loading,setLoading]=useState(false)
   const [message,setMessage]=useState('')
-  const [newOrg,setNewOrg]=useState({name:'',kind:'empresa',contact_name:'',contact_email:'',contact_phone:'',notes:''})
+  const [newOrg,setNewOrg]=useState(EMPTY_ORG)
+  const [initialPurchase,setInitialPurchase]=useState(EMPTY_PURCHASE)
   const [lotForm,setLotForm]=useState({quantity:'',source:'manual',reference:'',amount_cents:''})
   const [codeLabel,setCodeLabel]=useState('')
 
@@ -47,7 +50,9 @@ export default function InstitutionalAccessAdminPanel({supabase}){
     }else{
       setAccounts(a.data||[]);setSummary(s.data||[]);setEditions(e.data||[])
       if(!selectedId&&a.data?.length)setSelectedId(a.data[0].id)
-      if(!selectedEditionId&&e.data?.length)setSelectedEditionId(e.data.find(x=>x.is_active)?.id||e.data[0].id)
+      const defaultEdition=e.data?.find(x=>x.is_active)?.id||e.data?.[0]?.id||''
+      if(!selectedEditionId&&defaultEdition)setSelectedEditionId(defaultEdition)
+      setInitialPurchase(v=>v.annual_edition_id? v : {...v,annual_edition_id:defaultEdition})
     }
     setLoading(false)
   }
@@ -69,11 +74,32 @@ export default function InstitutionalAccessAdminPanel({supabase}){
 
   async function createOrg(){
     if(!newOrg.name.trim()){setMessage('Informe o nome da instituição.');return}
-    setLoading(true);setMessage('Cadastrando instituição...')
+    const qty=Number(initialPurchase.quantity)
+    if(!initialPurchase.annual_edition_id){setMessage('Selecione a edição/ano da compra inicial.');return}
+    if(!Number.isInteger(qty)||qty<=0){setMessage('Informe a quantidade de acessos adquiridos na compra inicial.');return}
+    setLoading(true);setMessage('Cadastrando instituição e compra inicial...')
     const {data,error}=await createInstitutionalAccount(supabase,newOrg)
     if(error){setMessage('Erro ao cadastrar instituição: '+error.message);setLoading(false);return}
-    setNewOrg({name:'',kind:'empresa',contact_name:'',contact_email:'',contact_phone:'',notes:''})
-    await loadBase();setSelectedId(data.id);setLoading(false);setMessage('✓ Instituição cadastrada.')
+
+    const lotResult=await addInstitutionalLicenseLot(supabase,{
+      institution_id:data.id,
+      annual_edition_id:initialPurchase.annual_edition_id,
+      quantity:qty,
+      source:initialPurchase.source,
+      reference:initialPurchase.reference,
+      amount_cents:initialPurchase.amount_cents
+    })
+    if(lotResult.error){
+      setSelectedId(data.id)
+      setMessage('A instituição foi cadastrada, mas a compra inicial não foi registrada. Abra a instituição e adicione o lote. Erro: '+lotResult.error.message)
+      await loadBase();setLoading(false);return
+    }
+
+    const defaultEdition=editions.find(x=>x.is_active)?.id||editions[0]?.id||''
+    setNewOrg(EMPTY_ORG)
+    setInitialPurchase({...EMPTY_PURCHASE,annual_edition_id:defaultEdition})
+    setSelectedEditionId(initialPurchase.annual_edition_id)
+    await loadBase();setSelectedId(data.id);setLoading(false);setMessage(`✓ Instituição cadastrada com ${qty} acessos adquiridos.`)
   }
 
   async function addLot(){
@@ -127,7 +153,20 @@ export default function InstitutionalAccessAdminPanel({supabase}){
         <label>Telefone<input value={newOrg.contact_phone} onChange={e=>setNewOrg(v=>({...v,contact_phone:e.target.value}))}/></label>
         <label>Observações<input value={newOrg.notes} onChange={e=>setNewOrg(v=>({...v,notes:e.target.value}))}/></label>
       </div>
-      <button type="button" onClick={createOrg} disabled={loading}>Cadastrar instituição</button>
+
+      <div className="institutional-block" style={{marginTop:'16px'}}>
+        <h3>Compra inicial</h3>
+        <p>Registre aqui a primeira aquisição da empresa. Novas compras poderão ser acrescentadas depois como novos lotes, sem perder o histórico.</p>
+        <div className="institutional-form-grid">
+          <label>Quantidade de acessos adquiridos<input type="number" min="1" value={initialPurchase.quantity} onChange={e=>setInitialPurchase(v=>({...v,quantity:e.target.value}))} placeholder="Ex.: 40"/></label>
+          <label>Edição / ano<select value={initialPurchase.annual_edition_id} onChange={e=>setInitialPurchase(v=>({...v,annual_edition_id:e.target.value}))}><option value="">Selecione</option>{editions.map(item=><option key={item.id} value={item.id}>{item.year} — {item.title}</option>)}</select></label>
+          <label>Origem da aquisição<select value={initialPurchase.source} onChange={e=>setInitialPurchase(v=>({...v,source:e.target.value}))}>{Object.entries(SOURCE_LABELS).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label>
+          <label>Referência<input value={initialPurchase.reference} onChange={e=>setInitialPurchase(v=>({...v,reference:e.target.value}))} placeholder="Contrato, NF, empenho..."/></label>
+          <label>Valor total em centavos (opcional)<input type="number" min="0" value={initialPurchase.amount_cents} onChange={e=>setInitialPurchase(v=>({...v,amount_cents:e.target.value}))}/></label>
+        </div>
+      </div>
+
+      <button type="button" onClick={createOrg} disabled={loading}>Cadastrar instituição + compra inicial</button>
     </section>
 
     <div className="institutional-layout">
@@ -143,7 +182,7 @@ export default function InstitutionalAccessAdminPanel({supabase}){
           <label>Edição<select value={selectedEditionId} onChange={e=>setSelectedEditionId(e.target.value)}>{editions.map(item=><option key={item.id} value={item.id}>{item.year} — {item.title}</option>)}</select></label>
 
           <div className="institutional-kpis">
-            <div><strong>{current?.purchased||0}</strong><span>Comprados</span></div>
+            <div><strong>{current?.purchased||0}</strong><span>Contratados</span></div>
             <div><strong>{current?.activated||0}</strong><span>Ativados</span></div>
             <div><strong>{current?.available||0}</strong><span>Disponíveis</span></div>
           </div>
