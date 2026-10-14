@@ -7,6 +7,7 @@ import './styles.css'
 import './institutional.css'
 import './dashboard-card-fixes.css'
 import './dashboard-mobile-final.css'
+import './single-session-hardening.js'
 import './social-mobile-fix.js'
 import './signup-hardening.js'
 
