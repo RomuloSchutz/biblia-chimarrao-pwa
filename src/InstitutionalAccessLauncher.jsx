@@ -30,6 +30,22 @@ export default function InstitutionalAccessLauncher(){
     return()=>{cancelled=true;listener.subscription.unsubscribe()}
   },[])
 
+  useEffect(()=>{
+    if(!user)return
+    const params=new URLSearchParams(window.location.search)
+    if(params.get('app-return')!=='dashboard')return
+    params.delete('app-return')
+    const clean=window.location.pathname+(params.toString()?`?${params.toString()}`:'')+window.location.hash
+    window.history.replaceState({},document.title,clean)
+    let attempts=0
+    const openDashboard=()=>{
+      const button=document.querySelector('.guest-landing-actions .guest-round-action')
+      if(button){button.click();return}
+      if(attempts++<20)window.setTimeout(openDashboard,50)
+    }
+    openDashboard()
+  },[user?.id])
+
   if(!user)return null
 
   const go=(key)=>{
