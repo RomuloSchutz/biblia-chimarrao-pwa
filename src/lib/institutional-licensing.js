@@ -1,68 +1,21 @@
 export async function listInstitutionalAccounts(supabase){
   return supabase.from('institutional_accounts').select('*').order('name',{ascending:true})
 }
-
-export async function listInstitutionalSummary(supabase){
-  return supabase.from('institutional_license_summary').select('*').order('institution_name',{ascending:true}).order('year',{ascending:false})
-}
-
-export async function listAnnualEditions(supabase){
-  return supabase.from('app_annual_editions').select('id,year,title,is_active').order('year',{ascending:false})
-}
-
-export async function createInstitutionalAccount(supabase,payload){
-  return supabase.from('institutional_accounts').insert({
-    name:String(payload.name||'').trim(),kind:payload.kind||'empresa',contact_name:String(payload.contact_name||'').trim()||null,
-    contact_email:String(payload.contact_email||'').trim()||null,contact_phone:String(payload.contact_phone||'').trim()||null,notes:String(payload.notes||'').trim()||null
-  }).select('*').single()
-}
-
-export async function updateInstitutionalAccount(supabase,id,patch){
-  return supabase.from('institutional_accounts').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select('*').single()
-}
-
-export async function addInstitutionalLicenseLot(supabase,payload){
-  return supabase.from('institutional_license_lots').insert({
-    institution_id:payload.institution_id,annual_edition_id:payload.annual_edition_id,quantity:Number(payload.quantity),source:payload.source||'manual',
-    reference:String(payload.reference||'').trim()||null,amount_cents:payload.amount_cents==null||payload.amount_cents===''?null:Number(payload.amount_cents),purchased_at:payload.purchased_at||new Date().toISOString()
-  }).select('*').single()
-}
-
-export async function listInstitutionalLots(supabase,institutionId,annualEditionId){
-  let query=supabase.from('institutional_license_lots').select('*').eq('institution_id',institutionId).order('purchased_at',{ascending:false})
-  if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId)
-  return query
-}
-
-export async function issueInstitutionalActivationCode(supabase,{institutionId,annualEditionId,label='',expiresAt=null,manager=false}){
-  return supabase.rpc(manager?'issue_institutional_code':'admin_issue_institutional_code',{
-    p_institution_id:institutionId,p_annual_edition_id:annualEditionId,p_label:label||null,p_expires_at:expiresAt||null
-  })
-}
-
-export async function listInstitutionalCodes(supabase,institutionId,annualEditionId){
-  let query=supabase.from('institutional_activation_codes').select('*').eq('institution_id',institutionId).order('created_at',{ascending:false})
-  if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId)
-  return query
-}
-
-export async function listInstitutionalActivations(supabase,institutionId,annualEditionId){
-  let query=supabase.from('institutional_activations').select('id,institution_id,annual_edition_id,user_id,activated_at,revoked_at,notes').eq('institution_id',institutionId).order('activated_at',{ascending:false})
-  if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId)
-  return query
-}
-
-export async function revokeInstitutionalActivation(supabase,activationId,{manager=false}={}){
-  return supabase.rpc(manager?'revoke_institutional_activation':'admin_revoke_institutional_activation',{p_activation_id:activationId})
-}
-
+export async function listInstitutionalSummary(supabase){return supabase.from('institutional_license_summary').select('*').order('institution_name',{ascending:true}).order('year',{ascending:false})}
+export async function listAnnualEditions(supabase){return supabase.from('app_annual_editions').select('id,year,title,is_active').order('year',{ascending:false})}
+export async function createInstitutionalAccount(supabase,payload){return supabase.from('institutional_accounts').insert({name:String(payload.name||'').trim(),kind:payload.kind||'empresa',contact_name:String(payload.contact_name||'').trim()||null,contact_email:String(payload.contact_email||'').trim()||null,contact_phone:String(payload.contact_phone||'').trim()||null,notes:String(payload.notes||'').trim()||null}).select('*').single()}
+export async function updateInstitutionalAccount(supabase,id,patch){return supabase.from('institutional_accounts').update({...patch,updated_at:new Date().toISOString()}).eq('id',id).select('*').single()}
+export async function addInstitutionalLicenseLot(supabase,payload){return supabase.from('institutional_license_lots').insert({institution_id:payload.institution_id,annual_edition_id:payload.annual_edition_id,quantity:Number(payload.quantity),source:payload.source||'manual',reference:String(payload.reference||'').trim()||null,amount_cents:payload.amount_cents==null||payload.amount_cents===''?null:Number(payload.amount_cents),purchased_at:payload.purchased_at||new Date().toISOString()}).select('*').single()}
+export async function listInstitutionalLots(supabase,institutionId,annualEditionId){let query=supabase.from('institutional_license_lots').select('*').eq('institution_id',institutionId).order('purchased_at',{ascending:false});if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId);return query}
+export async function issueInstitutionalActivationCode(supabase,{institutionId,annualEditionId,label='',expiresAt=null,manager=false}){return supabase.rpc(manager?'issue_institutional_code':'admin_issue_institutional_code',{p_institution_id:institutionId,p_annual_edition_id:annualEditionId,p_label:label||null,p_expires_at:expiresAt||null})}
+export async function listInstitutionalCodes(supabase,institutionId,annualEditionId){let query=supabase.from('institutional_activation_codes').select('*').eq('institution_id',institutionId).order('created_at',{ascending:false});if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId);return query}
+export async function listInstitutionalActivations(supabase,institutionId,annualEditionId){let query=supabase.from('institutional_activations').select('id,institution_id,annual_edition_id,activation_code_id,user_id,activated_at,revoked_at,notes').eq('institution_id',institutionId).order('activated_at',{ascending:false});if(annualEditionId)query=query.eq('annual_edition_id',annualEditionId);return query}
+export async function getInstitutionalAccessRoster(supabase,institutionId,annualEditionId,search=''){return supabase.rpc('get_institutional_access_roster',{p_institution_id:institutionId,p_annual_edition_id:annualEditionId||null,p_search:String(search||'').trim()||null})}
+export async function revokeInstitutionalActivation(supabase,activationId,{manager=false}={}){return supabase.rpc(manager?'revoke_institutional_activation':'admin_revoke_institutional_activation',{p_activation_id:activationId})}
 export async function redeemInstitutionalCode(supabase,code){return supabase.rpc('redeem_institutional_code',{p_code:String(code||'').trim()})}
-
 export async function getInstitutionalManagerContext(supabase){return supabase.rpc('get_my_institutional_manager_context')}
 export async function getInstitutionalManagerSummary(supabase,institutionId){return supabase.rpc('get_institutional_manager_summary',{p_institution_id:institutionId})}
-export async function searchInstitutionalActivationUsers(supabase,institutionId,annualEditionId,search=''){
-  return supabase.rpc('search_institutional_activation_users',{p_institution_id:institutionId,p_annual_edition_id:annualEditionId||null,p_search:String(search||'').trim()||null})
-}
+export async function searchInstitutionalActivationUsers(supabase,institutionId,annualEditionId,search=''){return supabase.rpc('search_institutional_activation_users',{p_institution_id:institutionId,p_annual_edition_id:annualEditionId||null,p_search:String(search||'').trim()||null})}
 export async function setInstitutionalCodeStatus(supabase,codeId,status){return supabase.rpc('set_institutional_code_status',{p_code_id:codeId,p_status:status})}
 export async function assignInstitutionalManager(supabase,institutionId,email){return supabase.rpc('admin_assign_institutional_manager',{p_institution_id:institutionId,p_email:String(email||'').trim()})}
 export async function listInstitutionalManagers(supabase,institutionId){return supabase.rpc('admin_list_institutional_managers',{p_institution_id:institutionId})}
