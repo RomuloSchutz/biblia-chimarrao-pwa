@@ -7,6 +7,11 @@ export default function InstitutionalManagerPanel({supabase,context}){
   const [users,setUsers]=useState([]),[codes,setCodes]=useState([]),[search,setSearch]=useState(''),[codeLabel,setCodeLabel]=useState('')
   const [loading,setLoading]=useState(false),[message,setMessage]=useState('')
   const current=useMemo(()=>summary.find(x=>x.annual_edition_id===editionId)||null,[summary,editionId])
+  const activeUsers=useMemo(()=>users.filter(x=>x.status==='active'),[users])
+  const userByCode=useMemo(()=>{const map=new Map();for(const u of activeUsers){if(u.activation_code_id)map.set(u.activation_code_id,u)}return map},[activeUsers])
+  const pendingCount=useMemo(()=>codes.filter(c=>c.status==='active').length,[codes])
+  const occupiedCount=activeUsers.length+pendingCount
+  const availableToIssue=Math.max(Number(current?.purchased||0)-occupiedCount,0)
 
   async function loadBase(){
     if(!institutionId)return
@@ -26,18 +31,18 @@ export default function InstitutionalManagerPanel({supabase,context}){
   useEffect(()=>{const timer=setTimeout(loadDetail,search?250:0);return()=>clearTimeout(timer)},[institutionId,editionId,search])
 
   async function issueCode(){
-    if(!editionId)return
+    if(!editionId||availableToIssue<=0)return
     setLoading(true);setMessage('Gerando código...')
     const {data,error}=await issueInstitutionalActivationCode(supabase,{institutionId,annualEditionId:editionId,label:codeLabel,manager:true})
-    if(error)setMessage('Não foi possível gerar o código: '+error.message)
-    else{setCodeLabel('');setMessage('✓ Código individual criado: '+data);await loadDetail()}
+    if(error)setMessage(error.message?.includes('no_available_seats')?'Todas as licenças já estão ativas ou aguardando ativação. Revogue/bloqueie uma autorização ou adquira mais acessos.':'Não foi possível gerar o código: '+error.message)
+    else{setCodeLabel('');setMessage('✓ Código individual criado: '+data);await Promise.all([loadBase(),loadDetail()])}
     setLoading(false)
   }
   async function toggleCode(item){
     if(item.status==='used')return
     const next=item.status==='active'?'blocked':'active'
     const {error}=await setInstitutionalCodeStatus(supabase,item.id,next)
-    if(error)setMessage('Erro ao alterar o código: '+error.message);else{setMessage(next==='active'?'✓ Código desbloqueado.':'✓ Código bloqueado.');await loadDetail()}
+    if(error)setMessage('Erro ao alterar o código: '+error.message);else{setMessage(next==='active'?'? Código reaberto e aguardando ativação.':'✕ Código bloqueado; a vaga voltou ao saldo disponível.');await Promise.all([loadBase(),loadDetail()])}
   }
   async function revoke(item){
     if(!window.confirm('Revogar este acesso? A vaga voltará ao saldo disponível da instituição. O código já utilizado continuará encerrado.'))return
@@ -46,16 +51,17 @@ export default function InstitutionalManagerPanel({supabase,context}){
     if(error)setMessage('Erro ao revogar acesso: '+error.message);else{setMessage('✓ Acesso revogado e vaga devolvida ao saldo. Gere um novo código para uma nova autorização.');await Promise.all([loadBase(),loadDetail()])}
     setLoading(false)
   }
-  const codeStatus=item=>item.status==='used'?'✓ Utilizado':item.status==='active'?'Ativo':'× Bloqueado'
+  const statusFor=item=>item.status==='active'?{icon:'?',label:'Aguardando ativação'}:item.status==='blocked'?{icon:'✕',label:'Bloqueado'}:{icon:'✓',label:'Ativo'}
 
   return <section className="institutional-admin institutional-manager">
-    <div className="admin-title"><p className="eyebrow">GESTÃO INSTITUCIONAL</p><h1>{context?.institution_name||'Minha instituição'}</h1><p>Administre somente os acessos da sua instituição. Anotações, favoritos, orações, histórico de leitura e reflexões pessoais dos usuários não são exibidos neste painel.</p></div>
+    <div className="admin-title"><p className="eyebrow">GESTÃO INSTITUCIONAL</p><h1>{context?.institution_name||'Minha instituição'}</h1><p>Controle simples das licenças da instituição. O gestor vê somente nome, e-mail e situação administrativa; anotações, favoritos, orações, histórico de leitura e reflexões pessoais permanecem privados.</p></div>
     {message&&<p className="admin-message" role="status">{message}</p>}
     <div className="institutional-detail">
       <label>Edição<select value={editionId} onChange={e=>setEditionId(e.target.value)}>{editions.filter(e=>summary.some(s=>s.annual_edition_id===e.id)).map(e=><option key={e.id} value={e.id}>{e.year} — {e.title}</option>)}</select></label>
-      <div className="institutional-kpis"><div><strong>{current?.purchased||0}</strong><span>Contratados</span></div><div><strong>{current?.activated||0}</strong><span>Acessos ativados</span></div><div><strong>{current?.available||0}</strong><span>Disponíveis</span></div></div>
-      <section className="institutional-block"><h3>Códigos individuais</h3><p>Cada código libera somente uma vaga e é encerrado automaticamente após o primeiro uso. Se um acesso for revogado, a vaga volta ao saldo, mas o código antigo não pode ser reutilizado.</p><div className="institutional-code-row"><input value={codeLabel} onChange={e=>setCodeLabel(e.target.value)} placeholder="Ex.: Maria — cortesia"/><button type="button" disabled={loading||!editionId} onClick={issueCode}>Gerar código</button></div>{codes.length?<div className="institutional-code-list">{codes.map(item=><div key={item.id}><strong>{item.code}</strong><span>{item.label||'Código individual'} · {codeStatus(item)}</span>{item.status!=='used'&&<button type="button" className={item.status==='active'?'admin-block':''} onClick={()=>toggleCode(item)}>{item.status==='active'?'Bloquear':'Desbloquear'}</button>}</div>)}</div>:<p>Nenhum código nesta edição.</p>}</section>
-      <section className="institutional-block"><h3>Usuários com acesso</h3><label>Buscar por nome ou e-mail<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite nome ou e-mail"/></label>{loading&&!users.length?<p>Carregando...</p>:users.length?<div className="institutional-history">{users.map(item=><article key={item.activation_id}><strong>{item.full_name||item.email||'Usuário'}</strong><span>{item.email||''}</span><small>Acesso ativado em {new Date(item.activated_at).toLocaleString('pt-BR')} · {item.status==='active'?'Ativo':'Revogado'}</small>{item.status==='active'&&<button type="button" className="admin-block" onClick={()=>revoke(item)}>Revogar acesso</button>}</article>)}</div>:<p>Nenhum usuário encontrado.</p>}</section>
+      <div className="institutional-kpis"><div><strong>{current?.purchased||0}</strong><span>Contratados</span></div><div><strong>{activeUsers.length}</strong><span>✓ Ativos</span></div><div><strong>{pendingCount}</strong><span>? Aguardando</span></div><div><strong>{availableToIssue}</strong><span>Disponíveis</span></div></div>
+      <section className="institutional-block"><h3>Licenças e códigos individuais</h3><p>Cada código reserva uma licença. Um código aguardando ativação já conta entre os acessos contratados. Depois do primeiro uso, ele fica vinculado àquela pessoa e não pode ser reutilizado por outra conta.</p><div className="institutional-code-row"><input value={codeLabel} onChange={e=>setCodeLabel(e.target.value)} placeholder="Identificação opcional: nome ou setor"/><button type="button" disabled={loading||!editionId||availableToIssue<=0} onClick={issueCode}>{availableToIssue>0?'Gerar código':'Limite atingido'}</button></div>
+      {codes.length?<div className="institutional-code-list">{codes.map(item=>{const st=statusFor(item);const person=userByCode.get(item.id);return <div key={item.id} className={'institutional-code-item status-'+item.status}><strong><span aria-hidden="true">{st.icon}</span> {item.code}</strong><span>{st.label}{item.label?' · '+item.label:''}</span>{person&&<small>{person.full_name||'Usuário'}{person.email?' · '+person.email:''}</small>}{item.status==='active'&&<button type="button" className="admin-block" onClick={()=>toggleCode(item)}>Bloquear código</button>}{item.status==='blocked'&&<button type="button" onClick={()=>toggleCode(item)}>Reabrir código</button>}</div>})}</div>:<p>Nenhum código nesta edição.</p>}</section>
+      <section className="institutional-block"><h3>Pessoas e acessos</h3><label>Buscar por nome ou e-mail<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite nome ou e-mail"/></label>{loading&&!users.length?<p>Carregando...</p>:users.length?<div className="institutional-history">{users.map(item=><article key={item.activation_id}><strong>{item.status==='active'?'✓':'✕'} {item.full_name||item.email||'Usuário'}</strong><span>{item.email||''}</span><small>{item.status==='active'?'Ativo':'Revogado'} · ativado em {new Date(item.activated_at).toLocaleString('pt-BR')}</small>{item.status==='active'&&<button type="button" className="admin-block" onClick={()=>revoke(item)}>Revogar acesso</button>}</article>)}</div>:<p>Nenhum usuário encontrado.</p>}</section>
     </div>
   </section>
 }
