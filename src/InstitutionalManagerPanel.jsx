@@ -1,67 +1,18 @@
-import { useEffect,useMemo,useState } from 'react'
-import {getInstitutionalManagerSummary,issueInstitutionalActivationCode,listAnnualEditions,listInstitutionalCodes,revokeInstitutionalActivation,searchInstitutionalActivationUsers,setInstitutionalCodeStatus} from './lib/institutional-licensing.js'
+import {useEffect,useMemo,useState} from 'react'
+import {getInstitutionalManagerSummary,getInstitutionalAccessRoster,issueInstitutionalActivationCode,listAnnualEditions,revokeInstitutionalActivation,setInstitutionalCodeStatus} from './lib/institutional-licensing.js'
 
 export default function InstitutionalManagerPanel({supabase,context}){
-  const institutionId=context?.institution_id
-  const [editions,setEditions]=useState([]),[summary,setSummary]=useState([]),[editionId,setEditionId]=useState('')
-  const [users,setUsers]=useState([]),[codes,setCodes]=useState([]),[search,setSearch]=useState(''),[codeLabel,setCodeLabel]=useState('')
-  const [loading,setLoading]=useState(false),[message,setMessage]=useState('')
-  const current=useMemo(()=>summary.find(x=>x.annual_edition_id===editionId)||null,[summary,editionId])
-  const activeUsers=useMemo(()=>users.filter(x=>x.status==='active'),[users])
-  const userById=useMemo(()=>{const map=new Map();for(const u of users)map.set(u.user_id,u);return map},[users])
-  const pendingCount=useMemo(()=>codes.filter(c=>c.status==='active').length,[codes])
-  const occupiedCount=activeUsers.length+pendingCount
-  const availableToIssue=Math.max(Number(current?.purchased||0)-occupiedCount,0)
-
-  async function loadBase(){
-    if(!institutionId)return
-    setLoading(true)
-    const [s,e]=await Promise.all([getInstitutionalManagerSummary(supabase,institutionId),listAnnualEditions(supabase)])
-    if(s.error||e.error)setMessage('Não foi possível carregar os acessos da instituição.')
-    else{setSummary(s.data||[]);setEditions(e.data||[]);if(!editionId){const first=(s.data||[])[0]?.annual_edition_id||(e.data||[]).find(x=>x.is_active)?.id;setEditionId(first||'')}}
-    setLoading(false)
-  }
-  async function loadDetail(){
-    if(!institutionId||!editionId)return
-    const [u,c]=await Promise.all([searchInstitutionalActivationUsers(supabase,institutionId,editionId,search),listInstitutionalCodes(supabase,institutionId,editionId)])
-    if(u.error)setMessage('Não foi possível carregar os usuários ativados.');else setUsers(u.data||[])
-    if(!c.error)setCodes(c.data||[])
-  }
-  useEffect(()=>{loadBase()},[institutionId])
-  useEffect(()=>{const timer=setTimeout(loadDetail,search?250:0);return()=>clearTimeout(timer)},[institutionId,editionId,search])
-
-  async function issueCode(){
-    if(!editionId||availableToIssue<=0)return
-    setLoading(true);setMessage('Gerando código...')
-    const {data,error}=await issueInstitutionalActivationCode(supabase,{institutionId,annualEditionId:editionId,label:codeLabel,manager:true})
-    if(error)setMessage(error.message?.includes('no_available_seats')?'Todas as licenças já estão ativas ou aguardando ativação. Revogue/bloqueie uma autorização ou adquira mais acessos.':'Não foi possível gerar o código: '+error.message)
-    else{setCodeLabel('');setMessage('✓ Código individual criado: '+data);await Promise.all([loadBase(),loadDetail()])}
-    setLoading(false)
-  }
-  async function toggleCode(item){
-    if(item.status==='used')return
-    const next=item.status==='active'?'blocked':'active'
-    const {error}=await setInstitutionalCodeStatus(supabase,item.id,next)
-    if(error)setMessage('Erro ao alterar o código: '+error.message);else{setMessage(next==='active'?'? Código reaberto e aguardando ativação.':'✕ Código bloqueado; a vaga voltou ao saldo disponível.');await Promise.all([loadBase(),loadDetail()])}
-  }
-  async function revoke(item){
-    if(!window.confirm('Revogar este acesso? A vaga voltará ao saldo disponível da instituição. O código já utilizado continuará encerrado.'))return
-    setLoading(true)
-    const {error}=await revokeInstitutionalActivation(supabase,item.activation_id,{manager:true})
-    if(error)setMessage('Erro ao revogar acesso: '+error.message);else{setMessage('✓ Acesso revogado e vaga devolvida ao saldo. Gere um novo código para uma nova autorização.');await Promise.all([loadBase(),loadDetail()])}
-    setLoading(false)
-  }
-  const statusFor=item=>item.status==='active'?{icon:'?',label:'Aguardando ativação'}:item.status==='blocked'?{icon:'✕',label:'Bloqueado'}:{icon:'✓',label:'Ativo'}
-
-  return <section className="institutional-admin institutional-manager">
-    <div className="admin-title"><p className="eyebrow">GESTÃO INSTITUCIONAL</p><h1>{context?.institution_name||'Minha instituição'}</h1><p>Controle simples das licenças da instituição. O gestor vê somente nome, e-mail e situação administrativa; anotações, favoritos, orações, histórico de leitura e reflexões pessoais permanecem privados.</p></div>
-    {message&&<p className="admin-message" role="status">{message}</p>}
-    <div className="institutional-detail">
-      <label>Edição<select value={editionId} onChange={e=>setEditionId(e.target.value)}>{editions.filter(e=>summary.some(s=>s.annual_edition_id===e.id)).map(e=><option key={e.id} value={e.id}>{e.year} — {e.title}</option>)}</select></label>
-      <div className="institutional-kpis"><div><strong>{current?.purchased||0}</strong><span>Contratados</span></div><div><strong>{activeUsers.length}</strong><span>✓ Ativos</span></div><div><strong>{pendingCount}</strong><span>? Aguardando</span></div><div><strong>{availableToIssue}</strong><span>Disponíveis</span></div></div>
-      <section className="institutional-block"><h3>Licenças e códigos individuais</h3><p>Cada código reserva uma licença. Um código aguardando ativação já conta entre os acessos contratados. Depois do primeiro uso, ele fica vinculado àquela pessoa e não pode ser reutilizado por outra conta.</p><div className="institutional-code-row"><input value={codeLabel} onChange={e=>setCodeLabel(e.target.value)} placeholder="Identificação opcional: nome ou setor"/><button type="button" disabled={loading||!editionId||availableToIssue<=0} onClick={issueCode}>{availableToIssue>0?'Gerar código':'Limite atingido'}</button></div>
-      {codes.length?<div className="institutional-code-list">{codes.map(item=>{const st=statusFor(item);const person=item.used_by?userById.get(item.used_by):null;return <div key={item.id} className={'institutional-code-item status-'+item.status}><strong><span aria-hidden="true">{st.icon}</span> {item.code}</strong><span>{st.label}{item.label?' · '+item.label:''}</span>{person&&<small>{person.full_name||'Usuário'}{person.email?' · '+person.email:''}</small>}{item.status==='active'&&<button type="button" className="admin-block" onClick={()=>toggleCode(item)}>Bloquear código</button>}{item.status==='blocked'&&<button type="button" onClick={()=>toggleCode(item)}>Reabrir código</button>}</div>})}</div>:<p>Nenhum código nesta edição.</p>}</section>
-      <section className="institutional-block"><h3>Pessoas e acessos</h3><label>Buscar por nome ou e-mail<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite nome ou e-mail"/></label>{loading&&!users.length?<p>Carregando...</p>:users.length?<div className="institutional-history">{users.map(item=><article key={item.activation_id}><strong>{item.status==='active'?'✓':'✕'} {item.full_name||item.email||'Usuário'}</strong><span>{item.email||''}</span><small>{item.status==='active'?'Ativo':'Revogado'} · ativado em {new Date(item.activated_at).toLocaleString('pt-BR')}</small>{item.status==='active'&&<button type="button" className="admin-block" onClick={()=>revoke(item)}>Revogar acesso</button>}</article>)}</div>:<p>Nenhum usuário encontrado.</p>}</section>
-    </div>
-  </section>
+ const institutionId=context?.institution_id
+ const [editions,setEditions]=useState([]),[summary,setSummary]=useState([]),[editionId,setEditionId]=useState(''),[roster,setRoster]=useState([]),[search,setSearch]=useState(''),[codeLabel,setCodeLabel]=useState(''),[loading,setLoading]=useState(false),[message,setMessage]=useState('')
+ const current=useMemo(()=>summary.find(x=>x.annual_edition_id===editionId)||null,[summary,editionId])
+ const active=roster.filter(x=>x.access_status==='active').length,pending=roster.filter(x=>x.access_status==='pending').length,revoked=roster.filter(x=>x.access_status==='revoked'||x.access_status==='blocked').length
+ const available=Math.max(Number(current?.purchased||0)-active-pending,0)
+ async function loadBase(){if(!institutionId)return;setLoading(true);const[s,e]=await Promise.all([getInstitutionalManagerSummary(supabase,institutionId),listAnnualEditions(supabase)]);if(s.error||e.error)setMessage('Não foi possível carregar os acessos da instituição.');else{setSummary(s.data||[]);setEditions(e.data||[]);if(!editionId)setEditionId((s.data||[])[0]?.annual_edition_id||(e.data||[]).find(x=>x.is_active)?.id||'')}setLoading(false)}
+ async function loadRoster(){if(!institutionId||!editionId)return;const{data,error}=await getInstitutionalAccessRoster(supabase,institutionId,editionId,search);if(error)setMessage('Não foi possível carregar as licenças.');else setRoster(data||[])}
+ useEffect(()=>{loadBase()},[institutionId]);useEffect(()=>{const t=setTimeout(loadRoster,search?250:0);return()=>clearTimeout(t)},[institutionId,editionId,search])
+ async function issueCode(){if(!editionId||available<=0)return;setLoading(true);const{data,error}=await issueInstitutionalActivationCode(supabase,{institutionId,annualEditionId:editionId,label:codeLabel,manager:true});setMessage(error?(error.message?.includes('no_available_seats')?'Todas as licenças já estão ativas ou aguardando ativação.':'Não foi possível gerar o código: '+error.message):'✓ Código individual criado: '+data);if(!error){setCodeLabel('');await Promise.all([loadBase(),loadRoster()])}setLoading(false)}
+ async function toggleCode(item){const next=item.code_status==='active'?'blocked':'active';const{error}=await setInstitutionalCodeStatus(supabase,item.code_id,next);setMessage(error?'Erro ao alterar o código: '+error.message:next==='active'?'? Código reaberto e aguardando ativação.':'✕ Código bloqueado; vaga liberada.');if(!error)await Promise.all([loadBase(),loadRoster()])}
+ async function revoke(item){if(!item.user_id||!window.confirm(`Revogar o acesso de ${item.full_name||item.email||'este usuário'}? A vaga voltará ao saldo.`))return;const {data}=await supabase.from('institutional_activations').select('id').eq('activation_code_id',item.code_id).eq('user_id',item.user_id).is('revoked_at',null).order('activated_at',{ascending:false}).limit(1).maybeSingle();if(!data?.id){setMessage('Ativação ativa não localizada.');return}setLoading(true);const{error}=await revokeInstitutionalActivation(supabase,data.id,{manager:true});setMessage(error?'Erro ao revogar acesso: '+error.message:'✓ Acesso revogado e vaga devolvida.');if(!error)await Promise.all([loadBase(),loadRoster()]);setLoading(false)}
+ const mark=s=>s==='active'?'✓':s==='pending'?'?':'✕';const label=s=>s==='active'?'Ativo':s==='pending'?'Aguardando ativação':s==='blocked'?'Bloqueado':'Revogado'
+ return <section className="institutional-admin institutional-manager"><div className="admin-title"><p className="eyebrow">GESTÃO INSTITUCIONAL</p><h1>{context?.institution_name||'Minha instituição'}</h1><p>Nome, e-mail e situação da licença ficam visíveis para administração. Conteúdo pessoal do usuário permanece privado.</p></div>{message&&<p className="admin-message" role="status">{message}</p>}<div className="institutional-detail"><label>Edição<select value={editionId} onChange={e=>setEditionId(e.target.value)}>{editions.filter(e=>summary.some(s=>s.annual_edition_id===e.id)).map(e=><option key={e.id} value={e.id}>{e.year} — {e.title}</option>)}</select></label><div className="institutional-kpis"><div><strong>{current?.purchased||0}</strong><span>Contratados</span></div><div><strong>{active}</strong><span>✓ Ativos</span></div><div><strong>{pending}</strong><span>? Aguardando</span></div><div><strong>{available}</strong><span>Disponíveis</span></div></div><section className="institutional-block"><h3>Gerar nova autorização</h3><div className="institutional-code-row"><input value={codeLabel} onChange={e=>setCodeLabel(e.target.value)} placeholder="Identificação opcional: nome ou setor"/><button type="button" disabled={loading||available<=0} onClick={issueCode}>{available>0?'Gerar código':'Limite atingido'}</button></div></section><section className="institutional-block"><h3>Funcionários e licenças</h3><label>🔎 Localizar por nome, e-mail ou código<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Digite para localizar"/></label><p><strong>{active}</strong> ativos · <strong>{pending}</strong> aguardando · <strong>{revoked}</strong> bloqueados/revogados</p>{roster.length?<div className="institutional-history">{roster.map(item=><article key={item.code_id}><strong>{mark(item.access_status)} {item.full_name||item.label||'Aguardando usuário'}</strong>{item.email&&<span>{item.email}</span>}<small>{item.code} · {label(item.access_status)}</small>{item.access_status==='active'&&<button type="button" className="admin-block" onClick={()=>revoke(item)}>Revogar acesso</button>}{item.access_status==='pending'&&<button type="button" className="admin-block" onClick={()=>toggleCode(item)}>Bloquear código</button>}{item.access_status==='blocked'&&<button type="button" onClick={()=>toggleCode(item)}>Reabrir código</button>}</article>)}</div>:<p>Nenhuma licença encontrada.</p>}</section></div></section>
 }
