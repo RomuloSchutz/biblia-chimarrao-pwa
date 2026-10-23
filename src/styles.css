@@ -1208,3 +1208,8 @@ background:transparent!important;
 .spread-front-cover{overflow:hidden;position:relative}
 .spread-front-cover img{width:330%!important;max-width:none!important;height:100%!important;object-fit:cover!important;transform:translateX(-55.8%);object-position:center!important}
 @media(max-width:720px){.edition-spread-modal{padding:64px 8px 8px}.edition-spread-close{top:10px;left:10px}}
+
+
+/* Caminho aplicativo -> site oficial */
+.site-access-card{max-width:760px}.site-qr-frame{max-width:320px}.site-access-qr{display:block;width:100%;height:auto}.site-access-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;margin:2px auto 16px}.site-access-note{max-width:620px;margin:18px auto 0;color:#d8ccb5}.guest-landing .guest-landing-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important}.guest-landing .site-round-action .guest-round-icon{background:radial-gradient(circle at 35% 20%,#477a60,#153d2c 72%)}
+@media(max-width:400px){.guest-landing .guest-landing-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
