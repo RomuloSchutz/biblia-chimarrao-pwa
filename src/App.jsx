@@ -1339,6 +1339,11 @@ export default function App() {
 
             {user && isAdmin && <button type="button" className="visual-settings-bar admin-entry" onClick={openAdminPanel}><span aria-hidden="true">♜</span><span><strong>Painel Administrativo</strong><small>Gerencie usuários e acessos</small></span><span aria-hidden="true">→</span></button>}
             <button type="button" className="visual-settings-bar" onClick={()=>user? (setSettingsMessage(''),setScreen('settings')):setScreen('guestInfo')}><span aria-hidden="true">⚙</span><span><strong>Configurações</strong><small>Personalize seu aplicativo</small></span><span aria-hidden="true">→</span></button>
+            <section className="dashboard-site-share" aria-label="Compartilhe o site oficial Bíblia + Chimarrão">
+              <div className="dashboard-site-share-copy"><span className="dashboard-site-share-mark" aria-hidden="true">↗</span><div><strong>Conheça o site oficial</strong><p>Apresente o projeto, os livros e a loja. Aponte a câmera para o QR Code ou compartilhe o link.</p></div></div>
+              <div className="dashboard-site-share-qr"><img src="/site-qr.svg" alt="QR Code do site oficial Bíblia + Chimarrão"/></div>
+              <div className="dashboard-site-share-actions"><button type="button" onClick={async()=>{try{if(navigator.share)await navigator.share({title:'Bíblia + Chimarrão — Site oficial',text:'Conheça o site oficial Bíblia + Chimarrão.',url:SITE_URL});else{await navigator.clipboard.writeText(SITE_URL);setMessage('Link do site copiado para compartilhar.')}}catch(error){if(error?.name!=='AbortError')setMessage('Não foi possível compartilhar agora.')}}}>Compartilhar</button><button type="button" className="outline" onClick={async()=>{try{await navigator.clipboard.writeText(SITE_URL);setMessage('Link do site copiado.')}catch{setMessage('Site oficial: '+SITE_URL)}}}>Copiar link</button></div>
+            </section>
           </div>
         </section>
         {message && <p className="dash-message">{message}</p>}
