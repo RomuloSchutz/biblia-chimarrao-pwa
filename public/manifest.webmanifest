@@ -1,6 +1,6 @@
 {
-  "name": "Bíblia + Chimarrão",
-  "short_name": "Bíblia + Chimarrão",
+  "name": "Bíblia + Chimarrão App",
+  "short_name": "Bíblia + Chimarrão App",
   "description": "Plataforma de leitura: devocional Chimarrão com Deus, biblioteca digital, livros e reflexões de Romulo Schutz.",
   "start_url": "/",
   "display": "standalone",
