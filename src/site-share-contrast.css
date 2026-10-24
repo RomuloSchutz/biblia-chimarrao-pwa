@@ -5,8 +5,8 @@
   box-shadow:0 14px 30px rgba(0,0,0,.34),inset 0 0 0 1px rgba(244,213,145,.16)!important;
 }
 .dashboard-site-share-copy strong{
-  color:#f2c86f!important;
-  text-shadow:0 1px 2px rgba(0,0,0,.35)!important;
+  color:#fff3cf!important;
+  text-shadow:0 1px 2px rgba(0,0,0,.42)!important;
 }
 .dashboard-site-share-copy p{
   color:#fff1d2!important;
@@ -29,5 +29,5 @@
 }
 @media(max-width:640px){
   .dashboard-site-share-copy p{font-size:15px!important;line-height:1.55!important;}
-  .dashboard-site-share-copy strong{color:#f6ca70!important;}
+  .dashboard-site-share-copy strong{color:#fff3cf!important;}
 }
