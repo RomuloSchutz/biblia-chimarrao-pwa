@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import ePub from 'epubjs'
 
 const readJson=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
+const readTheme=()=>{try{const saved=localStorage.getItem('bc-epub-theme');return saved==='white'||saved==='sepia'?saved:'sepia'}catch{return 'sepia'}}
 const voiceLooksFemale=name=>/female|femin|luciana|francisca|maria|helena|leticia|camila|vitoria|brenda/i.test(name||'')
 const voiceLooksMale=name=>/male|mascul|antonio|daniel|felipe|ricardo|thiago|paulo/i.test(name||'')
 
@@ -9,6 +10,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const host=useRef(null), rendition=useRef(null), bookRef=useRef(null)
   const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
+  const [readerTheme,setReaderTheme]=useState(readTheme)
   const selectedStartRef=useRef(null)
   const audioStateRef=useRef('parado')
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
@@ -27,6 +29,17 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     try{
       setLoading(true);setError(''); book=ePub(epubUrl,{openAs:'epub'}); bookRef.current=book
       const view=book.renderTo(host.current,{width:'100%',height:'76vh',flow:'paginated'}); rendition.current=view
+      view.themes.register('white',{
+        html:{background:'#ffffff',color:'#1f2a24'},
+        body:{background:'#ffffff',color:'#1f2a24','font-family':'Georgia, serif','line-height':'1.58','padding-left':'5.5%','padding-right':'5.5%'},
+        img:{'max-width':'100%',height:'auto'}
+      })
+      view.themes.register('sepia',{
+        html:{background:'#efe3c7',color:'#342d24'},
+        body:{background:'#efe3c7',color:'#342d24','font-family':'Georgia, serif','line-height':'1.58','padding-left':'5.5%','padding-right':'5.5%'},
+        img:{'max-width':'100%',height:'auto'}
+      })
+      view.themes.select(readerTheme)
       view.themes.fontSize(fontSize+'%')
       view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}
         const ref=audioRef.current
@@ -54,6 +67,10 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   },[epubUrl,title])
 
   useEffect(()=>{rendition.current?.themes.fontSize(fontSize+'%')},[fontSize])
+  useEffect(()=>{
+    try{localStorage.setItem('bc-epub-theme',readerTheme)}catch{}
+    try{rendition.current?.themes.select(readerTheme)}catch{}
+  },[readerTheme])
 
   const addBookmark=()=>{
     const current=rendition.current?.currentLocation?.(); const cfi=current?.start?.cfi
@@ -64,7 +81,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   }
   const removeBookmark=cfi=>saveBookmarks(bookmarks.filter(b=>b.cfi!==cfi))
   const removeHighlight=cfi=>{try{rendition.current?.annotations.remove(cfi,'highlight')}catch{};saveHighlights(highlights.filter(h=>h.cfi!==cfi))}
-  const pageText=()=>{const contents=rendition.current?.getContents?.()||[];return contents.map(c=>c.document?.body?.innerText||'').join(' ').replace(/\\s+/g,' ').trim()}
+  const pageText=()=>{const contents=rendition.current?.getContents?.()||[];return contents.map(c=>c.document?.body?.innerText||'').join(' ').replace(/\s+/g,' ').trim()}
   const splitSpeech=text=>{
     const parts=text.match(/[^.!?;:]+[.!?;:]?|[^.!?;:]+$/g)||[text];const chunks=[];let current=''
     for(const part of parts){if((current+' '+part).length>220&&current){chunks.push(current.trim());current=part}else current+=(current?' ':'')+part}
@@ -100,8 +117,6 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(!('speechSynthesis'in window)){setError('A leitura em voz alta não é suportada neste navegador.');return}
     const ref=audioRef.current
     if(audioState==='tocando'){
-      /* Alguns Androids não disparam onboundary. Estimamos o avanço pelo tempo falado,
-         preservando o ponto da frase em vez de reiniciar a página. */
       if(ref.utterance){
         const elapsed=Math.max(0,(Date.now()-ref.startedAt)/1000)
         const spoken=ref.chunks[ref.index]||''
@@ -128,12 +143,21 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   }
   const stopAudio=()=>{const ref=audioRef.current;ref.token+=1;speechSynthesis?.cancel();clearSpokenHighlight();ref.chunks=[];ref.index=0;ref.offset=0;ref.utterance=null;ref.startedAt=0;ref.continuous=false;setAudioState('parado')}
 
+  const themeButtonStyle=active=>({
+    border:'1px solid rgba(230,196,135,.75)',borderRadius:'999px',padding:'8px 14px',fontWeight:700,
+    background:active?'#e7bd75':'transparent',color:active?'#173e34':'#f7dfaa'
+  })
+
   return <main className="dashboard epub-page">
     <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Leitor digital</small></div><button className="logout" onClick={onBack}>← Minha biblioteca</button></header>
     <section className="epub-panel">
       <p className="eyebrow">LEITURA DIGITAL</p><h2>{title}</h2>
       <div className="epub-toolbar">
         <button onClick={()=>setFontSize(n=>Math.max(75,n-10))}>A−</button><span>Tamanho do texto: {fontSize}%</span><button onClick={()=>setFontSize(n=>Math.min(180,n+10))}>A+</button>
+        <div role="group" aria-label="Cor da página" style={{display:'inline-flex',gap:'6px',alignItems:'center'}}>
+          <button type="button" aria-pressed={readerTheme==='white'} style={themeButtonStyle(readerTheme==='white')} onClick={()=>setReaderTheme('white')}>Branco</button>
+          <button type="button" aria-pressed={readerTheme==='sepia'} style={themeButtonStyle(readerTheme==='sepia')} onClick={()=>setReaderTheme('sepia')}>Sépia</button>
+        </div>
         {chapters.length>0&&<select aria-label="Selecionar capítulo" value={location} onChange={ev=>rendition.current?.display(ev.target.value)}><option value="">Capítulos</option>{chapters.map((chapter,i)=><option key={i} value={chapter.href}>{chapter.label}</option>)}</select>}
       </div>
       <div className="epub-tools" aria-label="Ferramentas do livro">
