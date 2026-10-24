@@ -27,6 +27,22 @@
   background:linear-gradient(120deg,#7d3518,#5f2612)!important;
   color:#fff7e8!important;
 }
+
+/* QR do site oficial: preencher melhor o quadrado, como o QR do card inferior. */
+.dashboard-site-share-qr{
+  padding:2px!important;
+  overflow:hidden!important;
+  background:#fff!important;
+}
+.dashboard-site-share-qr img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  transform:scale(1.16)!important;
+  transform-origin:center!important;
+}
+
 @media(max-width:640px){
   .dashboard-site-share-copy p{font-size:15px!important;line-height:1.55!important;}
   .dashboard-site-share-copy strong{color:#fff3cf!important;}
