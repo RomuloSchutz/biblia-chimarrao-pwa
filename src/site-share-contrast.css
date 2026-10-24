@@ -28,7 +28,7 @@
   color:#fff7e8!important;
 }
 
-/* QR do site oficial: preencher melhor o quadrado, como o QR do card inferior. */
+/* QR do site oficial: fundo branco real e leitura preta, como o QR do card inferior. */
 .dashboard-site-share-qr{
   padding:2px!important;
   overflow:hidden!important;
@@ -41,6 +41,10 @@
   object-fit:contain!important;
   transform:scale(1.16)!important;
   transform-origin:center!important;
+  background:#fff!important;
+  filter:none!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
 }
 
 @media(max-width:640px){
