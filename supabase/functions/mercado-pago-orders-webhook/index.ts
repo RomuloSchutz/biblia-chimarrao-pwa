@@ -6,7 +6,7 @@ const eq=(a:string,b:string)=>{if(a.length!==b.length)return false;let d=0;for(l
 async function sig(req:Request,id:string){const secret=Deno.env.get("MERCADO_PAGO_WEBHOOK_SECRET");if(!secret)return false;const h=req.headers.get("x-signature")??"",rid=req.headers.get("x-request-id")??"";const p=Object.fromEntries(h.split(",").map(v=>v.trim().split("=",2)));if(!p.ts||!p.v1)return false;let m=`id:${id.toLowerCase()};`;if(rid)m+=`request-id:${rid};`;m+=`ts:${p.ts};`;const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return eq(hex(await crypto.subtle.sign("HMAC",k,new TextEncoder().encode(m))),String(p.v1).toLowerCase())}
 const cents=(v:unknown)=>Math.round(Number(v)*100);
 Deno.serve(async(req:Request)=>{
- if(req.method==="GET")return json({ok:true,service:"mercado-pago-orders-webhook",ready:true,entitlement_model:"annual-edition-db-trigger-v16"});
+ if(req.method==="GET")return json({ok:true,service:"mercado-pago-orders-webhook",ready:true,entitlement_model:"annual-edition-db-trigger-v17"});
  if(req.method!=="POST")return json({error:"method_not_allowed"},405);
  const url=new URL(req.url);let body:any={};try{body=await req.json()}catch{}const dataId=String(url.searchParams.get("data.id")||url.searchParams.get("data_id")||body?.data?.id||"").trim();if(!dataId)return json({error:"missing_data_id"},400);if(!await sig(req,dataId))return json({error:"invalid_signature"},401);
  const token=Deno.env.get("MERCADO_PAGO_ACCESS_TOKEN"),base=Deno.env.get("SUPABASE_URL"),key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");if(!token||!base||!key)return json({error:"server_not_configured"},503);
@@ -21,6 +21,11 @@ Deno.serve(async(req:Request)=>{
   if(p.product_type==="app_access"&&p.code==="app_biblia_chimarrao"){const {data:e,error:ee}=await db.from("user_annual_editions").select("id,revoked_at").eq("source","purchase").eq("order_reference",o.id).maybeSingle();if(ee||!e||e.revoked_at)return json({error:"annual_entitlement_trigger_failed",db_code:ee?.code||null},500)}
   return json({ok:true,reconciled:"paid"});
  }
- if(ps==="refunded"||sd==="refunded"){const {error:e}=await db.from("orders").update({status:"refunded",updated_at:now}).eq("id",o.id);if(e)return json({error:"refund_order_update_failed"},500);if(p.product_type==="app_access"&&p.code==="app_biblia_chimarrao"){const {error:r}=await db.from("user_annual_editions").update({revoked_at:now}).eq("user_id",o.user_id).eq("source","purchase").eq("order_reference",o.id).is("revoked_at",null);if(r)return json({error:"annual_entitlement_revoke_failed"},500)}return json({ok:true,reconciled:"refunded"})}
+ if(ps==="refunded"||sd==="refunded"){
+  const {error:e}=await db.from("orders").update({status:"refunded",updated_at:now}).eq("id",o.id);if(e)return json({error:"refund_order_update_failed"},500);
+  if((p.product_type==="ebook"||p.product_type==="devotional")&&p.edition_id){const {error:r}=await db.from("user_editions").delete().eq("user_id",o.user_id).eq("edition_id",p.edition_id).eq("source","purchase").eq("order_reference",o.id);if(r)return json({error:"book_entitlement_revoke_failed"},500)}
+  if(p.product_type==="app_access"&&p.code==="app_biblia_chimarrao"){const {error:r}=await db.from("user_annual_editions").update({revoked_at:now}).eq("user_id",o.user_id).eq("source","purchase").eq("order_reference",o.id).is("revoked_at",null);if(r)return json({error:"annual_entitlement_revoke_failed"},500)}
+  return json({ok:true,reconciled:"refunded"})
+ }
  if(ps==="canceled"){await db.from("orders").update({status:"cancelled",updated_at:now}).eq("id",o.id);return json({ok:true,reconciled:"cancelled"})}if(ps==="failed"){await db.from("orders").update({status:"failed",updated_at:now}).eq("id",o.id);return json({ok:true,reconciled:"failed"})}await db.from("orders").update({status:"pending",provider_order_id:dataId,updated_at:now}).eq("id",o.id);return json({ok:true,reconciled:"pending"});
 });
