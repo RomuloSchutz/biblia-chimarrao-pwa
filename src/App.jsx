@@ -8,6 +8,7 @@ import { supabase, supabaseConfigured } from './lib/supabase.js'
 import { fetchCommercialCatalog, formatCommercialPrice } from './lib/commercial-catalog-api.js'
 import EpubReader from './EpubReader.jsx'
 import AnnualPurchasePanel from './AnnualPurchasePanel.jsx'
+import CommercialCouponsAdminPanel from './CommercialCouponsAdminPanel.jsx'
 
 const menuItems = [
   ['📖','Chimarrão com Deus','365 Encontros com Deus'],
@@ -1271,12 +1272,15 @@ export default function App() {
       </section></main>
   }
 
+  if(screen==='commercialCoupons'&&user&&isAdmin) return <CommercialCouponsAdminPanel onBack={()=>setScreen('admin')}/>
+
   if(screen==='admin'&&user&&isAdmin){
     const filteredAdminUsers=adminUsers.filter(item=>{const q=adminSearch.trim().toLocaleLowerCase('pt-BR');return !q||String(item.full_name||'').toLocaleLowerCase('pt-BR').includes(q)||String(item.email||'').toLocaleLowerCase('pt-BR').includes(q)})
     return <main className="dashboard admin-page">
       <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Painel Administrativo</small></div><button className="logout" onClick={()=>setScreen('dashboard')}>← Menu</button></header>
       <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA RESTRITA</p><h1>Leitores</h1><p>Clientes, edições adquiridas e controle de acesso.</p></div>
         <div className="admin-summary"><div><strong>{adminUsers.length}</strong><span>Clientes</span></div><div><strong>{adminUsers.filter(u=>u.is_admin).length}</strong><span>Administradores</span></div><div><strong>2027</strong><span>Acesso por edição</span></div></div>
+        <button type="button" className="support-copy" onClick={()=>setScreen('commercialCoupons')}>💰 Promoções e Cupons — administrar campanhas</button>
         <button type="button" className="support-copy" onClick={openAuthorArea}>✍ Área do Autor — publicar e editar conteúdos</button>
         <label className="admin-search"><span>Buscar cliente</span><input type="search" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Nome ou e-mail" /></label>
         {adminMessage&&<p className="admin-message" role="status">{adminMessage}</p>}
