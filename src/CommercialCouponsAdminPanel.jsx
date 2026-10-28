@@ -8,10 +8,10 @@ const localInput=v=>v?new Date(v).toISOString().slice(0,16):''
 async function callAdmin(body){
   const {data}=await supabase.auth.getSession();const session=data?.session
   if(!session)throw new Error('Sua sessão expirou. Entre novamente.')
-  const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-commercial-coupons`,{method:'POST',headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},body:JSON.stringify(body)})
-  let payload={};try{payload=await response.json()}catch{}
-  if(!response.ok)throw new Error(payload?.error||'Não foi possível concluir a operação.')
-  return payload
+  const {data:payload,error}=await supabase.functions.invoke('admin-commercial-coupons',{body:{...body,access_token:session.access_token}})
+  if(error)throw new Error(payload?.error||error.message||'Não foi possível concluir a operação.')
+  if(payload?.error)throw new Error(payload.error)
+  return payload||{}
 }
 
 export default function CommercialCouponsAdminPanel({onBack}){
