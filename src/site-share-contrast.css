@@ -1,53 +1,101 @@
-/* Ajuste de contraste — card "Conheça o site oficial" */
+/* Padronização visual — compartilhamentos do site e do aplicativo */
 .dashboard-site-share{
-  background:linear-gradient(145deg,#0b4734 0%,#073b2d 62%,#0c3429 100%)!important;
-  border:2px solid #c99a43!important;
-  box-shadow:0 14px 30px rgba(0,0,0,.34),inset 0 0 0 1px rgba(244,213,145,.16)!important;
+  margin-top:12px!important;
+  padding:18px!important;
+  border:1px solid rgba(216,176,83,.48)!important;
+  border-radius:18px!important;
+  background:linear-gradient(145deg,rgba(20,62,47,.98),rgba(8,36,28,.98))!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.2)!important;
+  grid-template-columns:1fr 118px!important;
+  gap:14px!important;
+  align-items:center!important;
+  color:#f7e9c2!important;
+}
+.dashboard-site-share-copy{
+  gap:11px!important;
+  align-items:flex-start!important;
 }
 .dashboard-site-share-copy strong{
-  color:#fff3cf!important;
-  text-shadow:0 1px 2px rgba(0,0,0,.42)!important;
+  margin:0!important;
+  font:700 19px Georgia,serif!important;
+  color:#f5d986!important;
+  text-shadow:none!important;
 }
 .dashboard-site-share-copy p{
-  color:#fff1d2!important;
+  margin-top:5px!important;
+  color:#ddd1b8!important;
+  line-height:1.4!important;
+  font-size:13px!important;
+  font-weight:400!important;
   opacity:1!important;
-  font-weight:500!important;
 }
 .dashboard-site-share-mark{
-  color:#f0c76d!important;
-  border-color:#d6aa50!important;
-  background:rgba(255,255,255,.035)!important;
+  width:36px!important;
+  height:36px!important;
+  flex:0 0 36px!important;
+  border:1px solid #b98b3f!important;
+  border-radius:50%!important;
+  color:#f2d68b!important;
+  background:transparent!important;
+  font-size:20px!important;
 }
-.dashboard-site-share-actions button.outline{
-  color:#ffe6aa!important;
-  border-color:#c99a43!important;
-  background:rgba(8,42,31,.72)!important;
-}
-.dashboard-site-share-actions button:first-child{
-  background:linear-gradient(120deg,#7d3518,#5f2612)!important;
-  color:#fff7e8!important;
-}
-
-/* QR do site oficial: fundo branco real e leitura preta, como o QR do card inferior. */
 .dashboard-site-share-qr{
-  padding:2px!important;
+  grid-column:2!important;
+  grid-row:1!important;
+  width:118px!important;
+  height:118px!important;
+  padding:5px!important;
   overflow:hidden!important;
+  border-radius:12px!important;
   background:#fff!important;
+  box-shadow:none!important;
 }
 .dashboard-site-share-qr img{
   display:block!important;
   width:100%!important;
   height:100%!important;
   object-fit:contain!important;
-  transform:scale(1.16)!important;
-  transform-origin:center!important;
+  transform:none!important;
   background:#fff!important;
   filter:none!important;
   opacity:1!important;
   mix-blend-mode:normal!important;
 }
+.dashboard-site-share-actions{
+  grid-column:1/-1!important;
+  display:flex!important;
+  gap:8px!important;
+}
+.dashboard-site-share-actions button{
+  margin:0!important;
+  padding:10px 16px!important;
+}
+.dashboard-site-share-actions button:first-child{
+  background:#5b2f16!important;
+  color:white!important;
+  border:0!important;
+}
+.dashboard-site-share-actions button.outline{
+  background:transparent!important;
+  border:1px solid #b98b3f!important;
+  color:#f3dfac!important;
+}
 
-@media(max-width:640px){
-  .dashboard-site-share-copy p{font-size:15px!important;line-height:1.55!important;}
-  .dashboard-site-share-copy strong{color:#fff3cf!important;}
+@media(max-width:520px){
+  .dashboard-site-share{
+    grid-template-columns:1fr 92px!important;
+    padding:14px!important;
+    gap:10px!important;
+  }
+  .dashboard-site-share-copy strong{font-size:16px!important;}
+  .dashboard-site-share-copy p{font-size:11px!important;line-height:1.4!important;}
+  .dashboard-site-share-qr{width:92px!important;height:92px!important;}
+  .dashboard-site-share-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+  }
+  .dashboard-site-share-actions button{
+    padding:9px 8px!important;
+    font-size:12px!important;
+  }
 }
