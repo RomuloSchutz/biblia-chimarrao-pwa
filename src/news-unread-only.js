@@ -1,60 +1,109 @@
-// Notificações funcionam como caixa de entrada pessoal.
-// Abrir marca como lida, mas mantém o item visível. Excluir remove somente
-// da caixa deste usuário, sem apagar a publicação original do autor.
-function notificationStorageKey(kind){
-  const userId=Object.keys(localStorage).find(key=>key.startsWith('bc-author-read-')&&!key.includes('reset-'))?.replace('bc-author-read-','')
-  return userId?`bc-author-${kind}-${userId}`:`bc-author-${kind}-session`
+import { supabase } from './lib/supabase.js'
+
+// Caixa de entrada pessoal das publicações do autor.
+// A publicação original nunca é apagada: Excluir grava somente o estado
+// individual do leitor em author_notification_state.
+let currentUserId=''
+let dismissedIds=new Set()
+let contentByTitle=new Map()
+let stateLoaded=false
+let loadingState=null
+
+function cardTitle(card){
+  return card?.querySelector('.admin-user-head strong')?.textContent?.trim()||''
 }
 
-function getDeletedIds(){
-  const key=notificationStorageKey('deleted')
-  try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}
+async function loadNotificationState(force=false){
+  if(!supabase)return
+  if(loadingState&&!force)return loadingState
+  loadingState=(async()=>{
+    const {data:sessionData}=await supabase.auth.getSession()
+    const user=sessionData?.session?.user
+    currentUserId=user?.id||''
+    dismissedIds=new Set()
+    contentByTitle=new Map()
+    if(!currentUserId){stateLoaded=true;return}
+
+    const [contentResult,stateResult]=await Promise.all([
+      supabase.from('author_content').select('id,title').eq('is_published',true),
+      supabase.from('author_notification_state').select('content_id,dismissed_at').eq('user_id',currentUserId)
+    ])
+
+    if(!contentResult.error){
+      ;(contentResult.data||[]).forEach(item=>{
+        if(item?.id&&item?.title&&!contentByTitle.has(item.title.trim()))contentByTitle.set(item.title.trim(),item.id)
+      })
+    }
+    if(!stateResult.error){
+      ;(stateResult.data||[]).forEach(item=>{if(item?.content_id&&item?.dismissed_at)dismissedIds.add(item.content_id)})
+    }
+    stateLoaded=true
+  })().finally(()=>{loadingState=null})
+  return loadingState
 }
 
-// Os cards React atuais não expõem o UUID da publicação no DOM.
-// Até o componente receber esse atributo, usamos uma assinatura estável do
-// próprio conteúdo visível para identificar a notificação neste dispositivo.
-function notificationId(card){
-  const explicit=card?.dataset?.notificationId
-  if(explicit)return explicit
-  const title=card?.querySelector('.admin-user-head strong')?.textContent?.trim()||''
-  const theme=card?.querySelector('.admin-user-head small')?.textContent?.trim()||''
-  const quote=card?.querySelector('blockquote')?.textContent?.trim()||''
-  return [title,theme,quote].join('|')
+async function dismissNotification(card,control){
+  if(!supabase)return
+  if(!stateLoaded)await loadNotificationState()
+  if(!currentUserId)await loadNotificationState(true)
+  const title=cardTitle(card)
+  let contentId=card?.dataset?.notificationId||contentByTitle.get(title)||''
+
+  // Fallback seguro caso uma publicação tenha surgido depois do carregamento inicial.
+  if(!contentId&&title){
+    const {data,error}=await supabase.from('author_content').select('id').eq('is_published',true).eq('title',title).limit(1).maybeSingle()
+    if(!error&&data?.id){contentId=data.id;contentByTitle.set(title,data.id)}
+  }
+  if(!contentId||!currentUserId)return
+
+  if(control){control.setAttribute('aria-disabled','true');control.textContent='Excluindo...'}
+  const now=new Date().toISOString()
+  const {error}=await supabase.from('author_notification_state').upsert({
+    user_id:currentUserId,
+    content_id:contentId,
+    dismissed_at:now,
+    updated_at:now
+  },{onConflict:'user_id,content_id'})
+
+  if(error){
+    console.info('Não foi possível excluir a notificação:',error)
+    if(control){control.removeAttribute('aria-disabled');control.textContent='Excluir'}
+    return
+  }
+
+  dismissedIds.add(contentId)
+  card.hidden=true
+  card.setAttribute('aria-hidden','true')
 }
 
 function syncAuthorNews(){
-  const deleted=new Set(getDeletedIds())
   document.querySelectorAll('.author-news-card').forEach(card=>{
-    const id=notificationId(card)
-    card.hidden=Boolean(id&&deleted.has(id))
+    const title=cardTitle(card)
+    const contentId=contentByTitle.get(title)||card.dataset.notificationId||''
+    if(contentId)card.dataset.notificationId=contentId
+    card.hidden=Boolean(contentId&&dismissedIds.has(contentId))
     card.setAttribute('aria-hidden',card.hidden?'true':'false')
     if(card.querySelector('.author-news-delete'))return
 
-    // Evita <button> dentro de <button>, que é HTML inválido e pode impedir
-    // o clique em alguns navegadores móveis.
-    const button=document.createElement('span')
-    button.className='author-news-delete'
-    button.textContent='Excluir'
-    button.setAttribute('role','button')
-    button.setAttribute('tabindex','0')
-    button.setAttribute('aria-label','Excluir esta notificação')
+    // O card React é um <button>; por isso o controle é um span com semântica
+    // de botão, evitando HTML inválido de botão dentro de botão.
+    const control=document.createElement('span')
+    control.className='author-news-delete'
+    control.textContent='Excluir'
+    control.setAttribute('role','button')
+    control.setAttribute('tabindex','0')
+    control.setAttribute('aria-label','Excluir esta notificação')
 
     const remove=event=>{
       event.preventDefault();event.stopPropagation()
-      const itemId=notificationId(card)
-      if(!itemId)return
-      const key=notificationStorageKey('deleted')
-      const next=Array.from(new Set([...getDeletedIds(),itemId]))
-      localStorage.setItem(key,JSON.stringify(next))
-      card.hidden=true
-      card.setAttribute('aria-hidden','true')
+      if(control.getAttribute('aria-disabled')==='true')return
+      dismissNotification(card,control)
     }
-    button.addEventListener('click',remove)
-    button.addEventListener('keydown',event=>{
+    control.addEventListener('click',remove)
+    control.addEventListener('keydown',event=>{
       if(event.key==='Enter'||event.key===' '){event.preventDefault();remove(event)}
     })
-    card.appendChild(button)
+    card.appendChild(control)
   })
 }
 
@@ -65,4 +114,14 @@ const newsObserver=new MutationObserver(()=>{
   requestAnimationFrame(()=>{newsSyncQueued=false;syncAuthorNews()})
 })
 newsObserver.observe(document.documentElement,{childList:true,subtree:true})
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncAuthorNews);else syncAuthorNews()
+
+async function startAuthorNews(){
+  await loadNotificationState()
+  syncAuthorNews()
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startAuthorNews);else startAuthorNews()
+
+supabase?.auth?.onAuthStateChange(()=>{
+  stateLoaded=false
+  loadNotificationState(true).then(syncAuthorNews)
+})
