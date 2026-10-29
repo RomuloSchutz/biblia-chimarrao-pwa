@@ -14,6 +14,7 @@ import './single-session-hardening.js'
 import './share-app-card.js'
 import './site-share-card-v2.js'
 import './news-unread-only.js'
+import './remove-legacy-site-card.js'
 import './social-mobile-fix.js'
 import './signup-hardening.js'
 
