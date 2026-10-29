@@ -80,6 +80,10 @@ export default function App() {
   const [bookAccessLoading,setBookAccessLoading]=useState(false)
   const [bookAccessMessage,setBookAccessMessage]=useState('')
   const [commercialCatalog,setCommercialCatalog]=useState({})
+  const [activePromotions,setActivePromotions]=useState([])
+  const [purchaseModal,setPurchaseModal]=useState(null)
+  const [purchaseCoupon,setPurchaseCoupon]=useState('')
+  const [purchaseBusy,setPurchaseBusy]=useState(false)
   useEffect(()=>{
     let active=true
     let retryTimer=null
@@ -95,6 +99,36 @@ export default function App() {
     loadCatalog()
     return ()=>{active=false;if(retryTimer)clearTimeout(retryTimer)}
   },[])
+  useEffect(()=>{
+    if(!user||!supabase){setActivePromotions([]);return}
+    let cancelled=false
+    const loadPromotions=async()=>{
+      const now=new Date().toISOString()
+      const [coupons,links]=await Promise.all([
+        supabase.from('commercial_coupons').select('id,code,name,description,discount_type,discount_value,starts_at,ends_at').eq('is_active',true).or(`starts_at.is.null,starts_at.lte.${now}`).or(`ends_at.is.null,ends_at.gte.${now}`),
+        supabase.from('commercial_coupon_products').select('coupon_id,product_code')
+      ])
+      if(cancelled)return
+      if(coupons.error||links.error){setActivePromotions([]);return}
+      setActivePromotions((coupons.data||[]).map(c=>({...c,product_codes:(links.data||[]).filter(l=>l.coupon_id===c.id).map(l=>l.product_code)})))
+    }
+    loadPromotions()
+    const timer=window.setInterval(loadPromotions,60000)
+    return()=>{cancelled=true;window.clearInterval(timer)}
+  },[user?.id])
+
+  function promotionFor(productCode){
+    return activePromotions.find(p=>!p.product_codes.length||p.product_codes.includes(productCode))||null
+  }
+  function promotionLabel(p){
+    if(!p)return ''
+    return p.discount_type==='percent'?`${Number(p.discount_value||0)/100}% OFF`:`${formatCommercialPrice(Number(p.discount_value||0),'BRL')} OFF`
+  }
+  function promotionExpiry(p){
+    if(!p?.ends_at)return ''
+    return new Date(p.ends_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+  }
+
   const [reminderTime, setReminderTime] = useState('08:00')
   const [weeklySchedule, setWeeklySchedule] = useState(null)
   const WEEKDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']
@@ -299,18 +333,25 @@ export default function App() {
     window.open(url,'_blank','noopener,noreferrer')
   }
 
-  async function purchaseCommercialBook(book){
+  function purchaseCommercialBook(book){
     const product=book?.productCode?commercialCatalog[book.productCode]:null
     if(!user||!supabase||!product?.isActive)return
-    const couponAnswer=window.prompt('Se você possui um cupom promocional, digite o código abaixo. Se não possui, deixe em branco e toque em OK.','')
-    if(couponAnswer===null)return
-    const couponCode=String(couponAnswer||'').trim().toUpperCase()
-    const accepted=window.confirm('Compra digital: a leitura no aplicativo será liberada após a confirmação do pagamento. O download do EPUB ficará disponível após 7 dias. Ao continuar, você confirma que leu e aceita a Política de Compra Digital e a Licença Digital. Deseja ir para o Mercado Pago?')
-    if(!accepted)return
+    const promo=promotionFor(book.productCode)
+    setPurchaseCoupon(promo?.code||'')
+    setBookAccessMessage('')
+    setPurchaseModal({book,product,promo})
+  }
+
+  async function continueCommercialPurchase(){
+    const book=purchaseModal?.book
+    const product=purchaseModal?.product
+    if(!book||!product||purchaseBusy)return
+    const couponCode=String(purchaseCoupon||'').trim().toUpperCase()
+    setPurchaseBusy(true)
     setBookAccessMessage(couponCode?'Validando cupom e preparando checkout seguro do Mercado Pago...':'Preparando checkout seguro do Mercado Pago...')
     const {data:sessionData}=await supabase.auth.getSession()
     const session=sessionData?.session
-    if(!session){setBookAccessMessage('Sua sessão expirou. Entre novamente para comprar.');return}
+    if(!session){setBookAccessMessage('Sua sessão expirou. Entre novamente para comprar.');setPurchaseBusy(false);return}
     try{
       const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{
         method:'POST',
@@ -321,11 +362,18 @@ export default function App() {
       try{data=await response.json()}catch{}
       if(!response.ok||!data?.checkout_url){
         const couponErrors={coupon_invalid:'Cupom inválido.',coupon_inactive:'Este cupom está inativo.',coupon_not_started:'Esta promoção ainda não começou.',coupon_expired:'Este cupom expirou.',coupon_not_applicable:'Este cupom não é válido para esta obra.',coupon_usage_limit_reached:'O limite de utilizações deste cupom foi atingido.',coupon_user_limit_reached:'Este cupom já foi utilizado por esta conta.',coupon_minimum_not_met:'O valor mínimo para este cupom não foi atingido.'}
-        setBookAccessMessage(couponErrors[data?.error]||('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.'));return
+        setBookAccessMessage(couponErrors[data?.error]||('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.'));setPurchaseBusy(false);return
       }
       if(data?.coupon_code&&Number(data?.discount_amount_cents)>0)setBookAccessMessage(`Cupom ${data.coupon_code} aplicado. Desconto de ${formatCommercialPrice(Number(data.discount_amount_cents),data.currency||'BRL')}. Abrindo Mercado Pago...`)
       window.location.assign(data.checkout_url)
-    }catch{setBookAccessMessage('Não foi possível conectar ao checkout do Mercado Pago.')}
+    }catch{setBookAccessMessage('Não foi possível conectar ao checkout do Mercado Pago.');setPurchaseBusy(false)}
+  }
+
+  function renderPurchaseModal(){
+    if(!purchaseModal)return null
+    const {book,product,promo}=purchaseModal
+    const discount=promo?.discount_type==='percent'?Math.round(product.amountCents*(Number(promo.discount_value||0)/10000)):promo?Math.min(product.amountCents,Number(promo.discount_value||0)):0
+    return <div className="coupon-modal-backdrop" role="dialog" aria-modal="true" aria-label="Finalizar compra" onClick={()=>!purchaseBusy&&setPurchaseModal(null)}><div className="coupon-modal" onClick={e=>e.stopPropagation()}><button className="coupon-modal-close" onClick={()=>setPurchaseModal(null)} disabled={purchaseBusy}>×</button><p className="eyebrow">COMPRA DIGITAL</p><h2>{book.title}</h2><p>Preço normal: <strong>{formatCommercialPrice(product.amountCents,product.currency)}</strong></p>{promo&&<div className="coupon-modal-promo"><strong>⚡ {promo.name||'Promoção ativa'} · {promotionLabel(promo)}</strong><span>Use o cupom <b>{promo.code}</b>{promotionExpiry(promo)?` · válido até ${promotionExpiry(promo)}`:''}</span>{discount>0&&<span>Com esta promoção: <b>{formatCommercialPrice(Math.max(0,product.amountCents-discount),product.currency)}</b></span>}</div>}<label className="coupon-field">Tem um cupom?<input value={purchaseCoupon} onChange={e=>setPurchaseCoupon(e.target.value.toUpperCase())} placeholder="Digite o código do cupom" autoCapitalize="characters" /></label><small>A leitura será liberada após a confirmação do pagamento. O download do EPUB ficará disponível após 7 dias. Ao continuar, você aceita a Política de Compra Digital e a Licença Digital.</small>{bookAccessMessage&&<p className="coupon-modal-status">{bookAccessMessage}</p>}<button className="primary coupon-pay-button" onClick={continueCommercialPurchase} disabled={purchaseBusy}>{purchaseBusy?'Validando...':purchaseCoupon.trim()?'Aplicar cupom e ir ao Mercado Pago →':'Ir ao Mercado Pago →'}</button></div></div>
   }
 
   useEffect(() => {
@@ -1070,7 +1118,7 @@ export default function App() {
       {title:'Entre os Sistemas — Volume 1',sub:'Cristo, o Libertador',kind:'Religioso · Filosófico · Político · Econômico',cover:'sistemas',image:'/CAPA VL1.png',status:'PRÉ-LANÇAMENTO · EM BREVE',group:'projetos',action:'Em breve'},
       {title:'Entre a Cidade e o Silêncio',sub:'NASCE · CRESCE · VIVE',kind:'Trilogia em desenvolvimento',cover:'cidade',image:'/image (1).png',status:'Em breve',group:'projetos',action:'Projeto em desenvolvimento'}
     ]
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os EPUBs ficam protegidos por conta. Livros adquiridos ou liberados pelo administrador podem ser lidos no aplicativo e baixados para uso pessoal.</p>{bookAccessMessage&&<p className="encounter-save-status">{bookAccessMessage}</p>}</div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title} role="button" tabIndex={0} onClick={()=>book.open?book.open():openAuthorBookContent(book.title)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();book.open?book.open():openAuthorBookContent(book.title)}}}><div className={'book-cover '+book.cover+(book.spreadCover?' spread-front-cover':'')}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={e=>{e.stopPropagation();book.open()}}>{book.action} →</button>:isAdmin&&bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>🔐 Abrir prévia →</button><small className="book-license-note">Somente administrador. Ainda não disponível ao público.</small></div>:(book.group==='publicados'||book.action==='Ler EPUB')?(bookAccessLoading?<button className="book-disabled" disabled>Verificando acesso...</button>:bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>Ler no aplicativo →</button><button className="book-download" onClick={e=>{e.stopPropagation();downloadSecureBook(book.title)}}>Baixar EPUB ↓</button><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<div className="book-actions">{book.productCode&&commercialCatalog[book.productCode]?.isActive?<button className="primary" onClick={e=>{e.stopPropagation();purchaseCommercialBook(book)}}>Comprar · {formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)} →</button>:<button className="book-disabled" disabled>{book.productCode&&commercialCatalog[book.productCode]?`🔒 Livro não adquirido · ${formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)}`:'🔒 Livro não adquirido'}</button>}<small className="book-license-note">Após a confirmação do pagamento, a leitura será liberada nesta conta. O download do EPUB fica protegido por 7 dias.</small></div>):<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}</main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Biblioteca de Romulo Schutz</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header>{activePromotions.length>0&&<section className="commercial-promo-banner"><strong>⚡ PROMOÇÃO ATIVA</strong><div>{activePromotions.slice(0,3).map(p=><p key={p.id}><b>{p.name||'Oferta especial'} — {promotionLabel(p)}</b><span>Use o cupom <strong>{p.code}</strong>{promotionExpiry(p)?` · válido até ${promotionExpiry(p)}`:''}</span></p>)}</div></section>}<section className="welcome books-head stage3-library-head premium-library-banner" aria-label="Meus Livros"><img src="/História, Fé e Esperança para Sua Jornada.png" alt="Meus Livros — História, fé e esperança para sua jornada" /></section><div className="library-controls"><label htmlFor="library-search">Buscar na biblioteca</label><input id="library-search" type="search" value={bookSearch} onChange={e=>setBookSearch(e.target.value)} placeholder="Digite o título de um livro..." /><div className="library-filters" aria-label="Filtrar livros">{[['todos','Todos'],['disponivel','No aplicativo'],['publicados','Publicados'],['projetos','Projetos']].map(([key,label])=><button key={key} className={bookFilter===key?'selected':''} onClick={()=>setBookFilter(key)} aria-pressed={bookFilter===key}>{label}</button>)}</div><p className="library-explainer">Os EPUBs ficam protegidos por conta. Livros adquiridos ou liberados pelo administrador podem ser lidos no aplicativo e baixados para uso pessoal.</p>{bookAccessMessage&&<p className="encounter-save-status">{bookAccessMessage}</p>}</div><section className="books-grid stage3-books-grid">{books.filter(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))).map(book=><article className="book-card stage3-book" key={book.title} role="button" tabIndex={0} onClick={()=>book.open?book.open():openAuthorBookContent(book.title)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();book.open?book.open():openAuthorBookContent(book.title)}}}><div className={'book-cover '+book.cover+(book.spreadCover?' spread-front-cover':'')}><img src={book.image} alt={'Capa de '+book.title} loading="lazy" /></div><div className="book-info"><span className="book-status">{book.status}</span><h3>{book.title}</h3><p>{book.sub}</p><small>{book.kind}</small>{book.open?<button onClick={e=>{e.stopPropagation();book.open()}}>{book.action} →</button>:isAdmin&&bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>🔐 Abrir prévia →</button><small className="book-license-note">Somente administrador. Ainda não disponível ao público.</small></div>:(book.group==='publicados'||book.action==='Ler EPUB')?(bookAccessLoading?<button className="book-disabled" disabled>Verificando acesso...</button>:bookAccess[book.title]?.has_access?<div className="book-actions"><button onClick={e=>{e.stopPropagation();openSecureBook(book.title)}}>Ler no aplicativo →</button><button className="book-download" onClick={e=>{e.stopPropagation();downloadSecureBook(book.title)}}>Baixar EPUB ↓</button><small className="book-license-note">Cópia para uso pessoal. Não compartilhe ou redistribua o arquivo.</small></div>:<div className="book-actions">{promotionFor(book.productCode)&&<div className="book-promo-badge"><strong>⚡ {promotionLabel(promotionFor(book.productCode))}</strong><span>Cupom {promotionFor(book.productCode).code}{promotionExpiry(promotionFor(book.productCode))?` · até ${promotionExpiry(promotionFor(book.productCode))}`:''}</span></div>}{book.productCode&&commercialCatalog[book.productCode]?.isActive?<button className="primary" onClick={e=>{e.stopPropagation();purchaseCommercialBook(book)}}>Comprar · {formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)} →</button>:<button className="book-disabled" disabled>{book.productCode&&commercialCatalog[book.productCode]?`🔒 Livro não adquirido · ${formatCommercialPrice(commercialCatalog[book.productCode].amountCents,commercialCatalog[book.productCode].currency)}`:'🔒 Livro não adquirido'}</button>}<small className="book-license-note">Após a confirmação do pagamento, a leitura será liberada nesta conta. O download do EPUB fica protegido por 7 dias.</small></div>):<button className="book-disabled" disabled>{book.action}</button>}</div></article>)}</section>{!books.some(book=>(bookFilter==='todos'||book.group===bookFilter)&&[book.title,book.sub,book.kind].join(' ').toLocaleLowerCase('pt-BR').includes(bookSearch.trim().toLocaleLowerCase('pt-BR'))) && <p className="library-empty">Nenhum livro encontrado. Experimente outro título ou filtro.</p>}{renderPurchaseModal()}</main>
   }
 
   if(screen==='notebook'&&user){
