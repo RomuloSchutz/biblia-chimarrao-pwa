@@ -302,9 +302,12 @@ export default function App() {
   async function purchaseCommercialBook(book){
     const product=book?.productCode?commercialCatalog[book.productCode]:null
     if(!user||!supabase||!product?.isActive)return
+    const couponAnswer=window.prompt('Se você possui um cupom promocional, digite o código abaixo. Se não possui, deixe em branco e toque em OK.','')
+    if(couponAnswer===null)return
+    const couponCode=String(couponAnswer||'').trim().toUpperCase()
     const accepted=window.confirm('Compra digital: a leitura no aplicativo será liberada após a confirmação do pagamento. O download do EPUB ficará disponível após 7 dias. Ao continuar, você confirma que leu e aceita a Política de Compra Digital e a Licença Digital. Deseja ir para o Mercado Pago?')
     if(!accepted)return
-    setBookAccessMessage('Preparando checkout seguro do Mercado Pago...')
+    setBookAccessMessage(couponCode?'Validando cupom e preparando checkout seguro do Mercado Pago...':'Preparando checkout seguro do Mercado Pago...')
     const {data:sessionData}=await supabase.auth.getSession()
     const session=sessionData?.session
     if(!session){setBookAccessMessage('Sua sessão expirou. Entre novamente para comprar.');return}
@@ -312,11 +315,15 @@ export default function App() {
       const response=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercado-pago-create-order`,{
         method:'POST',
         headers:{'Content-Type':'application/json','apikey':import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,'Authorization':`Bearer ${session.access_token}`},
-        body:JSON.stringify({product_code:book.productCode,accepted:true,policy_version:'08/10/2026',license_version:'08/10/2026'})
+        body:JSON.stringify({product_code:book.productCode,coupon_code:couponCode||undefined,accepted:true,policy_version:'08/10/2026',license_version:'08/10/2026'})
       })
       let data={}
       try{data=await response.json()}catch{}
-      if(!response.ok||!data?.checkout_url){setBookAccessMessage('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.');return}
+      if(!response.ok||!data?.checkout_url){
+        const couponErrors={coupon_invalid:'Cupom inválido.',coupon_inactive:'Este cupom está inativo.',coupon_not_started:'Esta promoção ainda não começou.',coupon_expired:'Este cupom expirou.',coupon_not_applicable:'Este cupom não é válido para esta obra.',coupon_usage_limit_reached:'O limite de utilizações deste cupom foi atingido.',coupon_user_limit_reached:'Este cupom já foi utilizado por esta conta.',coupon_minimum_not_met:'O valor mínimo para este cupom não foi atingido.'}
+        setBookAccessMessage(couponErrors[data?.error]||('Não foi possível iniciar a compra: '+(data?.error||('erro '+response.status))+'.'));return
+      }
+      if(data?.coupon_code&&Number(data?.discount_amount_cents)>0)setBookAccessMessage(`Cupom ${data.coupon_code} aplicado. Desconto de ${formatCommercialPrice(Number(data.discount_amount_cents),data.currency||'BRL')}. Abrindo Mercado Pago...`)
       window.location.assign(data.checkout_url)
     }catch{setBookAccessMessage('Não foi possível conectar ao checkout do Mercado Pago.')}
   }
