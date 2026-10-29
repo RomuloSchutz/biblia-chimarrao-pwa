@@ -156,6 +156,7 @@ export default function App() {
   const [adminAuthorLoading,setAdminAuthorLoading]=useState(false)
   const [adminAuthorMessage,setAdminAuthorMessage]=useState('')
   const [adminAuthorFilter,setAdminAuthorFilter]=useState('all')
+  const [adminAuthorSection,setAdminAuthorSection]=useState('menu')
   const [adminAuthorStatusFilter,setAdminAuthorStatusFilter]=useState('all')
   const [adminAuthorSearch,setAdminAuthorSearch]=useState('')
   const [adminAuthorPreview,setAdminAuthorPreview]=useState(null)
@@ -1199,7 +1200,7 @@ export default function App() {
 
   async function openAuthorArea(){
     if(!isAdmin||!supabase)return
-    setAdminAuthorLoading(true);setAdminAuthorMessage('');setScreen('adminAuthor')
+    setAdminAuthorLoading(true);setAdminAuthorMessage('');setAdminAuthorSection('menu');setAdminAuthorFilter('all');setScreen('adminAuthor')
     const {data,error}=await supabase.from('author_content').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false})
     setAdminAuthorLoading(false)
     if(error){setAdminAuthorMessage('Erro ao carregar: '+error.message);return}
@@ -1294,20 +1295,31 @@ export default function App() {
   if(screen==='adminAuthor'&&user&&isAdmin){
     const typeNames={reflection:'Ideia / Reflexão',book_page:'Página complementar',quote:'Citação / Frase',note:'Nota do autor',book_image:'Imagem / página do livro',book_video:'Vídeo do livro'}
     const books=['Chimarrão com Deus','Entre os Tempos','Entre o Já e o Ainda Não','Cristo: O Marco Entre o Antes e o Depois','Entre a Cidade e o Silêncio','Entre os Sistemas I','Entre os Sistemas II','Entre a Honra e a Gratidão']
+    const sectionMatches=item=>{
+      if(adminAuthorSection==='works')return Boolean(item.book_key)
+      if(adminAuthorSection==='reflections')return !item.book_key||item.content_type==='reflection'||item.content_type==='quote'||item.content_type==='note'
+      if(adminAuthorSection==='videos')return item.media_kind==='youtube'||item.media_kind==='video'||item.content_type==='book_video'
+      if(adminAuthorSection==='images')return item.media_kind==='image'||item.content_type==='book_image'
+      if(adminAuthorSection==='general')return !item.book_key
+      return true
+    }
     const filteredAuthorItems=adminAuthorItems.filter(item=>{
       const q=adminAuthorSearch.trim().toLocaleLowerCase('pt-BR')
       const matchesBook=adminAuthorFilter==='all'||(adminAuthorFilter==='general'&&!item.book_key)||item.book_key===adminAuthorFilter
       const matchesStatus=adminAuthorStatusFilter==='all'||(adminAuthorStatusFilter==='published'&&item.is_published)||(adminAuthorStatusFilter==='draft'&&!item.is_published)
       const matchesSearch=!q||[item.title,item.theme,item.highlight,item.body,item.book_key].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(q))
-      return matchesBook&&matchesStatus&&matchesSearch
+      return sectionMatches(item)&&matchesBook&&matchesStatus&&matchesSearch
     }).sort((a,b)=>{
       if(adminAuthorSort==='title')return String(a.title||'').localeCompare(String(b.title||''),'pt-BR')
       if(adminAuthorSort==='book')return String(a.book_key||'Reflexões gerais').localeCompare(String(b.book_key||'Reflexões gerais'),'pt-BR')||String(a.title||'').localeCompare(String(b.title||''),'pt-BR')
       if(adminAuthorSort==='oldest')return new Date(a.created_at||0)-new Date(b.created_at||0)
       return new Date(b.updated_at||b.created_at||0)-new Date(a.updated_at||a.created_at||0)
     })
-    return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Área do Autor</small></div><button className="logout" onClick={()=>setScreen('admin')}>← Painel</button></header>
-      <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA DO AUTOR</p><h1>Publicações e conteúdos</h1><p>Crie e edite reflexões, citações, notas e páginas complementares dos livros. Os EPUBs permanecem separados e não são alterados aqui.</p></div>
+    const sectionTitles={works:'📚 Obras / Livros',reflections:'✍️ Reflexões e Textos',videos:'🎥 Vídeos / YouTube',images:'🖼️ Imagens e Mídias',general:'📢 Geral / Autor'}
+    const openAuthorSection=(section,book='all')=>{setAdminAuthorSection(section);setAdminAuthorFilter(book);setAdminAuthorSearch('');setAdminAuthorStatusFilter('all')}
+    if(adminAuthorSection==='menu')return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Área do Autor</small></div><button className="logout" onClick={()=>setScreen('admin')}>← Painel</button></header><section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA DO AUTOR</p><h1>Publicações</h1><p>Escolha o assunto que deseja administrar. Assim cada tipo de conteúdo permanece organizado mesmo com o crescimento das publicações.</p></div><div className="admin-actions admin-author-section-menu"><button type="button" onClick={()=>openAuthorSection('works')}>📚 Obras / Livros</button><button type="button" onClick={()=>openAuthorSection('reflections')}>✍️ Reflexões e Textos</button><button type="button" onClick={()=>openAuthorSection('videos')}>🎥 Vídeos / YouTube</button><button type="button" onClick={()=>openAuthorSection('images')}>🖼️ Imagens e Mídias</button><button type="button" onClick={()=>openAuthorSection('general')}>📢 Geral / Autor</button></div>{adminAuthorSection==='works'&&null}</section></main>
+    return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>{sectionTitles[adminAuthorSection]||'Publicações'}</small></div><button className="logout" onClick={()=>{setAdminAuthorSection('menu');setAdminAuthorFilter('all')}}>← Publicações</button></header>
+      <section className="admin-panel"><div className="admin-title"><p className="eyebrow">ÁREA DO AUTOR · PUBLICAÇÕES</p><h1>{sectionTitles[adminAuthorSection]}</h1><p>{adminAuthorSection==='works'?'Escolha uma obra no filtro abaixo para trabalhar somente com as publicações daquele livro.':'Crie e administre somente os conteúdos deste assunto.'}</p></div>
       <form className="reader-settings-panel" onSubmit={saveAuthorContent}><h2>{adminAuthorForm.id?'Editar conteúdo':'Novo conteúdo'}</h2>
         <label>Tipo<select value={adminAuthorForm.content_type} onChange={e=>updateAuthorForm({content_type:e.target.value})}>{Object.entries(typeNames).map(([k,n])=><option key={k} value={k}>{n}</option>)}</select></label>
         {adminAuthorForm.content_type!=='reflection'&&<label>Livro<select value={adminAuthorForm.book_key} onChange={e=>updateAuthorForm({book_key:e.target.value})}><option value="">Selecione...</option>{books.map(b=><option key={b}>{b}</option>)}</select></label>}
