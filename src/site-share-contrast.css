@@ -47,19 +47,15 @@
   padding:5px!important;
   overflow:hidden!important;
   border-radius:12px!important;
-  background:#fff!important;
+  background:#fff url("https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=https%3A%2F%2Fbiblia-chimarrao-site.pages.dev%2F") center/contain no-repeat!important;
   box-shadow:none!important;
+  color-scheme:light!important;
+  forced-color-adjust:none!important;
 }
+/* No Android/PWA o SVG local estava sendo exibido acinzentado. Usamos a mesma
+   fonte raster de QR do card do aplicativo para preservar preto puro sobre branco. */
 .dashboard-site-share-qr img{
-  display:block!important;
-  width:100%!important;
-  height:100%!important;
-  object-fit:contain!important;
-  transform:none!important;
-  background:#fff!important;
-  filter:none!important;
-  opacity:1!important;
-  mix-blend-mode:normal!important;
+  display:none!important;
 }
 .dashboard-site-share-actions{
   grid-column:1/-1!important;
