@@ -1,11 +1,14 @@
 import { supabase } from './lib/supabase.js'
 
 // Caixa de entrada pessoal das publicações do autor.
-// A publicação original nunca é apagada: Excluir grava somente o estado
-// individual do leitor em author_notification_state.
+// Conteúdos anteriores à implantação definitiva das notificações continuam
+// publicados em suas áreas originais, mas não entram na caixa de novidades.
+const NOTIFICATION_CUTOFF=new Date('2026-10-30T01:20:00Z').getTime()
+
 let currentUserId=''
 let dismissedIds=new Set()
 let contentByTitle=new Map()
+let historicalTitles=new Set()
 let stateLoaded=false
 let loadingState=null
 
@@ -22,16 +25,21 @@ async function loadNotificationState(force=false){
     currentUserId=user?.id||''
     dismissedIds=new Set()
     contentByTitle=new Map()
+    historicalTitles=new Set()
     if(!currentUserId){stateLoaded=true;return}
 
     const [contentResult,stateResult]=await Promise.all([
-      supabase.from('author_content').select('id,title').eq('is_published',true),
+      supabase.from('author_content').select('id,title,published_at,created_at').eq('is_published',true),
       supabase.from('author_notification_state').select('content_id,dismissed_at').eq('user_id',currentUserId)
     ])
 
     if(!contentResult.error){
       ;(contentResult.data||[]).forEach(item=>{
-        if(item?.id&&item?.title&&!contentByTitle.has(item.title.trim()))contentByTitle.set(item.title.trim(),item.id)
+        const title=item?.title?.trim()
+        if(!item?.id||!title)return
+        if(!contentByTitle.has(title))contentByTitle.set(title,item.id)
+        const stamp=Date.parse(item.published_at||item.created_at||'')
+        if(Number.isFinite(stamp)&&stamp<NOTIFICATION_CUTOFF)historicalTitles.add(title)
       })
     }
     if(!stateResult.error){
@@ -49,12 +57,14 @@ async function dismissNotification(card,control){
   const title=cardTitle(card)
   let contentId=card?.dataset?.notificationId||contentByTitle.get(title)||''
 
-  // Fallback seguro caso uma publicação tenha surgido depois do carregamento inicial.
   if(!contentId&&title){
     const {data,error}=await supabase.from('author_content').select('id').eq('is_published',true).eq('title',title).limit(1).maybeSingle()
     if(!error&&data?.id){contentId=data.id;contentByTitle.set(title,data.id)}
   }
-  if(!contentId||!currentUserId)return
+  if(!contentId||!currentUserId){
+    if(control){control.removeAttribute('aria-disabled');control.textContent='Excluir'}
+    return
+  }
 
   if(control){control.setAttribute('aria-disabled','true');control.textContent='Excluindo...'}
   const now=new Date().toISOString()
@@ -72,8 +82,7 @@ async function dismissNotification(card,control){
   }
 
   dismissedIds.add(contentId)
-  card.hidden=true
-  card.setAttribute('aria-hidden','true')
+  card.remove()
 }
 
 function syncAuthorNews(){
@@ -81,12 +90,19 @@ function syncAuthorNews(){
     const title=cardTitle(card)
     const contentId=contentByTitle.get(title)||card.dataset.notificationId||''
     if(contentId)card.dataset.notificationId=contentId
-    card.hidden=Boolean(contentId&&dismissedIds.has(contentId))
-    card.setAttribute('aria-hidden',card.hidden?'true':'false')
+
+    // Corte único de implantação: publicações antigas não são notificações.
+    if(historicalTitles.has(title)){
+      card.remove()
+      return
+    }
+
+    if(contentId&&dismissedIds.has(contentId)){
+      card.remove()
+      return
+    }
     if(card.querySelector('.author-news-delete'))return
 
-    // O card React é um <button>; por isso o controle é um span com semântica
-    // de botão, evitando HTML inválido de botão dentro de botão.
     const control=document.createElement('span')
     control.className='author-news-delete'
     control.textContent='Excluir'
