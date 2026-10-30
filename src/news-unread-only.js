@@ -32,6 +32,35 @@ function showCard(card){
   card.setAttribute('aria-hidden','false')
 }
 
+function visibleNotificationCount(){
+  let count=0
+  contentByTitle.forEach((contentId,title)=>{
+    if(historicalTitles.has(title)||dismissedIds.has(contentId))return
+    count+=1
+  })
+  return count
+}
+
+function syncNotificationBadge(){
+  const button=document.querySelector('.visual-quick button.has-new-author-content')||Array.from(document.querySelectorAll('.visual-quick button')).find(item=>item.getAttribute('aria-label')?.startsWith('Notificações'))
+  if(!button)return
+  const badge=button.querySelector('.visual-notification-badge')
+  const count=visibleNotificationCount()
+  if(count<=0){
+    badge?.remove()
+    button.classList.remove('has-new-author-content')
+    button.setAttribute('aria-label','Notificações')
+    const label=button.querySelector('small')
+    if(label)label.textContent='Notificações'
+    return
+  }
+  button.classList.add('has-new-author-content')
+  button.setAttribute('aria-label',`Notificações — ${count} novidade(s) não lida(s)`)
+  const label=button.querySelector('small')
+  if(label)label.textContent='Novidades'
+  if(badge)badge.textContent=count>9?'9+':String(count)
+}
+
 async function loadNotificationState(force=false){
   if(!supabase)return
   if(loadingState&&!force)return loadingState
@@ -99,6 +128,7 @@ async function dismissNotification(card,control){
 
   dismissedIds.add(contentId)
   hideCard(card)
+  syncNotificationBadge()
 }
 
 function syncAuthorNews(){
@@ -138,6 +168,7 @@ function syncAuthorNews(){
     })
     card.appendChild(control)
   })
+  syncNotificationBadge()
 }
 
 let newsSyncQueued=false
