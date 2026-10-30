@@ -16,6 +16,12 @@ function cardTitle(card){
   return card?.querySelector('.admin-user-head strong')?.textContent?.trim()||''
 }
 
+function hideCard(card){
+  if(!card)return
+  card.hidden=true
+  card.setAttribute('aria-hidden','true')
+}
+
 async function loadNotificationState(force=false){
   if(!supabase)return
   if(loadingState&&!force)return loadingState
@@ -82,7 +88,9 @@ async function dismissNotification(card,control){
   }
 
   dismissedIds.add(contentId)
-  card.remove()
+  // Não remova nós criados pelo React. Remoção manual quebrava a reconciliação
+  // ao sair da tela e deixava somente o fundo marrom. Ocultar preserva o DOM.
+  hideCard(card)
 }
 
 function syncAuthorNews(){
@@ -93,14 +101,17 @@ function syncAuthorNews(){
 
     // Corte único de implantação: publicações antigas não são notificações.
     if(historicalTitles.has(title)){
-      card.remove()
+      hideCard(card)
       return
     }
 
     if(contentId&&dismissedIds.has(contentId)){
-      card.remove()
+      hideCard(card)
       return
     }
+
+    card.hidden=false
+    card.setAttribute('aria-hidden','false')
     if(card.querySelector('.author-news-delete'))return
 
     const control=document.createElement('span')
