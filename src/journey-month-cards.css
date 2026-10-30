@@ -1,0 +1,69 @@
+/* Correção isolada da Minha Caminhada.
+   Preserva as artes mensais inteiras, como no Devocional, sem alterar os cards do Devocional. */
+.journey-cycles-grid .stage2-cycle{
+  overflow:hidden;
+  padding:0!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,#302016,#1f130e)!important;
+}
+
+.journey-cycles-grid .stage2-cycle-cover{
+  position:relative;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  min-height:0;
+  margin:0 0 14px;
+  padding:0 14px 14px;
+  isolation:auto;
+}
+
+.journey-cycles-grid .stage2-cycle-cover img{
+  position:static!important;
+  inset:auto!important;
+  z-index:auto!important;
+  grid-column:1 / -1;
+  display:block!important;
+  width:calc(100% + 28px)!important;
+  height:auto!important;
+  max-height:none!important;
+  margin:0 -14px 12px!important;
+  aspect-ratio:auto!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  border-radius:0!important;
+  background:#302016;
+}
+
+.journey-cycles-grid .stage2-cycle-cover:after{display:none!important}
+.journey-cycles-grid .stage2-cycle-cover>div{min-width:0}
+.journey-cycles-grid .stage2-cycle-cover h3{margin:0 0 4px!important;line-height:1.1}
+.journey-cycles-grid .stage2-cycle-cover small{display:block;line-height:1.3}
+.journey-cycles-grid .stage2-cycle-cover b{position:static;align-self:center}
+.journey-cycles-grid .stage2-cycle>p,
+.journey-cycles-grid .stage2-cycle>.stage2-cycle-cover~div{margin-left:16px!important;margin-right:16px!important}
+.journey-cycles-grid .stage2-cycle>p{margin-top:0!important}
+.journey-cycles-grid .stage2-cycle>div:last-child{margin-bottom:16px!important}
+
+@media(max-width:600px){
+  .journey-cycles-grid{grid-template-columns:1fr!important;gap:16px!important}
+  .journey-cycles-grid .stage2-cycle{width:100%;min-width:0;padding:0!important}
+  .journey-cycles-grid .stage2-cycle-cover{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    padding:0 14px 14px!important;
+    margin:0 0 14px!important;
+  }
+  .journey-cycles-grid .stage2-cycle-cover img{
+    position:static!important;
+    width:calc(100% + 28px)!important;
+    height:auto!important;
+    max-height:none!important;
+    margin:0 -14px 12px!important;
+    object-fit:contain!important;
+    object-position:center!important;
+  }
+  .journey-cycles-grid .stage2-cycle-cover h3{font-size:clamp(25px,8vw,34px)!important}
+  .journey-cycles-grid .stage2-cycle-cover b{width:58px;height:58px}
+}

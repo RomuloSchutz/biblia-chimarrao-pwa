@@ -20,6 +20,7 @@ import './reset-test-notifications.js'
 import './social-mobile-fix.js'
 import './signup-hardening.js'
 import './settings-route-hardening.js'
+import './journey-month-cards.css'
 
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
