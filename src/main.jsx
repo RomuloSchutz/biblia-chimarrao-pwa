@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import InstitutionalAdminRoute from './InstitutionalAdminRoute.jsx'
 import InstitutionalAccessLauncher from './InstitutionalAccessLauncher.jsx'
+import ReaderSettingsRoute from './ReaderSettingsRoute.jsx'
 import './styles.css'
 import './institutional.css'
 import './dashboard-card-fixes.css'
@@ -18,14 +19,18 @@ import './remove-legacy-site-card.js'
 import './reset-test-notifications.js'
 import './social-mobile-fix.js'
 import './signup-hardening.js'
+import './settings-route-hardening.js'
 
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
+const readerSettingsRoute=params.get('reader-settings')==='1'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   institutionalRoute
     ? <InstitutionalAdminRoute/>
-    : <><App/><InstitutionalAccessLauncher/></>
+    : readerSettingsRoute
+      ? <ReaderSettingsRoute/>
+      : <><App/><InstitutionalAccessLauncher/></>
 )
 
 // Mantém o service worker do PWA ativo para notificações e atualizações.
