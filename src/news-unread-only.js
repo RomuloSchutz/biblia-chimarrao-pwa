@@ -18,8 +18,19 @@ function cardTitle(card){
 
 function hideCard(card){
   if(!card)return
+  // Algumas regras CSS dos cards definem display explicitamente e podem vencer
+  // o atributo HTML hidden. O estilo inline garante a ocultação sem remover o nó
+  // que pertence ao React, preservando o botão Voltar e a reconciliação da tela.
   card.hidden=true
+  card.style.setProperty('display','none','important')
   card.setAttribute('aria-hidden','true')
+}
+
+function showCard(card){
+  if(!card)return
+  card.hidden=false
+  card.style.removeProperty('display')
+  card.setAttribute('aria-hidden','false')
 }
 
 async function loadNotificationState(force=false){
@@ -88,8 +99,6 @@ async function dismissNotification(card,control){
   }
 
   dismissedIds.add(contentId)
-  // Não remova nós criados pelo React. Remoção manual quebrava a reconciliação
-  // ao sair da tela e deixava somente o fundo marrom. Ocultar preserva o DOM.
   hideCard(card)
 }
 
@@ -110,8 +119,7 @@ function syncAuthorNews(){
       return
     }
 
-    card.hidden=false
-    card.setAttribute('aria-hidden','false')
+    showCard(card)
     if(card.querySelector('.author-news-delete'))return
 
     const control=document.createElement('span')
