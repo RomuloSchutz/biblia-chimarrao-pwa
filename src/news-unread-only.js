@@ -18,8 +18,18 @@ function cardTitle(card){
 
 function hideCard(card){
   if(!card)return
+  // O CSS do card define display e pode sobrepor o atributo hidden.
+  // Inline !important oculta sem remover o nó controlado pelo React.
   card.hidden=true
+  card.style.setProperty('display','none','important')
   card.setAttribute('aria-hidden','true')
+}
+
+function showCard(card){
+  if(!card)return
+  card.hidden=false
+  card.style.removeProperty('display')
+  card.setAttribute('aria-hidden','false')
 }
 
 async function loadNotificationState(force=false){
@@ -88,8 +98,6 @@ async function dismissNotification(card,control){
   }
 
   dismissedIds.add(contentId)
-  // Não remova nós criados pelo React. Remoção manual quebrava a reconciliação
-  // ao sair da tela e deixava somente o fundo marrom. Ocultar preserva o DOM.
   hideCard(card)
 }
 
@@ -99,7 +107,6 @@ function syncAuthorNews(){
     const contentId=contentByTitle.get(title)||card.dataset.notificationId||''
     if(contentId)card.dataset.notificationId=contentId
 
-    // Corte único de implantação: publicações antigas não são notificações.
     if(historicalTitles.has(title)){
       hideCard(card)
       return
@@ -110,8 +117,7 @@ function syncAuthorNews(){
       return
     }
 
-    card.hidden=false
-    card.setAttribute('aria-hidden','false')
+    showCard(card)
     if(card.querySelector('.author-news-delete'))return
 
     const control=document.createElement('span')
