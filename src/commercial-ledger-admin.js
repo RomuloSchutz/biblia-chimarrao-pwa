@@ -1,4 +1,5 @@
 const LEDGER_PARAM='commercial-ledger'
+const LEDGER_RETURN_KEY='biblia-chimarrao:commercial-ledger-return'
 
 function installLedgerButton(){
   const panel=document.querySelector('.admin-page .admin-panel')
@@ -13,6 +14,10 @@ function installLedgerButton(){
   button.dataset.openCommercialLedger='true'
   button.textContent='📊 Livro Caixa — vendas e controle comercial'
   button.addEventListener('click',()=>{
+    // O Livro Caixa nasce a partir do Painel Administrativo, que é uma tela
+    // interna do React e não uma entrada confiável no histórico do navegador.
+    // Guardamos explicitamente essa origem para o botão Voltar.
+    sessionStorage.setItem(LEDGER_RETURN_KEY,'admin')
     const url=new URL(window.location.href)
     url.searchParams.delete('open-admin')
     url.searchParams.set(LEDGER_PARAM,'1')
@@ -22,12 +27,6 @@ function installLedgerButton(){
   return true
 }
 
-// O painel administrativo é uma tela React que pode ser desmontada e montada
-// novamente sem recarregar a página. Por isso o atalho não pode depender de
-// uma janela curta de tentativas: ele precisa ser recolocado sempre que o
-// painel voltar a existir. A checagem abaixo é pequena, limitada ao painel e
-// não observa mutações do DOM, evitando o travamento que ocorreu na versão
-// antiga baseada em MutationObserver.
 function ensureLedgerButton(){
   if(document.visibilityState==='visible')installLedgerButton()
 }
