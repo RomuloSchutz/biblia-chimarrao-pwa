@@ -3,22 +3,31 @@ import { supabase } from './lib/supabase.js'
 
 const money=value=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((Number(value)||0)/100)
 const date=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)):'—'
+const monthKey=value=>{if(!value)return '';const d=new Date(value);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
+const monthLabel=key=>{const [year,month]=key.split('-').map(Number);return new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(year,month-1,1)).replace(/^./,c=>c.toUpperCase())}
 
 export default function CommercialLedgerRoute(){
   const [auth,setAuth]=useState('loading')
   const [rows,setRows]=useState([])
+  const [products,setProducts]=useState([])
   const [loading,setLoading]=useState(false)
   const [error,setError]=useState('')
   const [search,setSearch]=useState('')
   const [status,setStatus]=useState('')
   const [kind,setKind]=useState('')
+  const [view,setView]=useState('ledger')
+  const [selectedMonth,setSelectedMonth]=useState('')
 
   async function load(){
     setLoading(true);setError('')
-    const {data,error}=await supabase.rpc('admin_commercial_ledger')
+    const [ledgerResult,catalogResult]=await Promise.all([
+      supabase.rpc('admin_commercial_ledger'),
+      supabase.from('commercial_products').select('code,title,product_type,amount_cents,is_active').order('title')
+    ])
     setLoading(false)
-    if(error){setError('Não foi possível carregar o Livro Caixa.');setRows([]);return}
-    setRows(Array.isArray(data)?data:[])
+    if(ledgerResult.error){setError('Não foi possível carregar o Livro Caixa.');setRows([]);return}
+    setRows(Array.isArray(ledgerResult.data)?ledgerResult.data:[])
+    if(!catalogResult.error)setProducts(Array.isArray(catalogResult.data)?catalogResult.data:[])
   }
 
   useEffect(()=>{
@@ -34,6 +43,9 @@ export default function CommercialLedgerRoute(){
     })()
     return()=>{active=false}
   },[])
+
+  const months=useMemo(()=>[...new Set(rows.map(r=>monthKey(r.purchased_at)).filter(Boolean))].sort().reverse(),[rows])
+  useEffect(()=>{if(!selectedMonth&&months.length)setSelectedMonth(months[0])},[months,selectedMonth])
 
   const filtered=useMemo(()=>{
     const q=search.trim().toLocaleLowerCase('pt-BR')
@@ -51,18 +63,48 @@ export default function CommercialLedgerRoute(){
   const statusLabel={paid:'Pago',pending:'Pendente',cancelled:'Cancelado'}
   const back=()=>window.location.assign(window.location.origin+window.location.pathname)
 
+  const monthlyRows=useMemo(()=>rows.filter(r=>monthKey(r.purchased_at)===selectedMonth),[rows,selectedMonth])
+  const monthlyPaid=monthlyRows.filter(r=>r.status==='paid')
+  const monthlyOriginal=monthlyPaid.reduce((s,r)=>s+(Number(r.original_amount_cents)||0),0)
+  const monthlyDiscount=monthlyPaid.reduce((s,r)=>s+(Number(r.discount_amount_cents)||0),0)
+  const monthlyReceived=monthlyPaid.reduce((s,r)=>s+(Number(r.paid_amount_cents)||0),0)
+  const monthlyPending=monthlyRows.filter(r=>r.status==='pending').length
+  const monthlyCancelled=monthlyRows.filter(r=>r.status==='cancelled').length
+  const productClosing=useMemo(()=>{
+    const catalog=new Map(products.map(p=>[p.code,p]))
+    monthlyRows.forEach(r=>{if(r.product_code&&!catalog.has(r.product_code))catalog.set(r.product_code,{code:r.product_code,title:r.product_title||r.product_code,product_type:r.product_type||'',amount_cents:r.original_amount_cents||0})})
+    return [...catalog.values()].map(product=>{
+      const sales=monthlyPaid.filter(r=>r.product_code===product.code)
+      return {...product,units:sales.length,full:sales.filter(r=>(Number(r.discount_amount_cents)||0)===0).length,promo:sales.filter(r=>(Number(r.discount_amount_cents)||0)>0).length,discount:sales.reduce((s,r)=>s+(Number(r.discount_amount_cents)||0),0),received:sales.reduce((s,r)=>s+(Number(r.paid_amount_cents)||0),0)}
+    }).sort((a,b)=>b.units-a.units||String(a.title).localeCompare(String(b.title),'pt-BR'))
+  },[products,monthlyRows,monthlyPaid])
+
   if(auth==='loading')return <main className="dashboard admin-page"><section className="admin-panel"><p>Validando acesso administrativo…</p></section></main>
   if(auth==='denied')return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa</small></div><button className="logout" onClick={back}>← Voltar</button></header><section className="admin-panel"><h1>Acesso restrito</h1><p>Entre com uma conta de administrador para consultar o Livro Caixa.</p></section></main>
 
   return <main className="dashboard admin-page commercial-ledger-page">
     <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa · Controle Comercial</small></div><button className="logout" onClick={back}>← Painel</button></header>
     <section className="admin-panel commercial-ledger-native">
-      <div className="admin-title"><p className="eyebrow">CONTROLE COMERCIAL</p><h1>Livro Caixa</h1><p>Movimentações individuais de vendas e pagamentos. Acesso administrativo separado de Promoções e Cupons.</p></div>
-      <div className="ledger-head"><div><h2>Vendas e recebimentos</h2><p>Consulte comprador, produto, desconto, cupom e valor efetivamente recebido.</p></div><button type="button" onClick={load} disabled={loading}>{loading?'Atualizando…':'Atualizar'}</button></div>
-      <div className="ledger-filters"><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar comprador, e-mail, produto ou cupom"/><select value={status} onChange={e=>setStatus(e.target.value)}><option value="">Todos os status</option><option value="paid">Pagos</option><option value="pending">Pendentes</option><option value="cancelled">Cancelados</option></select><select value={kind} onChange={e=>setKind(e.target.value)}><option value="">Todas as vendas</option><option value="full">Preço normal</option><option value="promo">Com desconto</option></select></div>
-      <div className="ledger-kpis"><article><strong>{paid.length}</strong><span>vendas pagas</span></article><article><strong>{money(original)}</strong><span>valor original</span></article><article><strong>{money(discount)}</strong><span>descontos</span></article><article><strong>{money(received)}</strong><span>recebido</span></article></div>
-      {error&&<p className="admin-message" role="status">{error}</p>}
-      <div className="ledger-table-wrap"><table><thead><tr><th>Data</th><th>Comprador</th><th>Produto</th><th>Venda</th><th>Original</th><th>Desconto</th><th>Pago</th><th>Status</th></tr></thead><tbody>{loading&&!rows.length?<tr><td colSpan="8">Carregando movimentações…</td></tr>:filtered.length?filtered.map(r=>{const promo=(Number(r.discount_amount_cents)||0)>0;return <tr key={r.order_id}><td>{date(r.purchased_at)}</td><td><strong>{r.buyer_name||'Cliente'}</strong><small>{r.buyer_email||''}</small></td><td>{r.product_title||r.product_code||'—'}</td><td>{promo?<span className="ledger-promo">{r.coupon_code||'Desconto'}</span>:'Preço normal'}</td><td>{money(r.original_amount_cents)}</td><td>{money(r.discount_amount_cents)}</td><td><strong>{money(r.paid_amount_cents)}</strong></td><td>{statusLabel[r.status]||r.status||'—'}</td></tr>}):<tr><td colSpan="8">Nenhuma movimentação encontrada.</td></tr>}</tbody></table></div>
+      <div className="admin-title"><p className="eyebrow">CONTROLE COMERCIAL</p><h1>Livro Caixa</h1><p>Movimentações individuais e fechamento mensal, separados por mês e ano.</p></div>
+      <nav className="ledger-view-tabs" aria-label="Visões do Livro Caixa"><button className={view==='ledger'?'active':''} onClick={()=>setView('ledger')}>Movimentações</button><button className={view==='monthly'?'active':''} onClick={()=>setView('monthly')}>Fechamento mensal</button></nav>
+      {view==='ledger'?<>
+        <div className="ledger-head"><div><h2>Vendas e recebimentos</h2><p>Consulte comprador, produto, desconto, cupom e valor efetivamente recebido.</p></div><button type="button" onClick={load} disabled={loading}>{loading?'Atualizando…':'Atualizar'}</button></div>
+        <div className="ledger-filters"><input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar comprador, e-mail, produto ou cupom"/><select value={status} onChange={e=>setStatus(e.target.value)}><option value="">Todos os status</option><option value="paid">Pagos</option><option value="pending">Pendentes</option><option value="cancelled">Cancelados</option></select><select value={kind} onChange={e=>setKind(e.target.value)}><option value="">Todas as vendas</option><option value="full">Preço normal</option><option value="promo">Com desconto</option></select></div>
+        <div className="ledger-kpis"><article><strong>{paid.length}</strong><span>vendas pagas</span></article><article><strong>{money(original)}</strong><span>valor original</span></article><article><strong>{money(discount)}</strong><span>descontos</span></article><article><strong>{money(received)}</strong><span>recebido</span></article></div>
+        {error&&<p className="admin-message" role="status">{error}</p>}
+        <div className="ledger-table-wrap"><table><thead><tr><th>Data</th><th>Comprador</th><th>Produto</th><th>Venda</th><th>Original</th><th>Desconto</th><th>Pago</th><th>Status</th></tr></thead><tbody>{loading&&!rows.length?<tr><td colSpan="8">Carregando movimentações…</td></tr>:filtered.length?filtered.map(r=>{const promo=(Number(r.discount_amount_cents)||0)>0;return <tr key={r.order_id}><td>{date(r.purchased_at)}</td><td><strong>{r.buyer_name||'Cliente'}</strong><small>{r.buyer_email||''}</small></td><td>{r.product_title||r.product_code||'—'}</td><td>{promo?<span className="ledger-promo">{r.coupon_code||'Desconto'}</span>:'Preço normal'}</td><td>{money(r.original_amount_cents)}</td><td>{money(r.discount_amount_cents)}</td><td><strong>{money(r.paid_amount_cents)}</strong></td><td>{statusLabel[r.status]||r.status||'—'}</td></tr>}):<tr><td colSpan="8">Nenhuma movimentação encontrada.</td></tr>}</tbody></table></div>
+      </>:<>
+        <div className="ledger-head"><div><h2>Fechamento mensal</h2><p>Selecione o mês e o ano para consultar o panorama comercial daquele período.</p></div><button type="button" onClick={load} disabled={loading}>{loading?'Atualizando…':'Atualizar'}</button></div>
+        <div className="ledger-months">{months.length?months.map(m=><button key={m} className={selectedMonth===m?'active':''} onClick={()=>setSelectedMonth(m)}>{monthLabel(m)}</button>):<span>Nenhum mês com movimentações.</span>}</div>
+        {selectedMonth&&<>
+          <h2 className="ledger-month-title">{monthLabel(selectedMonth)}</h2>
+          <div className="ledger-kpis ledger-kpis-month"><article><strong>{monthlyPaid.length}</strong><span>vendas pagas</span></article><article><strong>{money(monthlyOriginal)}</strong><span>valor bruto</span></article><article><strong>{money(monthlyDiscount)}</strong><span>descontos</span></article><article><strong>{money(monthlyReceived)}</strong><span>total recebido</span></article><article><strong>{monthlyPending}</strong><span>pendentes</span></article><article><strong>{monthlyCancelled}</strong><span>canceladas</span></article></div>
+          <h3>Fechamento por produto</h3>
+          <div className="ledger-table-wrap"><table className="ledger-products-table"><thead><tr><th>Produto</th><th>Unidades pagas</th><th>Preço normal</th><th>Com desconto</th><th>Descontos</th><th>Recebido</th></tr></thead><tbody>{productClosing.length?productClosing.map(p=><tr key={p.code}><td><strong>{p.title||p.code}</strong><small>{p.product_type||p.code}</small></td><td>{p.units}</td><td>{p.full}</td><td>{p.promo}</td><td>{money(p.discount)}</td><td><strong>{money(p.received)}</strong></td></tr>):<tr><td colSpan="6">Nenhum produto cadastrado.</td></tr>}</tbody></table></div>
+          <h3 className="ledger-detail-title">Movimentações de {monthLabel(selectedMonth)}</h3>
+          <div className="ledger-table-wrap"><table><thead><tr><th>Data</th><th>Comprador</th><th>Produto</th><th>Venda</th><th>Original</th><th>Desconto</th><th>Pago</th><th>Status</th></tr></thead><tbody>{monthlyRows.length?monthlyRows.map(r=>{const promo=(Number(r.discount_amount_cents)||0)>0;return <tr key={r.order_id}><td>{date(r.purchased_at)}</td><td><strong>{r.buyer_name||'Cliente'}</strong><small>{r.buyer_email||''}</small></td><td>{r.product_title||r.product_code||'—'}</td><td>{promo?<span className="ledger-promo">{r.coupon_code||'Desconto'}</span>:'Preço normal'}</td><td>{money(r.original_amount_cents)}</td><td>{money(r.discount_amount_cents)}</td><td><strong>{money(r.paid_amount_cents)}</strong></td><td>{statusLabel[r.status]||r.status||'—'}</td></tr>}):<tr><td colSpan="8">Nenhuma movimentação neste mês.</td></tr>}</tbody></table></div>
+        </>}
+      </>}
     </section>
   </main>
 }
