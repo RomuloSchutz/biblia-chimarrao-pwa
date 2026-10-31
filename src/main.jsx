@@ -34,6 +34,34 @@ const institutionalRoute=params.get('institutional-admin')==='1'||params.get('in
 const readerSettingsRoute=params.get('reader-settings')==='1'
 const commercialLedgerRoute=params.get('commercial-ledger')==='1'
 
+function AppShell(){
+  const [ledgerOpen,setLedgerOpen]=React.useState(false)
+
+  React.useEffect(()=>{
+    const openLedger=()=>setLedgerOpen(true)
+    window.addEventListener('biblia-chimarrao:open-commercial-ledger',openLedger)
+    return()=>window.removeEventListener('biblia-chimarrao:open-commercial-ledger',openLedger)
+  },[])
+
+  const handleLedgerNavigationCapture=event=>{
+    const button=event.target.closest?.('button')
+    if(!button)return
+    if(button.textContent.includes('Voltar')||button.textContent.trim()==='Painel'){
+      event.preventDefault()
+      event.stopPropagation()
+      setLedgerOpen(false)
+    }
+  }
+
+  return <>
+    <div style={{display:ledgerOpen?'none':''}}><App/><InstitutionalAccessLauncher/></div>
+    {ledgerOpen&&<div className="commercial-ledger-inline-shell" onClickCapture={handleLedgerNavigationCapture}>
+      <style>{`.commercial-ledger-inline-shell .commercial-ledger-page .header-actions button:last-child{display:none!important}`}</style>
+      <CommercialLedgerRoute/>
+    </div>}
+  </>
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   institutionalRoute
     ? <InstitutionalAdminRoute/>
@@ -41,7 +69,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       ? <ReaderSettingsRoute/>
       : commercialLedgerRoute
         ? <CommercialLedgerRoute/>
-        : <><App/><InstitutionalAccessLauncher/></>
+        : <AppShell/>
 )
 
 // Mantém o service worker do PWA ativo para notificações e atualizações.
