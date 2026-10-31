@@ -22,6 +22,7 @@ import './signup-hardening.js'
 import './settings-route-hardening.js'
 import './journey-month-cards.css'
 import './checkout-return-hardening.js'
+import './coupon-archive-admin.js'
 
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
