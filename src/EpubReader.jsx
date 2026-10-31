@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ePub from 'epubjs'
+import { supabase } from './lib/supabase.js'
 
 const readJson=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch{return fallback}}
 const readTheme=()=>{try{const saved=localStorage.getItem('bc-epub-theme');return saved==='white'||saved==='sepia'?saved:'sepia'}catch{return 'sepia'}}
@@ -13,6 +14,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
   const [readerTheme,setReaderTheme]=useState(readTheme)
+  const [syncedBookmark,setSyncedBookmark]=useState(null), [bookmarkStatus,setBookmarkStatus]=useState('')
   const selectedStartRef=useRef(null)
   const audioStateRef=useRef('parado')
   const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
@@ -24,6 +26,21 @@ export default function EpubReader({ title, epubUrl, onBack }) {
 
   const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
   const saveHighlights=items=>{setHighlights(items);localStorage.setItem('bc-epub-highlights:'+title,JSON.stringify(items))}
+
+  useEffect(()=>{
+    let cancelled=false
+    const loadSyncedBookmark=async()=>{
+      if(!supabase)return
+      const {data:{user}}=await supabase.auth.getUser()
+      if(!user||cancelled)return
+      const {data,error:bookmarkError}=await supabase.from('reader_bookmarks').select('cfi,href,updated_at').eq('user_id',user.id).eq('book_key',title).maybeSingle()
+      if(cancelled)return
+      if(bookmarkError){setBookmarkStatus('Não foi possível consultar o marca-página.');return}
+      setSyncedBookmark(data||null)
+    }
+    loadSyncedBookmark()
+    return()=>{cancelled=true}
+  },[title])
 
   useEffect(()=>{
     if(!epubUrl||!host.current){setLoading(false);setError('Arquivo EPUB não encontrado.');return}
@@ -87,6 +104,23 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     if(!href||!rendition.current)return
     setError('')
     try{await rendition.current.display(href)}catch{setError('Não foi possível abrir este capítulo.')}
+  }
+  const saveSyncedBookmark=async()=>{
+    const current=rendition.current?.currentLocation?.(); const cfi=current?.start?.cfi; const href=current?.start?.href||location||''
+    if(!cfi){setBookmarkStatus('Não foi possível identificar esta página.');return}
+    if(!supabase){setBookmarkStatus('Sincronização indisponível.');return}
+    setBookmarkStatus('Salvando marca-página…')
+    const {data:{user}}=await supabase.auth.getUser()
+    if(!user){setBookmarkStatus('Entre na sua conta para sincronizar o marca-página.');return}
+    const payload={user_id:user.id,book_key:title,book_title:title,cfi,href,updated_at:new Date().toISOString()}
+    const {error:bookmarkError}=await supabase.from('reader_bookmarks').upsert(payload,{onConflict:'user_id,book_key'})
+    if(bookmarkError){setBookmarkStatus('Não foi possível salvar o marca-página.');return}
+    setSyncedBookmark({cfi,href,updated_at:payload.updated_at});setBookmarkStatus('Marca-página salvo na sua conta.')
+  }
+  const openSyncedBookmark=async()=>{
+    if(!syncedBookmark?.cfi||!rendition.current)return
+    setError('');setBookmarkStatus('')
+    try{await rendition.current.display(syncedBookmark.cfi)}catch{setBookmarkStatus('Este marca-página não é mais válido para esta edição do livro.')}
   }
   const addBookmark=()=>{
     const current=rendition.current?.currentLocation?.(); const cfi=current?.start?.cfi
@@ -177,19 +211,22 @@ export default function EpubReader({ title, epubUrl, onBack }) {
         {chapters.length>0&&<select aria-label="Selecionar capítulo" value="" onChange={ev=>openChapter(ev.target.value)}><option value="">Capítulos</option>{chapters.map((chapter,i)=><option key={i} value={chapter.href}>{'— '.repeat(chapter.depth||0)}{chapter.label}</option>)}</select>}
       </div>
       <div className="epub-tools" aria-label="Ferramentas do livro">
-        <button onClick={addBookmark}>🔖 Favoritar página</button>
+        <button onClick={saveSyncedBookmark}>🔖 Marcar onde parei</button>
+        {syncedBookmark&&<button onClick={openSyncedBookmark}>▶ Ir ao marca-página</button>}
+        <button onClick={addBookmark}>⭐ Favoritar página</button>
         <label>Áudio <select value={audioVoice} onChange={e=>{stopAudio();setAudioVoice(e.target.value)}}><option value="masculina">Voz masculina</option><option value="feminina">Voz feminina</option></select></label>
         <label>Velocidade <select value={audioRate} onChange={e=>{const next=Number(e.target.value);stopAudio();setAudioRate(next)}}><option value="0.75">0,75× · Lento</option><option value="1">1,0× · Normal</option><option value="1.25">1,25× · Rápido</option></select></label>
         <button onClick={startFromSelection}>🎯 Ouvir a partir da seleção</button>
         <button onClick={speak}>{audioState==='tocando'?'⏸ Pausar':audioState==='pausado'?'▶ Continuar':'🔊 Ouvir página'}</button>
         {audioState!=='parado'&&<button onClick={stopAudio}>■ Parar</button>}
       </div>
-      <p className="epub-tip">O livro retoma automaticamente a última página lida. Use “Favoritar página” para guardar pontos específicos.</p>
+      <p className="epub-tip">A última página lida continua salva neste aparelho. “Marcar onde parei” sincroniza sua posição com a conta para continuar em outro dispositivo. Favoritos continuam separados.</p>
+      {bookmarkStatus&&<p className="epub-notice">{bookmarkStatus}</p>}
       {loading&&<p className="epub-notice">Preparando o livro…</p>}{error&&<p className="epub-notice" role="alert">{error}</p>}
       <div className="epub-content" ref={host} aria-label="Conteúdo do livro" />
       <div className="epub-navigation"><button onClick={()=>rendition.current?.prev()}>← Página anterior</button><button onClick={()=>rendition.current?.next()}>Próxima página →</button></div>
-      {(bookmarks.length>0||highlights.length>0)&&<section className="epub-marks"><h3>Marcações deste livro</h3>
-        {bookmarks.map((b,i)=><div className="epub-mark" key={b.cfi}><button onClick={()=>rendition.current?.display(b.cfi)}>🔖 Favorito {i+1}</button><button className="mark-remove" onClick={()=>removeBookmark(b.cfi)}>Remover</button></div>)}
+      {(bookmarks.length>0||highlights.length>0)&&<section className="epub-marks"><h3>Favoritos e destaques deste livro</h3>
+        {bookmarks.map((b,i)=><div className="epub-mark" key={b.cfi}><button onClick={()=>rendition.current?.display(b.cfi)}>⭐ Favorito {i+1}</button><button className="mark-remove" onClick={()=>removeBookmark(b.cfi)}>Remover</button></div>)}
         {highlights.map((h,i)=><div className="epub-mark" key={h.cfi}><button onClick={()=>rendition.current?.display(h.cfi)}>✍️ “{h.text.slice(0,90)}{h.text.length>90?'…':''}”</button><button className="mark-remove" onClick={()=>removeHighlight(h.cfi)}>Remover</button></div>)}
       </section>}
     </section>
