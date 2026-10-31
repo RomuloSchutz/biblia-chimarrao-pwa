@@ -7,6 +7,7 @@ const monthKey=value=>{if(!value)return '';const d=new Date(value);return `${d.g
 const monthName=month=>new Intl.DateTimeFormat('pt-BR',{month:'long'}).format(new Date(2026,month-1,1)).replace(/^./,c=>c.toUpperCase())
 const monthLabel=key=>{const [year,month]=key.split('-').map(Number);return `${monthName(month)} de ${year}`}
 const monthRange=year=>{const start=year===2026?10:1;return Array.from({length:12-start+1},(_,i)=>`${year}-${String(start+i).padStart(2,'0')}`)}
+const LEDGER_RETURN_KEY='biblia-chimarrao:commercial-ledger-return'
 
 export default function CommercialLedgerRoute(){
   const [auth,setAuth]=useState('loading')
@@ -69,14 +70,25 @@ export default function CommercialLedgerRoute(){
   const received=paid.reduce((s,r)=>s+(Number(r.paid_amount_cents)||0),0)
   const statusLabel={paid:'Pago',pending:'Pendente',cancelled:'Cancelado'}
 
-  // Duas ações distintas: Voltar usa o histórico real do navegador; Painel abre
-  // explicitamente o painel administrativo. Não misturar as duas responsabilidades.
-  const goBack=()=>window.history.back()
-  const goPanel=()=>{
+  const openAdmin=()=>{
     const url=new URL(window.location.href)
     url.searchParams.delete('commercial-ledger')
     url.searchParams.set('open-admin','1')
     window.location.assign(url.pathname+url.search+url.hash)
+  }
+  // Voltar consulta a origem registrada quando o Livro Caixa foi aberto.
+  // Não depende mais de history.back(), que não representa as telas internas do React.
+  const goBack=()=>{
+    const origin=sessionStorage.getItem(LEDGER_RETURN_KEY)
+    sessionStorage.removeItem(LEDGER_RETURN_KEY)
+    if(origin==='admin'){openAdmin();return}
+    const url=new URL(window.location.href)
+    url.searchParams.delete('commercial-ledger')
+    window.location.assign(url.pathname+url.search+url.hash)
+  }
+  const goPanel=()=>{
+    sessionStorage.removeItem(LEDGER_RETURN_KEY)
+    openAdmin()
   }
 
   const monthlyRows=useMemo(()=>selectedMonth?rows.filter(r=>monthKey(r.purchased_at)===selectedMonth):[],[rows,selectedMonth])
