@@ -4,13 +4,18 @@ const money=value=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL
 const date=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)):'—'
 const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const MODE_KEY='bc-commercial-admin-mode'
+let scheduled=false
+let lastHost=null
 
 function prepareAdminMenu(){
   const panel=document.querySelector('.admin-page .admin-panel')
-  if(!panel||document.querySelector('[data-open-commercial-ledger]'))return
+  if(!panel||panel.querySelector('[data-open-commercial-ledger]'))return
   const couponButton=[...panel.querySelectorAll('button')].find(b=>b.textContent.includes('Promoções e Cupons'))
   if(!couponButton)return
-  couponButton.addEventListener('click',()=>sessionStorage.setItem(MODE_KEY,'coupons'))
+  if(!couponButton.dataset.ledgerModeBound){
+    couponButton.dataset.ledgerModeBound='true'
+    couponButton.addEventListener('click',()=>sessionStorage.setItem(MODE_KEY,'coupons'))
+  }
   const ledgerButton=document.createElement('button')
   ledgerButton.type='button';ledgerButton.className=couponButton.className;ledgerButton.dataset.openCommercialLedger='true'
   ledgerButton.textContent='📊 Livro Caixa — vendas e controle comercial'
@@ -18,28 +23,25 @@ function prepareAdminMenu(){
   couponButton.insertAdjacentElement('afterend',ledgerButton)
 }
 
+function setHidden(el,hidden){if(el&&el.hidden!==hidden)el.hidden=hidden}
+function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
+
 function applyMode(host,section){
   const ledgerMode=sessionStorage.getItem(MODE_KEY)==='ledger'
-  const summary=document.querySelector('#commercial-sales-summary')
-  if(summary)summary.hidden=!ledgerMode
-  section.hidden=!ledgerMode
+  const summary=host.querySelector('#commercial-sales-summary')
+  setHidden(summary,!ledgerMode)
+  setHidden(section,!ledgerMode)
   ;[...host.children].forEach(el=>{
     if(el===summary||el===section)return
-    if(el.matches?.('.eyebrow,h1,.coupon-form,.admin-message,h2,.coupon-list'))el.hidden=ledgerMode
+    if(el.matches?.('.eyebrow,h1,.coupon-form,.admin-message,h2,.coupon-list'))setHidden(el,ledgerMode)
   })
-  const header=document.querySelector('.commercial-admin-page .dash-header small')
-  if(header)header.textContent=ledgerMode?'Livro Caixa e controle comercial':'Administração comercial'
+  setText(document.querySelector('.commercial-admin-page .dash-header small'),ledgerMode?'Livro Caixa e controle comercial':'Administração comercial')
 }
 
-function mount(){
-  prepareAdminMenu()
-  const host=document.querySelector('.commercial-admin-page .commercial-admin')
-  if(!host)return
-  let section=document.getElementById('commercial-ledger')
-  if(section){applyMode(host,section);return}
-  section=document.createElement('section');section.id='commercial-ledger';section.className='commercial-ledger'
+function createLedger(host){
+  const section=document.createElement('section');section.id='commercial-ledger';section.className='commercial-ledger'
   section.innerHTML=`<div class="ledger-head"><div><h2>Livro Caixa Comercial</h2><p>Movimentações individuais de vendas e pagamentos.</p></div><button type="button" data-ledger-refresh>Atualizar</button></div><div class="ledger-filters"><input data-ledger-search type="search" placeholder="Buscar comprador, e-mail, produto ou cupom"><select data-ledger-status><option value="">Todos os status</option><option value="paid">Pagos</option><option value="pending">Pendentes</option><option value="cancelled">Cancelados</option></select><select data-ledger-kind><option value="">Todas as vendas</option><option value="full">Preço normal</option><option value="promo">Com desconto</option></select></div><div class="ledger-kpis" data-ledger-kpis></div><div class="ledger-table-wrap"><table><thead><tr><th>Data</th><th>Comprador</th><th>Produto</th><th>Venda</th><th>Original</th><th>Desconto</th><th>Pago</th><th>Status</th></tr></thead><tbody data-ledger-body><tr><td colspan="8">Carregando movimentações…</td></tr></tbody></table></div>`
-  const summary=document.querySelector('#commercial-sales-summary')
+  const summary=host.querySelector('#commercial-sales-summary')
   if(summary)summary.insertAdjacentElement('afterend',section);else host.prepend(section)
   let rows=[]
   const render=()=>{
@@ -52,9 +54,28 @@ function mount(){
   }
   const load=async()=>{section.classList.add('is-loading');const{data,error}=await supabase.rpc('admin_commercial_ledger');section.classList.remove('is-loading');if(error){section.querySelector('[data-ledger-body]').innerHTML='<tr><td colspan="8">Não foi possível carregar o Livro Caixa.</td></tr>';return}rows=Array.isArray(data)?data:[];render()}
   section.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',render));section.querySelector('[data-ledger-refresh]').addEventListener('click',load)
-  applyMode(host,section);load()
+  load()
+  return section
 }
 
-const observer=new MutationObserver(mount)
-observer.observe(document.documentElement,{childList:true,subtree:true})
+function mount(){
+  prepareAdminMenu()
+  const host=document.querySelector('.commercial-admin-page .commercial-admin')
+  if(!host){lastHost=null;return}
+  let section=host.querySelector('#commercial-ledger')
+  if(!section)section=createLedger(host)
+  if(host!==lastHost)lastHost=host
+  applyMode(host,section)
+}
+
+function scheduleMount(){
+  if(scheduled)return
+  scheduled=true
+  requestAnimationFrame(()=>{scheduled=false;mount()})
+}
+
+const observer=new MutationObserver(mutations=>{
+  if(mutations.some(m=>[...m.addedNodes,...m.removedNodes].some(n=>n.nodeType===1&&(n.matches?.('.admin-page,.commercial-admin-page')||n.querySelector?.('.admin-page,.commercial-admin-page')))))scheduleMount()
+})
+observer.observe(document.body,{childList:true,subtree:true})
 mount()
