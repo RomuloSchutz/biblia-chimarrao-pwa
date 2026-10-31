@@ -1,8 +1,15 @@
-const LEDGER_PARAM='commercial-ledger'
-const LEDGER_RETURN_KEY='biblia-chimarrao:commercial-ledger-return'
+function findAdminPanel(){
+  return [...document.querySelectorAll('.admin-page .admin-panel')].find(panel=>{
+    const title=panel.querySelector('.admin-title h1')?.textContent.trim()
+    const hasCoupons=[...panel.querySelectorAll('button')].some(button=>button.textContent.includes('Promoções e Cupons'))
+    return title==='Administração'&&hasCoupons
+  })||null
+}
 
 function installLedgerButton(){
-  const panel=document.querySelector('.admin-page .admin-panel')
+  // O atalho pertence somente à tela principal Administração. Ele não deve
+  // aparecer em Clientes, Área do Autor, Imagens e Mídias ou outras subtelas.
+  const panel=findAdminPanel()
   if(!panel)return false
   const couponButton=[...panel.querySelectorAll('button')].find(button=>button.textContent.includes('Promoções e Cupons'))
   if(!couponButton)return false
@@ -14,14 +21,11 @@ function installLedgerButton(){
   button.dataset.openCommercialLedger='true'
   button.textContent='📊 Livro Caixa — vendas e controle comercial'
   button.addEventListener('click',()=>{
-    // O Livro Caixa nasce a partir do Painel Administrativo, que é uma tela
-    // interna do React e não uma entrada confiável no histórico do navegador.
-    // Guardamos explicitamente essa origem para o botão Voltar.
-    sessionStorage.setItem(LEDGER_RETURN_KEY,'admin')
-    const url=new URL(window.location.href)
-    url.searchParams.delete('open-admin')
-    url.searchParams.set(LEDGER_PARAM,'1')
-    window.location.assign(url.pathname+url.search+url.hash)
+    // Abre dentro do mesmo fluxo React do aplicativo. Assim o painel permanece
+    // montado por baixo e o Voltar pode simplesmente revelar a tela anterior,
+    // exatamente como as demais subtelas administrativas.
+    window.dispatchEvent(new CustomEvent('biblia-chimarrao:open-commercial-ledger'))
+    window.scrollTo(0,0)
   })
   couponButton.insertAdjacentElement('beforebegin',button)
   return true
