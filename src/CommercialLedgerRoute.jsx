@@ -68,7 +68,11 @@ export default function CommercialLedgerRoute(){
   const discount=paid.reduce((s,r)=>s+(Number(r.discount_amount_cents)||0),0)
   const received=paid.reduce((s,r)=>s+(Number(r.paid_amount_cents)||0),0)
   const statusLabel={paid:'Pago',pending:'Pendente',cancelled:'Cancelado'}
-  const back=()=>{
+
+  // Duas ações distintas: Voltar usa o histórico real do navegador; Painel abre
+  // explicitamente o painel administrativo. Não misturar as duas responsabilidades.
+  const goBack=()=>window.history.back()
+  const goPanel=()=>{
     const url=new URL(window.location.href)
     url.searchParams.delete('commercial-ledger')
     url.searchParams.set('open-admin','1')
@@ -92,10 +96,10 @@ export default function CommercialLedgerRoute(){
   },[products,monthlyRows,monthlyPaid])
 
   if(auth==='loading')return <main className="dashboard admin-page"><section className="admin-panel"><p>Validando acesso administrativo…</p></section></main>
-  if(auth==='denied')return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa</small></div><button className="logout" onClick={back}>← Voltar</button></header><section className="admin-panel"><h1>Acesso restrito</h1><p>Entre com uma conta de administrador para consultar o Livro Caixa.</p></section></main>
+  if(auth==='denied')return <main className="dashboard admin-page"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa</small></div><div className="header-actions"><button className="logout" onClick={goBack}>← Voltar</button><button className="logout" onClick={goPanel}>Painel</button></div></header><section className="admin-panel"><h1>Acesso restrito</h1><p>Entre com uma conta de administrador para consultar o Livro Caixa.</p></section></main>
 
   return <main className="dashboard admin-page commercial-ledger-page">
-    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa · Controle Comercial</small></div><button className="logout" onClick={back}>← Voltar</button></header>
+    <header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Livro Caixa · Controle Comercial</small></div><div className="header-actions"><button className="logout" onClick={goBack}>← Voltar</button><button className="logout" onClick={goPanel}>Painel</button></div></header>
     <section className="admin-panel commercial-ledger-native">
       <div className="admin-title"><p className="eyebrow">CONTROLE COMERCIAL</p><h1>Livro Caixa</h1><p>Movimentações individuais e fechamentos organizados por exercício e mês.</p></div>
       <nav className="ledger-view-tabs" aria-label="Visões do Livro Caixa"><button className={view==='ledger'?'active':''} onClick={()=>setView('ledger')}>Movimentações</button><button className={view==='monthly'?'active':''} onClick={()=>{setView('monthly');setSelectedMonth('')}}>Fechamentos</button></nav>
