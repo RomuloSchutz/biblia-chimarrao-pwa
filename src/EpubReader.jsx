@@ -5,6 +5,8 @@ const readJson=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)|
 const readTheme=()=>{try{const saved=localStorage.getItem('bc-epub-theme');return saved==='white'||saved==='sepia'?saved:'sepia'}catch{return 'sepia'}}
 const voiceLooksFemale=name=>/female|femin|luciana|francisca|maria|helena|leticia|camila|vitoria|brenda/i.test(name||'')
 const voiceLooksMale=name=>/male|mascul|antonio|daniel|felipe|ricardo|thiago|paulo/i.test(name||'')
+const flattenToc=(items,depth=0)=>items.flatMap(item=>[{...item,depth},...flattenToc(item.subitems||[],depth+1)])
+const progressKey=(title,epubUrl)=>'bc-epub-progress-v2:'+title+':'+epubUrl
 
 export default function EpubReader({ title, epubUrl, onBack }) {
   const host=useRef(null), rendition=useRef(null), bookRef=useRef(null)
@@ -41,7 +43,8 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       })
       view.themes.select(readerTheme)
       view.themes.fontSize(fontSize+'%')
-      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem('bc-epub-progress:'+title,place?.start?.cfi||href)}catch{}
+      const key=progressKey(title,epubUrl)
+      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem(key,place?.start?.cfi||href)}catch{}
         const ref=audioRef.current
         if(ref && audioStateRef.current==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
       })
@@ -55,9 +58,17 @@ export default function EpubReader({ title, epubUrl, onBack }) {
           try{contents.window.getSelection().removeAllRanges()}catch{}
         }
       })
-      book.loaded.navigation.then(nav=>{if(!cancelled)setChapters(nav.toc||[])}).catch(()=>{})
-      const saved=localStorage.getItem('bc-epub-progress:'+title)
-      view.display(saved||undefined).then(()=>{
+      Promise.all([book.ready,book.loaded.navigation]).then(async([,nav])=>{
+        if(cancelled)return
+        setChapters(flattenToc(nav.toc||[]))
+        const saved=localStorage.getItem(key)
+        const first=book.spine?.spineItems?.[0]?.href
+        try{
+          await view.display(saved||first||undefined)
+        }catch{
+          try{localStorage.removeItem(key)}catch{}
+          try{await view.display(first||undefined)}catch{throw new Error('display')}
+        }
         if(cancelled)return
         setLoading(false)
         readJson('bc-epub-highlights:'+title,[]).forEach(h=>{try{view.annotations.highlight(h.cfi,{},undefined,'bc-highlight',{fill:'#e3b341','fill-opacity':'0.38','mix-blend-mode':'multiply'})}catch{}})
@@ -72,6 +83,11 @@ export default function EpubReader({ title, epubUrl, onBack }) {
     try{rendition.current?.themes.select(readerTheme)}catch{}
   },[readerTheme])
 
+  const openChapter=async href=>{
+    if(!href||!rendition.current)return
+    setError('')
+    try{await rendition.current.display(href)}catch{setError('Não foi possível abrir este capítulo.')}
+  }
   const addBookmark=()=>{
     const current=rendition.current?.currentLocation?.(); const cfi=current?.start?.cfi
     if(!cfi)return
@@ -158,7 +174,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
           <button type="button" aria-pressed={readerTheme==='white'} style={themeButtonStyle(readerTheme==='white')} onClick={()=>setReaderTheme('white')}>Branco</button>
           <button type="button" aria-pressed={readerTheme==='sepia'} style={themeButtonStyle(readerTheme==='sepia')} onClick={()=>setReaderTheme('sepia')}>Sépia</button>
         </div>
-        {chapters.length>0&&<select aria-label="Selecionar capítulo" value={location} onChange={ev=>rendition.current?.display(ev.target.value)}><option value="">Capítulos</option>{chapters.map((chapter,i)=><option key={i} value={chapter.href}>{chapter.label}</option>)}</select>}
+        {chapters.length>0&&<select aria-label="Selecionar capítulo" value="" onChange={ev=>openChapter(ev.target.value)}><option value="">Capítulos</option>{chapters.map((chapter,i)=><option key={i} value={chapter.href}>{'— '.repeat(chapter.depth||0)}{chapter.label}</option>)}</select>}
       </div>
       <div className="epub-tools" aria-label="Ferramentas do livro">
         <button onClick={addBookmark}>🔖 Favoritar página</button>
@@ -168,7 +184,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
         <button onClick={speak}>{audioState==='tocando'?'⏸ Pausar':audioState==='pausado'?'▶ Continuar':'🔊 Ouvir página'}</button>
         {audioState!=='parado'&&<button onClick={stopAudio}>■ Parar</button>}
       </div>
-      <p className="epub-tip">Para sublinhar uma frase, selecione o trecho dentro do livro e confirme a marcação.</p>
+      <p className="epub-tip">O livro retoma automaticamente a última página lida. Use “Favoritar página” para guardar pontos específicos.</p>
       {loading&&<p className="epub-notice">Preparando o livro…</p>}{error&&<p className="epub-notice" role="alert">{error}</p>}
       <div className="epub-content" ref={host} aria-label="Conteúdo do livro" />
       <div className="epub-navigation"><button onClick={()=>rendition.current?.prev()}>← Página anterior</button><button onClick={()=>rendition.current?.next()}>Próxima página →</button></div>
