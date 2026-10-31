@@ -4,6 +4,7 @@ import App from './App.jsx'
 import InstitutionalAdminRoute from './InstitutionalAdminRoute.jsx'
 import InstitutionalAccessLauncher from './InstitutionalAccessLauncher.jsx'
 import ReaderSettingsRoute from './ReaderSettingsRoute.jsx'
+import CommercialLedgerRoute from './CommercialLedgerRoute.jsx'
 import './styles.css'
 import './institutional.css'
 import './dashboard-card-fixes.css'
@@ -30,13 +31,16 @@ import './commercial-ledger-admin.js'
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
 const readerSettingsRoute=params.get('reader-settings')==='1'
+const commercialLedgerRoute=params.get('commercial-ledger')==='1'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   institutionalRoute
     ? <InstitutionalAdminRoute/>
     : readerSettingsRoute
       ? <ReaderSettingsRoute/>
-      : <><App/><InstitutionalAccessLauncher/></>
+      : commercialLedgerRoute
+        ? <CommercialLedgerRoute/>
+        : <><App/><InstitutionalAccessLauncher/></>
 )
 
 // Mantém o service worker do PWA ativo para notificações e atualizações.
