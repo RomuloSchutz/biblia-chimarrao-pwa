@@ -27,6 +27,7 @@ import './coupon-archive-admin.js'
 import './commercial-sales-summary.js'
 import './commercial-ledger-admin.css'
 import './commercial-ledger-admin.js'
+import './admin-return-bridge.js'
 
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
