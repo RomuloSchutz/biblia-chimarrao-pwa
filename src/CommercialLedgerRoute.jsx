@@ -68,12 +68,10 @@ export default function CommercialLedgerRoute(){
   const discount=paid.reduce((s,r)=>s+(Number(r.discount_amount_cents)||0),0)
   const received=paid.reduce((s,r)=>s+(Number(r.paid_amount_cents)||0),0)
   const statusLabel={paid:'Pago',pending:'Pendente',cancelled:'Cancelado'}
-  // O Livro Caixa é aberto a partir do painel administrativo com uma navegação real.
-  // Voltar deve restaurar exatamente essa tela anterior, em vez de reconstruir a raiz do PWA.
   const back=()=>{
-    if(window.history.length>1){window.history.back();return}
     const url=new URL(window.location.href)
     url.searchParams.delete('commercial-ledger')
+    url.searchParams.set('open-admin','1')
     window.location.assign(url.pathname+url.search+url.hash)
   }
 
