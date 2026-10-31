@@ -1,13 +1,12 @@
 const LEDGER_PARAM='commercial-ledger'
-let installed=false
 
 function installLedgerButton(){
-  if(installed&&document.querySelector('[data-open-commercial-ledger]'))return true
   const panel=document.querySelector('.admin-page .admin-panel')
   if(!panel)return false
   const couponButton=[...panel.querySelectorAll('button')].find(button=>button.textContent.includes('Promoções e Cupons'))
   if(!couponButton)return false
-  if(panel.querySelector('[data-open-commercial-ledger]')){installed=true;return true}
+  if(panel.querySelector('[data-open-commercial-ledger]'))return true
+
   const button=document.createElement('button')
   button.type='button'
   button.className=couponButton.className
@@ -15,19 +14,25 @@ function installLedgerButton(){
   button.textContent='📊 Livro Caixa — vendas e controle comercial'
   button.addEventListener('click',()=>{
     const url=new URL(window.location.href)
+    url.searchParams.delete('open-admin')
     url.searchParams.set(LEDGER_PARAM,'1')
-    window.location.assign(url.toString())
+    window.location.assign(url.pathname+url.search+url.hash)
   })
   couponButton.insertAdjacentElement('beforebegin',button)
-  installed=true
   return true
 }
 
-// Este arquivo agora cuida somente do atalho no menu administrativo.
-// O Livro Caixa é uma rota React própria; não observa nem altera a tela comercial.
-let attempts=0
-const timer=window.setInterval(()=>{
-  attempts+=1
-  if(installLedgerButton()||attempts>=40)window.clearInterval(timer)
-},250)
-installLedgerButton()
+// O painel administrativo é uma tela React que pode ser desmontada e montada
+// novamente sem recarregar a página. Por isso o atalho não pode depender de
+// uma janela curta de tentativas: ele precisa ser recolocado sempre que o
+// painel voltar a existir. A checagem abaixo é pequena, limitada ao painel e
+// não observa mutações do DOM, evitando o travamento que ocorreu na versão
+// antiga baseada em MutationObserver.
+function ensureLedgerButton(){
+  if(document.visibilityState==='visible')installLedgerButton()
+}
+
+ensureLedgerButton()
+window.setInterval(ensureLedgerButton,1000)
+window.addEventListener('pageshow',ensureLedgerButton)
+document.addEventListener('visibilitychange',ensureLedgerButton)
