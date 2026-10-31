@@ -4,10 +4,14 @@ const money=value=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL
 const date=value=>value?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)):'—'
 const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
 const MODE_KEY='bc-commercial-admin-mode'
+let menuPrepared=false
+let lastAppliedMode=null
 
 function prepareAdminMenu(){
   const panel=document.querySelector('.admin-page .admin-panel')
-  if(!panel||document.querySelector('[data-open-commercial-ledger]'))return
+  if(!panel)return
+  const existing=document.querySelector('[data-open-commercial-ledger]')
+  if(existing){menuPrepared=true;return}
   const couponButton=[...panel.querySelectorAll('button')].find(b=>b.textContent.includes('Promoções e Cupons'))
   if(!couponButton)return
   couponButton.addEventListener('click',()=>sessionStorage.setItem(MODE_KEY,'coupons'))
@@ -16,25 +20,30 @@ function prepareAdminMenu(){
   ledgerButton.textContent='📊 Livro Caixa — vendas e controle comercial'
   ledgerButton.addEventListener('click',()=>{sessionStorage.setItem(MODE_KEY,'ledger');couponButton.click()})
   couponButton.insertAdjacentElement('afterend',ledgerButton)
+  menuPrepared=true
 }
 
+function setHidden(el,hidden){if(el&&el.hidden!==hidden)el.hidden=hidden}
 function applyMode(host,section){
   const ledgerMode=sessionStorage.getItem(MODE_KEY)==='ledger'
+  if(lastAppliedMode===ledgerMode&&section.hidden===!ledgerMode)return
   const summary=document.querySelector('#commercial-sales-summary')
-  if(summary)summary.hidden=!ledgerMode
-  section.hidden=!ledgerMode
+  setHidden(summary,!ledgerMode)
+  setHidden(section,!ledgerMode)
   ;[...host.children].forEach(el=>{
     if(el===summary||el===section)return
-    if(el.matches?.('.eyebrow,h1,.coupon-form,.admin-message,h2,.coupon-list'))el.hidden=ledgerMode
+    if(el.matches?.('.eyebrow,h1,.coupon-form,.admin-message,h2,.coupon-list'))setHidden(el,ledgerMode)
   })
   const header=document.querySelector('.commercial-admin-page .dash-header small')
-  if(header)header.textContent=ledgerMode?'Livro Caixa e controle comercial':'Administração comercial'
+  const title=ledgerMode?'Livro Caixa e controle comercial':'Administração comercial'
+  if(header&&header.textContent!==title)header.textContent=title
+  lastAppliedMode=ledgerMode
 }
 
 function mount(){
-  prepareAdminMenu()
+  if(!menuPrepared)prepareAdminMenu()
   const host=document.querySelector('.commercial-admin-page .commercial-admin')
-  if(!host)return
+  if(!host){lastAppliedMode=null;return}
   let section=document.getElementById('commercial-ledger')
   if(section){applyMode(host,section);return}
   section=document.createElement('section');section.id='commercial-ledger';section.className='commercial-ledger'
@@ -55,6 +64,8 @@ function mount(){
   applyMode(host,section);load()
 }
 
-const observer=new MutationObserver(mount)
+let mountQueued=false
+const queueMount=()=>{if(mountQueued)return;mountQueued=true;requestAnimationFrame(()=>{mountQueued=false;mount()})}
+const observer=new MutationObserver(queueMount)
 observer.observe(document.documentElement,{childList:true,subtree:true})
 mount()
