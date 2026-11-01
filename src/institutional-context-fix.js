@@ -1,6 +1,6 @@
 // Mantém os acessos institucionais fora das telas normais do aplicativo.
-// O administrador acessa a gestão pelo Painel Administrativo e o leitor
-// sem acesso pode informar um código somente na tela de acesso restrito.
+// O administrador acessa a gestão pelo mesmo fluxo interno do Painel Administrativo;
+// o leitor sem acesso pode informar um código somente na tela de acesso restrito.
 
 function goInstitutional(key){
   const url=new URL(window.location.href)
@@ -35,7 +35,10 @@ function installAdminInstitutionalButton(){
   button.className=clientsButton.className
   button.dataset.openInstitutionalAdmin='true'
   button.textContent='🏢 Acessos institucionais — empresas, lotes e ativações'
-  button.addEventListener('click',()=>goInstitutional('institutional-admin'))
+  button.addEventListener('click',()=>{
+    window.dispatchEvent(new CustomEvent('biblia-chimarrao:open-institutional-admin'))
+    window.scrollTo(0,0)
+  })
   clientsButton.insertAdjacentElement('afterend',button)
 }
 
