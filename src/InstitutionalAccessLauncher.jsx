@@ -33,17 +33,23 @@ export default function InstitutionalAccessLauncher(){
   useEffect(()=>{
     if(!user)return
     const params=new URLSearchParams(window.location.search)
-    if(params.get('app-return')!=='dashboard')return
+    const appReturn=params.get('app-return')
+    if(appReturn!=='dashboard'&&appReturn!=='admin')return
     params.delete('app-return')
     const clean=window.location.pathname+(params.toString()?`?${params.toString()}`:'')+window.location.hash
     window.history.replaceState({},document.title,clean)
     let attempts=0
-    const openDashboard=()=>{
-      const button=document.querySelector('.guest-landing-actions .guest-round-action')
-      if(button){button.click();return}
-      if(attempts++<20)window.setTimeout(openDashboard,50)
+    const openTarget=()=>{
+      if(appReturn==='admin'){
+        const adminButton=[...document.querySelectorAll('button')].find(button=>button.textContent.includes('Painel Administrativo'))
+        if(adminButton){adminButton.click();return}
+      }else{
+        const button=document.querySelector('.guest-landing-actions .guest-round-action')
+        if(button){button.click();return}
+      }
+      if(attempts++<30)window.setTimeout(openTarget,50)
     }
-    openDashboard()
+    openTarget()
   },[user?.id])
 
   if(!user)return null
