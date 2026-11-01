@@ -30,6 +30,7 @@ import './commercial-ledger-admin.js'
 import './admin-return-bridge.js'
 import './notebook-rich-editor.js'
 import './institutional-context-fix.js'
+import './admin-shortcuts-visibility.js'
 
 const params=new URLSearchParams(window.location.search)
 const institutionalRoute=params.get('institutional-admin')==='1'||params.get('institutional-redeem')==='1'
