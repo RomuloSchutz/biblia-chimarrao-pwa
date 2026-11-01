@@ -38,11 +38,17 @@ const commercialLedgerRoute=params.get('commercial-ledger')==='1'
 
 function AppShell(){
   const [ledgerOpen,setLedgerOpen]=React.useState(false)
+  const [institutionalOpen,setInstitutionalOpen]=React.useState(false)
 
   React.useEffect(()=>{
     const openLedger=()=>setLedgerOpen(true)
+    const openInstitutional=()=>setInstitutionalOpen(true)
     window.addEventListener('biblia-chimarrao:open-commercial-ledger',openLedger)
-    return()=>window.removeEventListener('biblia-chimarrao:open-commercial-ledger',openLedger)
+    window.addEventListener('biblia-chimarrao:open-institutional-admin',openInstitutional)
+    return()=>{
+      window.removeEventListener('biblia-chimarrao:open-commercial-ledger',openLedger)
+      window.removeEventListener('biblia-chimarrao:open-institutional-admin',openInstitutional)
+    }
   },[])
 
   const handleLedgerNavigationCapture=event=>{
@@ -55,11 +61,25 @@ function AppShell(){
     }
   }
 
+  const handleInstitutionalNavigationCapture=event=>{
+    const button=event.target.closest?.('button')
+    if(!button)return
+    if(button.textContent.includes('Voltar')){
+      event.preventDefault()
+      event.stopPropagation()
+      setInstitutionalOpen(false)
+      window.scrollTo(0,0)
+    }
+  }
+
   return <>
-    <div style={{display:ledgerOpen?'none':''}}><App/><InstitutionalAccessLauncher/></div>
+    <div style={{display:ledgerOpen||institutionalOpen?'none':''}}><App/><InstitutionalAccessLauncher/></div>
     {ledgerOpen&&<div className="commercial-ledger-inline-shell" onClickCapture={handleLedgerNavigationCapture}>
       <style>{`.commercial-ledger-inline-shell .commercial-ledger-page .header-actions button:last-child{display:none!important}`}</style>
       <CommercialLedgerRoute/>
+    </div>}
+    {institutionalOpen&&<div className="institutional-inline-shell" onClickCapture={handleInstitutionalNavigationCapture}>
+      <InstitutionalAdminRoute/>
     </div>}
   </>
 }
