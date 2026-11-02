@@ -1063,7 +1063,7 @@ export default function App() {
       'Chimarrão com Deus':'/CAPA ABERTA CHIMARRÃO CO DEUS.png',
       'Entre os Tempos':'/CAPA ABERTA ENTRE OS TEMPOS.png',
       'Entre o Já e o Ainda Não':'/CAPA ABERTA ENTRE O JÁ E O AINDA NÃO.jpeg',
-      'Cristo: O Marco Entre o Antes e o Depois':'/CONTRA CAPA CRISTO O MARCO.png',
+      'Cristo: O Marco Entre o Antes e o Depois':'/cristo-capa-aberta-lombadas-2026-11-02.png',
       'Entre os Sistemas — Volume 1':'/CONTRA CAPA VL 1.png',
       'Entre os Sistemas — Volume 2':'/CONTRA CAPA VL2.png',
       'Entre a Honra e a Gratidão':'/CAPA ABERTA.png'
