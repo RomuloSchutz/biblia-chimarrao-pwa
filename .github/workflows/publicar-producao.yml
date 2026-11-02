@@ -14,7 +14,9 @@ jobs:
         with:
           node-version: '22'
       - name: Instalar dependências
-        run: npm install
+        run: npm ci
+      - name: Testar regras críticas antes de publicar
+        run: npm test
       - name: Compilar aplicativo
         run: npm run build
         env:

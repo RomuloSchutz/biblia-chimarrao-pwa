@@ -7,9 +7,13 @@ const readTheme=()=>{try{const saved=localStorage.getItem('bc-epub-theme');retur
 const voiceLooksFemale=name=>/female|femin|luciana|francisca|maria|helena|leticia|camila|vitoria|brenda/i.test(name||'')
 const voiceLooksMale=name=>/male|mascul|antonio|daniel|felipe|ricardo|thiago|paulo/i.test(name||'')
 const flattenToc=(items,depth=0)=>items.flatMap(item=>[{...item,depth},...flattenToc(item.subitems||[],depth+1)])
-const progressKey=(title,epubUrl)=>'bc-epub-progress-v2:'+title+':'+epubUrl
+const storageKey=(kind,userId,bookId)=>'bc-epub-v3:'+userId+':'+bookId+':'+kind
 
-export default function EpubReader({ title, epubUrl, onBack }) {
+export default function EpubReader({ title, epubUrl, editionId, userId, onBack }) {
+  const bookId=editionId||title
+  const progressKey=storageKey('progress',userId,bookId)
+  const bookmarksKey=storageKey('bookmarks',userId,bookId)
+  const highlightsKey=storageKey('highlights',userId,bookId)
   const host=useRef(null), rendition=useRef(null), bookRef=useRef(null)
   const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
@@ -17,15 +21,15 @@ export default function EpubReader({ title, epubUrl, onBack }) {
   const [syncedBookmark,setSyncedBookmark]=useState(null), [bookmarkStatus,setBookmarkStatus]=useState('')
   const selectedStartRef=useRef(null)
   const audioStateRef=useRef('parado')
-  const [bookmarks,setBookmarks]=useState(()=>readJson('bc-epub-bookmarks:'+title,[]))
-  const [highlights,setHighlights]=useState(()=>readJson('bc-epub-highlights:'+title,[]))
+  const [bookmarks,setBookmarks]=useState(()=>readJson(bookmarksKey,[]))
+  const [highlights,setHighlights]=useState(()=>readJson(highlightsKey,[]))
   const [audioState,setAudioState]=useState('parado'), [audioVoice,setAudioVoice]=useState('masculina'), [audioRate,setAudioRate]=useState(1)
   const audioRef=useRef({chunks:[],index:0,offset:0,utterance:null,token:0,continuous:false,startedAt:0,rate:.92})
 
   useEffect(()=>{audioStateRef.current=audioState},[audioState])
 
-  const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem('bc-epub-bookmarks:'+title,JSON.stringify(items))}
-  const saveHighlights=items=>{setHighlights(items);localStorage.setItem('bc-epub-highlights:'+title,JSON.stringify(items))}
+  const saveBookmarks=items=>{setBookmarks(items);localStorage.setItem(bookmarksKey,JSON.stringify(items))}
+  const saveHighlights=items=>{setHighlights(items);localStorage.setItem(highlightsKey,JSON.stringify(items))}
 
   useEffect(()=>{
     let cancelled=false
@@ -60,7 +64,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
       })
       view.themes.select(readerTheme)
       view.themes.fontSize(fontSize+'%')
-      const key=progressKey(title,epubUrl)
+      const key=progressKey
       view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem(key,place?.start?.cfi||href)}catch{}
         const ref=audioRef.current
         if(ref && audioStateRef.current==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
@@ -70,7 +74,7 @@ export default function EpubReader({ title, epubUrl, onBack }) {
         selectedStartRef.current={cfi:cfiRange,text}
         if(text&&confirm('Sublinhar este trecho e guardar em “Marcações do livro”?')){
           const item={cfi:cfiRange,text:text.slice(0,500),createdAt:Date.now()}
-          const next=[...readJson('bc-epub-highlights:'+title,[]),item]; saveHighlights(next)
+          const next=[...readJson(highlightsKey,[]),item]; saveHighlights(next)
           try{view.annotations.highlight(cfiRange,{},undefined,'bc-highlight',{fill:'#e3b341','fill-opacity':'0.38','mix-blend-mode':'multiply'})}catch{}
           try{contents.window.getSelection().removeAllRanges()}catch{}
         }
@@ -88,11 +92,11 @@ export default function EpubReader({ title, epubUrl, onBack }) {
         }
         if(cancelled)return
         setLoading(false)
-        readJson('bc-epub-highlights:'+title,[]).forEach(h=>{try{view.annotations.highlight(h.cfi,{},undefined,'bc-highlight',{fill:'#e3b341','fill-opacity':'0.38','mix-blend-mode':'multiply'})}catch{}})
+        readJson(highlightsKey,[]).forEach(h=>{try{view.annotations.highlight(h.cfi,{},undefined,'bc-highlight',{fill:'#e3b341','fill-opacity':'0.38','mix-blend-mode':'multiply'})}catch{}})
       }).catch(()=>{if(!cancelled){setLoading(false);setError('Não foi possível abrir este arquivo EPUB.')}})
     }catch{setLoading(false);setError('Não foi possível iniciar o leitor.')}
     return()=>{cancelled=true;window.speechSynthesis?.cancel();rendition.current=null;bookRef.current=null;try{book?.destroy()}catch{}}
-  },[epubUrl,title])
+  },[epubUrl,title,editionId,userId])
 
   useEffect(()=>{rendition.current?.themes.fontSize(fontSize+'%')},[fontSize])
   useEffect(()=>{
