@@ -1225,5 +1225,5 @@ background:transparent!important;
 @media(max-width:640px){.commercial-promo-banner{margin:12px 16px 4px;padding:15px}.coupon-modal{padding:20px}.coupon-modal h2{font-size:1.35rem}}
 
 /* Frente da capa aprovada de Cristo, extraída visualmente da capa aberta. */
-.cristo-front-cover{overflow:hidden;position:relative}
-.cristo-front-cover img{width:286.129%!important;max-width:none!important;height:100%!important;object-fit:fill!important;transform:translateX(-51.522%);object-position:center!important}
+.cristo-front-cover{overflow:hidden;position:relative;aspect-ratio:620/887!important;width:min(100%,272px)!important;height:auto!important;min-height:0!important;padding:0!important;margin-inline:auto}
+.cristo-front-cover img{position:absolute;left:0;top:0;display:block;width:286.129%!important;max-width:none!important;height:100%!important;max-height:none!important;object-fit:fill!important;transform:translateX(-51.522%);object-position:center!important;border-radius:0}
