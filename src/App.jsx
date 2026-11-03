@@ -1007,7 +1007,7 @@ export default function App() {
     const items=publishedAuthorContent.filter(item=>item.book_key===selectedAuthorBook)
     const typeNames={book_page:'PÁGINA COMPLEMENTAR',quote:'CITAÇÃO / FRASE',note:'NOTA DO AUTOR',reflection:'REFLEXÃO',book_image:'IMAGEM DO LIVRO',book_video:'VÍDEO DO LIVRO'}
     const works=[
-      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/capa-devocional-oficial.jpg',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
+      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
       {title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus',meta:'História · Filosofia · Teologia',image:'/1000769251.jpg',status:'LIVRO PUBLICADO',text:'Uma obra sobre tempo, calendário, história e fé, percorrendo a construção humana do tempo e sua relação com a compreensão cristã.'},
       {title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',meta:'História · Calendário · Fé',image:'/cristo-capa-aberta-lombadas-2026-11-02.png',cristoCover:true,status:'LIVRO PUBLICADO',text:'Uma investigação histórica e reflexiva sobre como sociedades organizaram o tempo e como Cristo se tornou referência para a contagem da era cristã, distinguindo documentação histórica, interpretação e leitura teológica.'},
@@ -1062,7 +1062,7 @@ export default function App() {
       }
     }[selectedAuthorBook]
     const editionSpread=editorial?.spread || {
-      'Chimarrão com Deus':'/CAPA ABERTA CHIMARRÃO CO DEUS.png',
+      'Chimarrão com Deus':'/chimarrao-capa-aberta-revisada-2026-11-02.webp',
       'Entre os Tempos':'/CAPA ABERTA ENTRE OS TEMPOS.png',
       'Entre o Já e o Ainda Não':'/CAPA ABERTA ENTRE O JÁ E O AINDA NÃO.jpeg',
       'Cristo: O Marco Entre o Antes e o Depois':'/cristo-capa-aberta-lombadas-2026-11-02.png',
@@ -1094,7 +1094,7 @@ export default function App() {
 
   if (screen === 'authorBooks' && user) {
     const works = [
-      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/capa-devocional-oficial.jpg',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
+      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
       {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',meta:'História · Filosofia · Teologia',image:'/1000769251.jpg',status:'LIVRO PUBLICADO',text:'Uma obra sobre tempo, calendário, história e fé, percorrendo a construção humana do tempo e sua relação com a compreensão cristã.'},
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
       {title:'Cristo: O Marco Entre o Antes e o Depois',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',meta:'História · Calendário · Fé',image:'/cristo-capa-aberta-lombadas-2026-11-02.png',cristoCover:true,status:'LIVRO PUBLICADO',text:'Uma investigação histórica e reflexiva sobre como sociedades organizaram o tempo e como Cristo se tornou referência para a contagem da era cristã, distinguindo documentação histórica, interpretação e leitura teológica.'},
@@ -1112,8 +1112,8 @@ export default function App() {
 
   if (screen === 'books' && user) {
     const books = [
-      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
-      {title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/capa-devocional-oficial.jpg',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
+      {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
+      {title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
       {title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',image:'/1000769251.jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
       {title:'Entre o Já e o Ainda Não',productCode:'ebook_entre_ja_ainda_nao',sub:'A Esperança Inabalável em um Mundo Acelerado',kind:'Tempo · Corpo · Alma · Espírito',cover:'ja',image:'/1000670931(1).jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
       {title:'Cristo: O Marco Entre o Antes e o Depois',productCode:'ebook_cristo_marco',sub:'Como a Fé, a História e o Calendário se Encontram na Linha do Tempo',kind:'História · Calendário · Fé',cover:'cristo',image:'/cristo-capa-aberta-lombadas-2026-11-02.png',cristoCover:true,status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
