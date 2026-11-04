@@ -7,6 +7,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bc_coupon_quota_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,5 +29,9 @@ jobs:
         run: npm ci
       - name: Testar regras críticas
         run: npm test
+      - name: Testar concorrência de cupons no PostgreSQL
+        run: npm run test:db
+        env:
+          PG_TEST_URL: postgres://postgres:postgres@127.0.0.1:5432/bc_coupon_quota_test
       - name: Compilar aplicativo
         run: npm run build

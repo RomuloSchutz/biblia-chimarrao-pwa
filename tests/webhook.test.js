@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { stripTypeScriptTypes } from 'node:module'
 
-const source=stripTypeScriptTypes(fs.readFileSync(new URL('../supabase/functions/mercado-pago-orders-webhook/index.ts',import.meta.url),'utf8').replace(/^import .*;\n/gm,''))
+const source=stripTypeScriptTypes(fs.readFileSync(new URL('../supabase/functions/mercado-pago-orders-webhook/index.ts',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,''))
 async function run({status='processed',price=3990,failTable='',coupon=false}={}){
   let handler;const writes=[]
   const order={id:'order',user_id:'user',edition_id:'purchased-edition',product_code:'book',status:'pending',amount_cents:3490,currency:'BRL',payment_provider:'mercado_pago',provider_order_id:'123',paid_at:null,original_amount_cents:coupon?3990:3490,discount_amount_cents:coupon?500:0,coupon_id:coupon?'coupon':null,coupon_code:coupon?'PROMO':null}
