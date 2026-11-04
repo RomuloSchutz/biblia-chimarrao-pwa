@@ -60,12 +60,12 @@ Deno.serve(async (req: Request) => {
     if (mappingError) return json({ error: "coupon_product_validation_failed" }, 500);
     if (!mapping) return json({ error: "coupon_not_applicable" }, 409);
     if (coupon.max_redemptions != null) {
-      const { count, error } = await admin.from("commercial_coupon_redemptions").select("id", { count: "exact", head: true }).eq("coupon_id", coupon.id).eq("status", "redeemed");
+      const { count, error } = await admin.from("commercial_coupon_redemptions").select("id", { count: "exact", head: true }).eq("coupon_id", coupon.id).in("status", ["pending", "redeemed"]);
       if (error) return json({ error: "coupon_usage_validation_failed" }, 500);
       if ((count ?? 0) >= Number(coupon.max_redemptions)) return json({ error: "coupon_usage_limit_reached" }, 409);
     }
     if (coupon.max_redemptions_per_user != null) {
-      const { count, error } = await admin.from("commercial_coupon_redemptions").select("id", { count: "exact", head: true }).eq("coupon_id", coupon.id).eq("user_id", user.id).eq("status", "redeemed");
+      const { count, error } = await admin.from("commercial_coupon_redemptions").select("id", { count: "exact", head: true }).eq("coupon_id", coupon.id).eq("user_id", user.id).in("status", ["pending", "redeemed"]);
       if (error) return json({ error: "coupon_user_usage_validation_failed" }, 500);
       if ((count ?? 0) >= Number(coupon.max_redemptions_per_user)) return json({ error: "coupon_user_limit_reached" }, 409);
     }
@@ -103,14 +103,17 @@ Deno.serve(async (req: Request) => {
   const amount=(finalAmountCents/100).toFixed(2);
   const mpPayload:any={ type:"online", processing_mode:"manual", total_amount:amount, external_reference:order.id, description:product.title, items:[{external_code:product.code,title:product.title,quantity:1,unit_price:amount}] };
   const requestedReturnBase=String(body?.return_base_url??"").replace(/\/$/,"");
-  const allowedReturnBases=new Set(["https://lab-politica-compra-anual-2026-10-07-biblia-chimarrao-pwa.rommar2179.workers.dev","https://biblia-chimarrao-pwa.rommar2179.workers.dev","https://biblia-chimarrao-site.pages.dev/loja"]);
+  const allowedReturnBases=new Set(["https://lab-politica-compra-anual-2026-10-07-biblia-chimarrao-pwa.rommar2179.workers.dev","https://biblia-chimarrao-pwa.rommar2179.workers.dev","https://biblia-chimarrao-site.pages.dev/loja","https://bibliachimarrao.com.br/loja"]);
   if (requestedReturnBase && allowedReturnBases.has(requestedReturnBase)) mpPayload.config={online:{success_url:`${requestedReturnBase}/?payment_return=success&local_order=${order.id}`,pending_url:`${requestedReturnBase}/?payment_return=pending&local_order=${order.id}`,failure_url:`${requestedReturnBase}/?payment_return=failure&local_order=${order.id}`,auto_return:"all"}};
   let mpResponse:Response; let raw="";
   try { mpResponse=await fetch("https://api.mercadopago.com/v1/orders",{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json","Authorization":`Bearer ${mercadoPagoAccessToken}`,"X-Idempotency-Key":order.id},body:JSON.stringify(mpPayload)}); raw=await mpResponse.text(); }
-  catch { await admin.from("orders").update({status:"failed",updated_at:new Date().toISOString()}).eq("id",order.id); if(appliedCoupon) await admin.from("commercial_coupon_redemptions").update({status:"cancelled"}).eq("order_id",order.id); return json({error:"mercado_pago_connection_failed"},502); }
+  // A lost response can follow successful creation at the provider. Keep the
+  // reservation until the signed webhook/reconciliation establishes its state.
+  catch { return json({error:"mercado_pago_connection_failed",order_id:order.id},502); }
   let mp:any=null; try{mp=raw?JSON.parse(raw):null}catch{mp=null}
+  if(mpResponse.status>=500||[408,409,429].includes(mpResponse.status))return json({error:"mercado_pago_order_failed",order_id:order.id,provider_status:mpResponse.status},502);
   if(!mpResponse.ok){await admin.from("orders").update({status:"failed",updated_at:new Date().toISOString()}).eq("id",order.id);if(appliedCoupon) await admin.from("commercial_coupon_redemptions").update({status:"cancelled"}).eq("order_id",order.id);const diagnostic=safeProviderError(mp);console.error("Mercado Pago create order rejected",{provider_status:mpResponse.status,provider_error:diagnostic,provider_content_type:mpResponse.headers.get("content-type"),provider_raw_length:raw.length,provider_raw_preview:raw.slice(0,1000)});return json({error:"mercado_pago_order_failed",provider_status:mpResponse.status,provider_error:diagnostic,provider_details:diagnostic},502);}
-  if(!mp?.id||!mp?.checkout_url){await admin.from("orders").update({status:"failed",updated_at:new Date().toISOString()}).eq("id",order.id);if(appliedCoupon) await admin.from("commercial_coupon_redemptions").update({status:"cancelled"}).eq("order_id",order.id);return json({error:"mercado_pago_invalid_success_response",provider_status:mpResponse.status,provider_error:safeProviderError(mp)},502);}
+  if(!mp?.id||!mp?.checkout_url){return json({error:"mercado_pago_invalid_success_response",order_id:order.id,provider_status:mpResponse.status,provider_error:safeProviderError(mp)},502);}
   const {error:updateError}=await admin.from("orders").update({provider_order_id:String(mp.id),checkout_url:String(mp.checkout_url),updated_at:new Date().toISOString()}).eq("id",order.id);
   if(updateError)return json({error:"provider_order_persist_failed"},500);
   return json({order_id:order.id,product_code:product.code,original_amount_cents:originalAmountCents,discount_amount_cents:discountAmountCents,amount_cents:finalAmountCents,currency:product.currency,coupon_code:appliedCoupon?.code ?? null,checkout_url:mp.checkout_url},201);
