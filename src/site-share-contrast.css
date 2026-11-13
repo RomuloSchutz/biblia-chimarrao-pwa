@@ -47,7 +47,7 @@
   padding:5px!important;
   overflow:hidden!important;
   border-radius:12px!important;
-  background:#fff url("https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=https%3A%2F%2Fbiblia-chimarrao-site.pages.dev%2F") center/contain no-repeat!important;
+  background:#fff url("https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=https%3A%2F%2Fbibliachimarrao.com.br%2F") center/contain no-repeat!important;
   box-shadow:none!important;
   color-scheme:light!important;
   forced-color-adjust:none!important;
