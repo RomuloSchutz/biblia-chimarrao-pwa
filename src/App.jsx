@@ -853,9 +853,9 @@ export default function App() {
 
   async function shareMate() {
     if (!encounter) return
-    const text = encounter.title + '\n\n' + encounter.reflection + '\n\nChimarrão com Deus — 365 Encontros com Deus | no aplicativo Bíblia + Chimarrão | Romulo Schutz\n\nhttps://bibliachimarrao.com.br'
+    const text = `${encounter.title}\n\n${encounter.reflection}\n\nbibliachimarrao.com.br`
     try {
-      if (navigator.share) await navigator.share({ title:'Mate da Reflexão — ' + encounter.title, text })
+      if (navigator.share) await navigator.share({ text })
       else { await navigator.clipboard.writeText(text); setEncounterStatus('✓ Mate da Reflexão copiado para compartilhar.') }
     } catch (error) {
       if (error?.name !== 'AbortError') setEncounterStatus('Não foi possível compartilhar agora.')
