@@ -1015,7 +1015,7 @@ export default function App() {
   }
 
   if(screen==='authorBookContent'&&user&&selectedAuthorBook===desejoBook.title){
-    return <DesejoEsperanca onBack={()=>setScreen('books')} onRead={()=>{
+    return <DesejoEsperanca onBack={()=>setScreen('authorBooks')} onHome={()=>setScreen('dashboard')} onRead={()=>{
       setReaderTitle(desejoBook.title)
       setReaderUrl(desejoEpub)
       setScreen('epub-reader')
