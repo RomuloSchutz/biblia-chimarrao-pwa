@@ -10,6 +10,7 @@ import EpubReader from './EpubReader.jsx'
 import AnnualPurchasePanel from './AnnualPurchasePanel.jsx'
 import { upcomingBooks2027 } from './upcoming-books-2027.js'
 import { trilogyBookDetails } from './trilogy-book-details.js'
+import DesejoEsperanca, { desejoBook, desejoEpub } from './DesejoEsperanca.jsx'
 import CommercialCouponsAdminPanel from './CommercialCouponsAdminPanel.jsx'
 
 const menuItems = [
@@ -1013,6 +1014,15 @@ export default function App() {
     return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Ideias e Reflexões</small></div><div className="header-actions"><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><section className="welcome ideas-head stage3-ideas-head"><p className="eyebrow">IDEIAS E REFLEXÕES</p><h2>Palavras para levar consigo.</h2><p>Um espaço para pensamentos, perguntas e pequenas pausas sobre tempo, história, fé, esperança e vida.</p><div className="ideas-author">Romulo Schutz<small>Notas do autor</small></div></section><section className="ideas-grid">{reflections.map((item,index)=><article className="idea-card stage3-idea" key={item.id||item.title||index}><div className="idea-number">{String(index+1).padStart(2,'0')}</div><div><span>{item.theme||'REFLEXÃO'}</span>{item.title&&<h3>{item.title}</h3>}{item.highlight&&<blockquote>“{item.highlight}”</blockquote>}{item.body&&<p>{item.body}</p>}<small>Romulo Schutz</small></div></article>)}</section><section className="ideas-note"><span>✦</span><div><strong>Um espaço que continuará crescendo.</strong><p>Novas ideias e reflexões poderão ser acrescentadas ao aplicativo ao longo da caminhada.</p></div></section></main>
   }
 
+  if(screen==='authorBookContent'&&user&&selectedAuthorBook===desejoBook.title){
+    return <DesejoEsperanca onBack={()=>setScreen('books')} onRead={()=>{
+      setReaderTitle(desejoBook.title)
+      setReaderUrl(desejoEpub)
+      setScreen('epub-reader')
+      window.scrollTo(0,0)
+    }}/>
+  }
+
   if(screen==='authorBookContent'&&user){
     const items=publishedAuthorContent.filter(item=>item.book_key===selectedAuthorBook)
     const typeNames={book_page:'PÁGINA COMPLEMENTAR',quote:'CITAÇÃO / FRASE',note:'NOTA DO AUTOR',reflection:'REFLEXÃO',book_image:'IMAGEM DO LIVRO',book_video:'VÍDEO DO LIVRO'}
@@ -1104,6 +1114,7 @@ export default function App() {
 
   if (screen === 'authorBooks' && user) {
     const works = [
+      desejoBook,
       {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',meta:'Devocional diário 2027',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'DEVOCIONAL 2027',text:'Uma pausa diária para abrir a Palavra, refletir, conversar com Deus e transformar o encontro em um passo concreto para o dia.'},
       {title:'Entre os Tempos',sub:'A Urgência de Compreender o Calendário de Deus',meta:'História · Filosofia · Teologia',image:'/1000769251.jpg',status:'LIVRO PUBLICADO',text:'Uma obra sobre tempo, calendário, história e fé, percorrendo a construção humana do tempo e sua relação com a compreensão cristã.'},
       {title:'Entre o Já e o Ainda Não',sub:'A Esperança Inabalável em um Mundo Acelerado',meta:'Tempo · Corpo · Alma · Espírito',image:'/1000670931(1).jpg',status:'LIVRO PUBLICADO',text:'Uma reflexão sobre a vida no mundo acelerado e a esperança cristã, olhando para o ser humano em suas dimensões de tempo, corpo, alma e espírito.'},
@@ -1117,11 +1128,12 @@ export default function App() {
   }
 
   if (screen === 'epub-reader' && user) {
-    return <EpubReader key={user.id+":"+readerTitle} title={readerTitle} epubUrl={readerUrl} editionId={bookAccess[readerTitle]?.edition_id} userId={user.id} onBack={() => {setReaderUrl('');setScreen('books')}} />
+    return <EpubReader key={user.id+":"+readerTitle} title={readerTitle} epubUrl={readerUrl} editionId={bookAccess[readerTitle]?.edition_id} userId={user.id} onBack={() => {setReaderUrl('');setScreen(readerTitle===desejoBook.title?'authorBookContent':'books')}} />
   }
 
   if (screen === 'books' && user) {
     const books = [
+      {...desejoBook, kind:desejoBook.meta, cover:'desejo-esperanca', action:'Conhecer o livro', open:()=>openAuthorBookContent(desejoBook.title)},
       {title:'Chimarrão com Deus',sub:'365 Encontros com Deus',kind:'Devocional diário 2027',cover:'devotional',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'Disponível no aplicativo',group:'disponivel',action:'Abrir devocional',open:()=>setScreen('devotional')},
       {title:'Chimarrão com Deus — 365 Encontros com Deus',productCode:'devocional_chimarrao_com_deus_2027',sub:'Edição digital EPUB · Prévia 2027',kind:'Livro digital · acesso autorizado',cover:'devotional',image:'/chimarrao-capa-frontal-revisada-2026-11-02.png',status:'EPUB cadastrado · disponível para contas autorizadas',group:'disponivel',action:'Ler EPUB'},
       {title:'Entre os Tempos',productCode:'ebook_entre_os_tempos',sub:'A Urgência de Compreender o Calendário de Deus',kind:'História · Filosofia · Teologia',cover:'tempos',image:'/1000769251.jpg',status:'EPUB disponível no aplicativo',group:'publicados',action:'Ler EPUB'},
