@@ -145,7 +145,8 @@ export default function App() {
   const [reminderSaving, setReminderSaving] = useState(false)
   const [savedReminder, setSavedReminder] = useState(null)
   const [reminderClock, setReminderClock] = useState('')
-  const [isAdmin,setIsAdmin]=useState(false)
+  const [adminUserId,setAdminUserId]=useState(null)
+  const isAdmin=Boolean(user?.id && user.id===adminUserId)
   const [adminUsers,setAdminUsers]=useState([])
   const [adminLoading,setAdminLoading]=useState(false)
   const [adminMessage,setAdminMessage]=useState('')
@@ -236,10 +237,10 @@ export default function App() {
   },[])
 
   useEffect(()=>{
-    if(!user||!supabase){setIsAdmin(false);return}
+    if(!user||!supabase){setAdminUserId(null);return}
     let cancelled=false
     supabase.rpc('is_app_admin').then(({data,error})=>{
-      if(!cancelled) setIsAdmin(error ? false : data === true)
+      if(!cancelled) setAdminUserId(!error && data === true ? user.id : null)
     })
     return()=>{cancelled=true}
   },[user?.id])
@@ -851,9 +852,12 @@ export default function App() {
     }
   }
 
-  async function shareMate() {
-    if (!encounter) return
-    const text = `${encounter.title}\n\n${encounter.reflection}\n\nbibliachimarrao.com.br`
+  async function shareMate(forGroups = false) {
+    if (!encounter || (forGroups && !isAdmin)) return
+    const footer = forGroups
+      ? 'Se quiser saber mais sobre o devocional, me chame no privado.\nRomulo Schutz'
+      : 'bibliachimarrao.com.br'
+    const text = `${encounter.title}\n\n${encounter.reflection}\n\n${footer}`
     try {
       if (navigator.share) await navigator.share({ text })
       else { await navigator.clipboard.writeText(text); setEncounterStatus('✓ Mate da Reflexão copiado para compartilhar.') }
@@ -1162,7 +1166,7 @@ export default function App() {
 
   if (screen === 'encounter') {
     if (encounterLoading || !encounter) return <main className="dashboard"><p className="encounter-save-status">Carregando encontro...</p></main>
-    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Prévia 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => selectedMonth ? setScreen('month') : setScreen(user ? 'devotional' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><article className="welcome stage2-encounter"><div className="stage2-encounter-hero"><img src={"/devocional/mes_"+String(months.find(m=>m[1]?.toLowerCase()===String(encounter.month_name||"").toLowerCase())?.[0]||1).padStart(2,"0")+".jpg"} alt=""/><div className="stage2-encounter-heading"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2></div></div><div className="encounter-audio-controls" role="group" aria-label="Leitura em voz alta do encontro"><button type="button" onClick={playEncounterAudio} disabled={encounterAudioState==='playing'}>🔊 {encounterAudioState==='stopped'?'Ouvir o Encontro':'Reiniciar'}</button><button type="button" onClick={pauseResumeEncounterAudio} disabled={encounterAudioState==='stopped'}>{encounterAudioState==='paused'?'▶ Continuar':'⏸ Pausar'}</button><button type="button" onClick={stopEncounterAudio} disabled={encounterAudioState==='stopped'}>■ Parar</button></div><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small><strong>{encounter.verse_reference}</strong>{encounter.bible_version ? ' — '+encounter.bible_version : ' — Almeida 1911'}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button className="share-mate" onClick={shareMate}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea disabled={!user} value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea disabled={!user} value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div>{!user && <div className="guest-preview-note"><strong>Gostou da experiência?</strong><p>Crie sua conta para registrar suas anotações e continuar sua caminhada.</p><button onClick={()=>setScreen("signup")}>Criar minha conta</button></div>}<nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={user ? saveEncounterNotes : ()=>setScreen("signup")}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={user ? toggleEncounterFavorite : ()=>setScreen("signup")}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={user || encounter.day_number<3 ? goNext : ()=>setScreen("guestDemo")}><span>Próximo</span> →</button></nav><button className="complete-encounter" onClick={user ? markEncounterCompleted : ()=>setScreen("signup")}>✓ Concluir este encontro</button>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
+    return <main className="dashboard"><header className="dash-header"><div><strong>BÍBLIA + CHIMARRÃO</strong><small>Chimarrão com Deus · Prévia 2027</small></div><div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}><button className="logout" onClick={() => selectedMonth ? setScreen('month') : setScreen(user ? 'devotional' : 'guestDemo')}>← Voltar</button><button className="logout" onClick={() => setScreen(user ? 'dashboard' : 'landing')}>⌂ Início</button></div></header><article className="welcome stage2-encounter"><div className="stage2-encounter-hero"><img src={"/devocional/mes_"+String(months.find(m=>m[1]?.toLowerCase()===String(encounter.month_name||"").toLowerCase())?.[0]||1).padStart(2,"0")+".jpg"} alt=""/><div className="stage2-encounter-heading"><p className="eyebrow">DIA {encounter.day_number} · {encounter.day_of_month} DE {String(encounter.month_name || '').toUpperCase()}</p><h2>{encounter.title}</h2></div></div><div className="encounter-audio-controls" role="group" aria-label="Leitura em voz alta do encontro"><button type="button" onClick={playEncounterAudio} disabled={encounterAudioState==='playing'}>🔊 {encounterAudioState==='stopped'?'Ouvir o Encontro':'Reiniciar'}</button><button type="button" onClick={pauseResumeEncounterAudio} disabled={encounterAudioState==='stopped'}>{encounterAudioState==='paused'?'▶ Continuar':'⏸ Pausar'}</button><button type="button" onClick={stopEncounterAudio} disabled={encounterAudioState==='stopped'}>■ Parar</button></div><div className="dash-message">☀️ <strong>Bom Dia, Deus</strong><p>{encounter.bom_dia_deus}</p></div><div className="dash-message">📖 <strong>A Palavra</strong><p>{encounter.verse_text}</p><small><strong>{encounter.verse_reference}</strong>{encounter.bible_version ? ' — '+encounter.bible_version : ' — Almeida 1911'}</small></div><div className="dash-message"><div className="mate-title-row"><strong>🧉 Mate da Reflexão</strong><button type="button" className="share-mate" onClick={()=>shareMate()}>↗ Compartilhar</button></div>{String(encounter.reflection || '').split('\n').filter(Boolean).map((p,i)=><p key={i}>{p}</p>)}{isAdmin && <button type="button" className="share-mate" onClick={()=>shareMate(true)}>↗ Compartilhar para grupos</button>}</div><div className="dash-message">💭 <strong>Para Pensar</strong><p>{encounter.para_pensar}</p><textarea disabled={!user} value={pensarNote} onChange={e => setPensarNote(e.target.value)} placeholder="Escreva aqui sua anotação..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div><div className="dash-message">💬 <strong>Conversa com Deus</strong><p>{encounter.conversa_com_deus}</p></div><div className="dash-message">🌱 <strong>Um Passo para Hoje</strong><p>{encounter.um_passo_para_hoje}</p><textarea disabled={!user} value={passoNote} onChange={e => setPassoNote(e.target.value)} placeholder="Registre seu passo de hoje..." style={{width:'100%',minHeight:90,padding:12,borderRadius:10}} /></div>{!user && <div className="guest-preview-note"><strong>Gostou da experiência?</strong><p>Crie sua conta para registrar suas anotações e continuar sua caminhada.</p><button onClick={()=>setScreen("signup")}>Criar minha conta</button></div>}<nav className="encounter-actions" aria-label="Ações do encontro"><button disabled={encounter.day_number <= 1} onClick={goPrevious}>← <span>Anterior</span></button><button onClick={user ? saveEncounterNotes : ()=>setScreen("signup")}>✓ <span>{savedPreview ? 'Salvo!' : 'Salvar'}</span></button><button className={favoritePreview ? 'is-favorite' : ''} onClick={user ? toggleEncounterFavorite : ()=>setScreen("signup")}>{favoritePreview ? '♥' : '♡'} <span>{favoritePreview ? 'Favoritado' : 'Favoritar'}</span></button><button onClick={user || encounter.day_number<3 ? goNext : ()=>setScreen("guestDemo")}><span>Próximo</span> →</button></nav><button className="complete-encounter" onClick={user ? markEncounterCompleted : ()=>setScreen("signup")}>✓ Concluir este encontro</button>{encounterStatus && <p className="encounter-save-status" role="status">{encounterStatus}</p>}</article></main>
   }
 
   if (screen === 'reminder' && user) {
@@ -1181,7 +1185,7 @@ export default function App() {
     setAdminLoading(true);setAdminMessage('')
     const {data,error}=await supabase.rpc('admin_list_users')
     if(error){setAdminMessage('Acesso administrativo não autorizado.');setAdminUsers([]);setAdminLoading(false);return}
-    setIsAdmin(true);setAdminUsers(data||[])
+    setAdminUserId(user.id);setAdminUsers(data||[])
     setAdminLoading(false);setScreen('admin');window.scrollTo({top:0,behavior:'smooth'})
   }
 
