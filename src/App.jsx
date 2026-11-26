@@ -1025,7 +1025,7 @@ export default function App() {
   }
 
   if(screen==='authorBookContent'&&user&&selectedAuthorBook===promessaBook.title){
-    return <PromessaCumprimento onBack={()=>setScreen('authorBooks')} onHome={()=>setScreen('dashboard')} isAdmin={isAdmin} hasPreview={Boolean(bookAccess[promessaBook.title]?.has_access)} onRead={()=>openSecureBook(promessaBook.title)}/>
+    return <PromessaCumprimento onBack={()=>setScreen('authorBooks')} onHome={()=>setScreen('dashboard')} isAdmin={isAdmin} hasPreview={Boolean(bookAccess[promessaBook.title]?.has_access)} readError={bookAccessMessage} onRead={()=>openSecureBook(promessaBook.title)}/>
   }
 
   if(screen==='authorBookContent'&&user){
