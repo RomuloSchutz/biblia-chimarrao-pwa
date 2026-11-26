@@ -83,7 +83,10 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
         if(cancelled)return
         setChapters(flattenToc(nav.toc||[]))
         const saved=localStorage.getItem(key)
-        const first=book.spine?.spineItems?.[0]?.href
+        const spineItems=book.spine?.spineItems||[]
+        // A capa é um item não linear no EPUB e não deve ser a página inicial da leitura.
+        const firstReadable=spineItems.find(item=>item.linear!=='no'&&!/cover\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.linear!=='no')||spineItems.find(item=>!/cover\.xhtml?$/i.test(item.href||''))
+        const first=firstReadable?.href
         try{
           await view.display(saved||first||undefined)
         }catch{
