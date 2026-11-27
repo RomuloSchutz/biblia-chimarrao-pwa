@@ -12,10 +12,11 @@ const storageKey=(kind,userId,bookId)=>'bc-epub-v3:'+userId+':'+bookId+':'+kind
 export default function EpubReader({ title, epubUrl, editionId, userId, onBack }) {
   const bookId=editionId||title
   const progressKey=storageKey('progress',userId,bookId)
+  const progressHrefKey=storageKey('progress-href',userId,bookId)
   const bookmarksKey=storageKey('bookmarks',userId,bookId)
   const highlightsKey=storageKey('highlights',userId,bookId)
   const host=useRef(null), rendition=useRef(null), bookRef=useRef(null)
-  const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([])
+  const [fontSize,setFontSize]=useState(100), [location,setLocation]=useState(''), [chapters,setChapters]=useState([]), [coverHref,setCoverHref]=useState('')
   const [error,setError]=useState(''), [loading,setLoading]=useState(true)
   const [readerTheme,setReaderTheme]=useState(readTheme)
   const [syncedBookmark,setSyncedBookmark]=useState(null), [bookmarkStatus,setBookmarkStatus]=useState('')
@@ -65,7 +66,7 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
       view.themes.select(readerTheme)
       view.themes.fontSize(fontSize+'%')
       const key=progressKey
-      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem(key,place?.start?.cfi||href)}catch{}
+      view.on('relocated',place=>{if(cancelled)return;const href=place?.start?.href||'';setLocation(href);try{localStorage.setItem(key,place?.start?.cfi||href);if(href)localStorage.setItem(progressHrefKey,href)}catch{}
         const ref=audioRef.current
         if(ref && audioStateRef.current==='parado'){ref.chunks=[];ref.index=0;ref.offset=0;ref.continuous=false}
       })
@@ -83,12 +84,19 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
         if(cancelled)return
         setChapters(flattenToc(nav.toc||[]))
         const saved=localStorage.getItem(key)
+        const savedHref=localStorage.getItem(progressHrefKey)||''
         const spineItems=book.spine?.spineItems||[]
         // A capa é um item não linear no EPUB e não deve ser a página inicial da leitura.
         const firstReadable=spineItems.find(item=>item.linear!=='no'&&!/cover\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.linear!=='no')||spineItems.find(item=>!/cover\.xhtml?$/i.test(item.href||''))
         const first=firstReadable?.href
+        const coverItem=spineItems.find(item=>/cover\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.properties?.includes?.('cover'))
+        const cover=coverItem?.href||''
+        setCoverHref(cover)
+        const savedIsCover=/cover\.xhtml?$/i.test(savedHref)
+        // Progresso antigo sem href confiável não pode prender a leitura na capa.
+        const resumeAt=saved&&savedHref&&!savedIsCover?saved:first
         try{
-          await view.display(saved||first||undefined)
+          await view.display(resumeAt||first||undefined)
         }catch{
           try{localStorage.removeItem(key)}catch{}
           try{await view.display(first||undefined)}catch{throw new Error('display')}
@@ -106,6 +114,8 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
     try{localStorage.setItem('bc-epub-theme',readerTheme)}catch{}
     try{rendition.current?.themes.select(readerTheme)}catch{}
   },[readerTheme])
+
+  const openCover=async()=>{if(!coverHref||!rendition.current)return;stopAudio();setError('');try{await rendition.current.display(coverHref)}catch{setError('Não foi possível abrir a capa deste livro.')}}
 
   const openChapter=async href=>{
     if(!href||!rendition.current)return
@@ -218,6 +228,7 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
         {chapters.length>0&&<select aria-label="Selecionar capítulo" value="" onChange={ev=>openChapter(ev.target.value)}><option value="">Capítulos</option>{chapters.map((chapter,i)=><option key={i} value={chapter.href}>{'— '.repeat(chapter.depth||0)}{chapter.label}</option>)}</select>}
       </div>
       <div className="epub-tools" aria-label="Ferramentas do livro">
+        {coverHref&&<button onClick={openCover}>▣ Ver capa</button>}
         <button onClick={saveSyncedBookmark}>🔖 Marcar onde parei</button>
         {syncedBookmark&&<button onClick={openSyncedBookmark}>▶ Ir ao marca-página</button>}
         <button onClick={addBookmark}>⭐ Favoritar página</button>
