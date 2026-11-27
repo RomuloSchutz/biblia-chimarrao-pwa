@@ -89,10 +89,10 @@ export default function EpubReader({ title, epubUrl, editionId, userId, onBack }
         // A capa é um item não linear no EPUB e não deve ser a página inicial da leitura.
         const firstReadable=spineItems.find(item=>item.linear!=='no'&&!/cover\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.linear!=='no')||spineItems.find(item=>!/cover\.xhtml?$/i.test(item.href||''))
         const first=firstReadable?.href
-        const coverItem=spineItems.find(item=>/cover\\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.properties?.includes?.('cover'))
+        const coverItem=spineItems.find(item=>/cover\.xhtml?$/i.test(item.href||''))||spineItems.find(item=>item.properties?.includes?.('cover'))
         const cover=coverItem?.href||''
         setCoverHref(cover)
-        const savedIsCover=/cover\\.xhtml?$/i.test(savedHref)
+        const savedIsCover=/cover\.xhtml?$/i.test(savedHref)
         // Progresso antigo sem href confiável não pode prender a leitura na capa.
         const resumeAt=saved&&savedHref&&!savedIsCover?saved:first
         try{
